@@ -647,6 +647,8 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             hp: freshPlayer.hp,
             maxHp: freshPlayer.maxHp,
             presentation: getWorldModelPresentation(freshPlayer.visualData)
+              || getWorldModelPresentation(freshPlayer.assetProfileId)
+              || getWorldModelPresentation('brute')
           });
           babylonEngine.setEntityVisible('player_main', true);
 
@@ -782,6 +784,8 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             hp: other.hp,
             maxHp: other.maxHp,
             presentation: getWorldModelPresentation((other as any).visualData)
+              || getWorldModelPresentation((other as any).assetProfileId)
+              || getWorldModelPresentation('brute')
           });
         }
       }

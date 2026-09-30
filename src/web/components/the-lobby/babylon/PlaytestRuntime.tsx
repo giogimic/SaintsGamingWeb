@@ -641,7 +641,9 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
               fallback: "/game-assets/npc/adventurer.png",
             }),
             animationProfile: playerAnimationProfileRef.current as any,
-            presentation: getWorldModelPresentation(freshPlayer.visualData),
+            presentation: getWorldModelPresentation(freshPlayer.visualData)
+              || getWorldModelPresentation(freshPlayer.assetProfileId)
+              || getWorldModelPresentation('brute'),
             isPlayer: true,
             direction: freshPlayer.direction,
             isMoving: freshPlayer.isMoving,
@@ -804,7 +806,9 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
             animationProfile: multiplayerAnimationProfilesRef.current.get(
               socketId,
             ) as any,
-            presentation: getWorldModelPresentation((other as any).visualData),
+            presentation: getWorldModelPresentation((other as any).visualData)
+              || getWorldModelPresentation((other as any).assetProfileId)
+              || getWorldModelPresentation('brute'),
             isPlayer: true,
             direction: other.direction,
             isMoving: other.isMoving,

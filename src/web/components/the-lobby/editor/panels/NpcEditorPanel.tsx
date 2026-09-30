@@ -1,69 +1,157 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Plus, Save, Trash2, Smile, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { CatalogEditorShell } from '../components/CatalogEditorShell';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  Users, Plus, Trash2, Save, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle,
+  FileJson, Copy, Check, ChevronLeft, Cuboid, ShoppingBag, Shield, Award,
+  MessageSquare, Landmark, HeartHandshake, Swords, UserCheck, Sparkles, Filter, Search, Globe
+} from 'lucide-react';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
 import { ModelWardrobeEditor } from '../components/ModelWardrobeEditor';
 import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
+import { ArchetypeModelPreview3D } from '../hero-studio/ArchetypeModelPreview3D';
+import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { listNpcDefs, upsertNpcDef, deleteNpcDef } from '@/app/actions/studio/npc-def';
 import { ComponentMap } from '@/shared/game/entities/types';
+import { useEditorStore } from '../editor-store';
+import { cn } from '@/shared/lib/utils';
 
-interface NpcDefState {
+export interface NpcDefState {
   slug: string;
   name: string;
-  componentsData: Partial<ComponentMap>;
+  description?: string;
+  componentsData: Partial<ComponentMap> & {
+    behavior?: {
+      dialogueId?: string;
+      prompt?: string;
+      spawnType?: 'stationary' | 'patrol' | 'wander';
+      patrolRadius?: number;
+    };
+    trainerParty?: string;
+    faction?: string;
+    title?: string;
+  };
 }
 
-export function NpcEditorPanel() {
-  const [npcs, setNpcs] = useState<any[]>([]);
-  const [selected, setSelected] = useState<NpcDefState | null>(null);
-  const [form, setForm] = useState<NpcDefState>({ slug: '', name: 'New NPC', componentsData: {} });
-  const [isNew, setIsNew] = useState(false);
-  const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
+const EMPTY_NPC: NpcDefState = {
+  slug: '',
+  name: '',
+  description: '',
+  componentsData: {
+    identity: { slug: '', name: '' },
+    appearance: { assetProfileId: '3D Model', assetId: 'brute', scale: 0.8 },
+    capabilities: {
+      shopkeeper: false,
+      banker: false,
+      questGiver: false,
+      mercenary: false,
+      companion: false,
+      trainer: false,
+    },
+    behavior: {
+      dialogueId: '',
+      prompt: 'Talk',
+      spawnType: 'stationary',
+    },
+    trainerParty: '[]',
+    faction: 'Friendly',
+  },
+};
 
-  const fetchNpcs = async () => {
+const inputCls = "w-full bg-[#050b14] border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all placeholder:text-slate-700";
+const labelCls = "block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5";
+
+type NpcCapabilityKey = 'shopkeeper' | 'banker' | 'questGiver' | 'mercenary' | 'companion' | 'trainer';
+
+const CAPABILITY_CONFIGS: { key: NpcCapabilityKey; label: string; desc: string; icon: any; color: string }[] = [
+  { key: 'shopkeeper', label: 'Shopkeeper', desc: 'Sells items, equipment, and consumables', icon: ShoppingBag, color: 'text-amber-400 border-amber-500/30 bg-amber-500/10' },
+  { key: 'questGiver', label: 'Quest Giver', desc: 'Provides quests and storyline progression', icon: Award, color: 'text-yellow-400 border-yellow-500/30 bg-yellow-500/10' },
+  { key: 'trainer', label: 'Creature Trainer', desc: 'Challenges players with a creature party', icon: Swords, color: 'text-purple-400 border-purple-500/30 bg-purple-500/10' },
+  { key: 'mercenary', label: 'Mercenary', desc: 'Combat follower for hire in world exploration', icon: Shield, color: 'text-blue-400 border-blue-500/30 bg-blue-500/10' },
+  { key: 'companion', label: 'Companion', desc: 'Passive aesthetic companion / follower', icon: HeartHandshake, color: 'text-emerald-400 border-emerald-500/30 bg-emerald-500/10' },
+  { key: 'banker', label: 'Banker', desc: 'Access to persistent player vault and stash', icon: Landmark, color: 'text-cyan-400 border-cyan-500/30 bg-cyan-500/10' },
+];
+
+export function NpcEditorPanel() {
+  const activeGameId = useEditorStore((s) => s.activeGameId) || 'saints';
+
+  // Data State
+  const [npcs, setNpcs] = useState<any[]>([]);
+  const [viewState, setViewState] = useState<'gallery' | 'edit'>('gallery');
+
+  // Form State
+  const [selected, setSelected] = useState<NpcDefState | null>(null);
+  const [form, setForm] = useState<NpcDefState>({ ...EMPTY_NPC });
+  const [isNew, setIsNew] = useState(false);
+
+  // UI State
+  const [loading, setLoading] = useState(false);
+  const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'ALL' | NpcCapabilityKey>('ALL');
+  const [copied, setCopied] = useState(false);
+
+  const fetchNpcs = useCallback(async () => {
     setLoading(true);
-    const res = await listNpcDefs('saints');
+    const res = await listNpcDefs(activeGameId);
     if (res.success && res.data) {
       setNpcs(res.data);
     } else {
       showStatus('error', 'Failed to load NPCs.');
     }
     setLoading(false);
-  };
+  }, [activeGameId]);
 
   useEffect(() => {
-    fetchNpcs();
-  }, []);
+    void fetchNpcs();
+  }, [fetchNpcs]);
 
   const showStatus = (type: 'success' | 'error', msg: string) => {
     setStatus({ type, msg });
-    setTimeout(() => setStatus(null), 3000);
+    setTimeout(() => setStatus(null), 3500);
   };
 
-  const handleSelect = (n: any) => {
-    let parsed: Partial<ComponentMap> = {};
+  const handleSelectNpc = (n: any) => {
+    let parsed: any = {};
     try {
       parsed = JSON.parse(n.componentsData || '{}');
-    } catch (e) {}
+    } catch {}
 
     const npcState: NpcDefState = {
       slug: n.slug,
       name: n.name,
-      componentsData: parsed,
+      description: n.description || '',
+      componentsData: {
+        ...EMPTY_NPC.componentsData,
+        ...parsed,
+      },
     };
     setSelected(npcState);
     setForm(npcState);
     setIsNew(false);
+    setViewState('edit');
   };
 
   const handleNew = () => {
+    const freshSlug = `npc_${Math.floor(Date.now() / 1000)}`;
+    const newNpc: NpcDefState = {
+      ...EMPTY_NPC,
+      slug: freshSlug,
+      name: 'New NPC',
+      componentsData: {
+        ...EMPTY_NPC.componentsData,
+        identity: { slug: freshSlug, name: 'New NPC' },
+        behavior: { dialogueId: freshSlug, prompt: 'Talk', spawnType: 'stationary' },
+      },
+    };
     setSelected(null);
-    setForm({ slug: `npc_${Date.now()}`, name: 'New NPC', componentsData: {} });
+    setForm(newNpc);
     setIsNew(true);
+    setViewState('edit');
+  };
+
+  const handleBack = () => {
+    setViewState('gallery');
   };
 
   const setComponent = (key: keyof ComponentMap, val: any) => {
@@ -72,243 +160,666 @@ export function NpcEditorPanel() {
       componentsData: {
         ...prev.componentsData,
         [key]: {
-          ...(prev.componentsData[key] || {}),
-          ...val
-        }
-      }
+          ...((prev.componentsData as any)[key] || {}),
+          ...val,
+        },
+      },
     }));
   };
 
+  const toggleCapability = (cap: NpcCapabilityKey, val: boolean) => {
+    setForm((prev) => ({
+      ...prev,
+      componentsData: {
+        ...prev.componentsData,
+        capabilities: {
+          ...(prev.componentsData.capabilities || {}),
+          [cap]: val,
+        },
+      },
+    }));
+  };
+
+  const getCap = (cap: NpcCapabilityKey): boolean => {
+    return Boolean(form.componentsData.capabilities?.[cap]);
+  };
+
   const handleSave = async () => {
-    if (!form.slug || !form.name) return showStatus('error', 'Slug and Name required.');
-    
-    // Ensure identity component is updated with the slug and name
+    if (!form.slug || !form.name) {
+      showStatus('error', 'Slug and Name are required.');
+      return;
+    }
+
+    setLoading(true);
+
     const finalComponentsData = {
       ...form.componentsData,
       identity: {
         ...(form.componentsData.identity || {}),
         slug: form.slug,
-        name: form.name
-      }
+        name: form.name,
+        title: form.componentsData.title || '',
+      },
+      behavior: {
+        ...(form.componentsData.behavior || {}),
+        dialogueId: form.componentsData.behavior?.dialogueId || form.slug,
+      },
     };
 
     const payload = {
       slug: form.slug,
       name: form.name,
-      componentsData: JSON.stringify(finalComponentsData)
+      description: form.description || '',
+      componentsData: JSON.stringify(finalComponentsData),
     };
 
-    const res = await upsertNpcDef('saints', payload);
+    const res = await upsertNpcDef(activeGameId, payload);
+    setLoading(false);
+
     if (res.success) {
-      showStatus('success', 'NPC saved successfully.');
+      showStatus('success', `${form.name} saved successfully!`);
       setIsNew(false);
-      fetchNpcs();
-      // Keep the form updated with the latest
-      handleSelect({ ...res.data, componentsData: payload.componentsData });
+      await fetchNpcs();
     } else {
       showStatus('error', res.error || 'Failed to save NPC.');
     }
   };
 
-  const handleDelete = async () => {
-    if (!selected) return;
-    const res = await deleteNpcDef(selected.slug);
+  const handleDelete = async (slug: string) => {
+    if (!confirm(`Permanently delete NPC "${slug}"?`)) return;
+    const res = await deleteNpcDef(slug);
     if (res.success) {
       showStatus('success', 'NPC deleted.');
-      setSelected(null);
-      fetchNpcs();
+      if (selected?.slug === slug) {
+        setSelected(null);
+        setIsNew(false);
+        setViewState('gallery');
+      }
+      await fetchNpcs();
     } else {
-      showStatus('error', res.error || 'Failed to delete NPC.');
+      showStatus('error', res.error || 'Delete failed.');
     }
   };
 
+  const handleDuplicate = () => {
+    if (!form.slug) return;
+    const newSlug = `${form.slug}_copy_${Math.floor(Math.random() * 900 + 100)}`;
+    setSelected(null);
+    setForm({
+      ...form,
+      slug: newSlug,
+      name: `${form.name} (Copy)`,
+    });
+    setIsNew(true);
+    showStatus('success', 'Cloned NPC into new draft. Make changes and Save.');
+  };
+
+  const handleCopyFormJson = () => {
+    navigator.clipboard.writeText(JSON.stringify(form, null, 2));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // World Model representation helpers
   const getWorldModel = (): WorldModelValue => {
     const app = form.componentsData.appearance;
-    if (app && app.assetProfileId && app.assetId) {
-      return { type: app.assetProfileId as any, assetId: app.assetId, scale: app.scale };
+    if (app && app.assetId) {
+      return { type: (app.assetProfileId || '3D Model') as any, assetId: app.assetId, scale: app.scale ?? 0.8 };
     }
-    return { type: '2D Sprite', assetId: 'adventurer' };
+    return { type: '3D Model', assetId: 'brute', scale: 0.8 };
   };
 
   const handleWorldModelChange = (val: WorldModelValue) => {
-    setComponent('appearance', { assetProfileId: val.type, assetId: val.assetId, scale: val.scale });
+    setComponent('appearance', {
+      assetProfileId: val.type,
+      assetId: val.assetId,
+      scale: val.scale ?? 0.8,
+    });
   };
 
-  const getModularAttachments = (): ModelWardrobeItem[] =>
-    (form.componentsData.appearance?.modularAttachments || []) as ModelWardrobeItem[];
+  const getModularAttachments = (): ModelWardrobeItem[] => {
+    return ((form.componentsData.appearance?.modularAttachments || []) as ModelWardrobeItem[]);
+  };
 
   const handleModularAttachmentsChange = (items: ModelWardrobeItem[]) => {
     setComponent('appearance', { modularAttachments: items });
   };
 
-  const toggleCapability = (cap: 'shopkeeper' | 'banker' | 'questGiver' | 'mercenary' | 'companion' | 'trainer', val: boolean) => {
-    setComponent('capabilities', { [cap]: val });
-  };
+  // Live validation markers
+  const isSlugValid = Boolean(form.slug && /^[a-z0-9_]+$/.test(form.slug));
+  const isVisualValid = Boolean(form.componentsData.appearance?.assetId);
+  const activeCapCount = Object.values(form.componentsData.capabilities || {}).filter(Boolean).length;
 
-  const inputCls = "w-full bg-[#050b14] border border-amber-900/50 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-amber-500 transition-colors";
-  const labelCls = "block text-[9px] font-black text-amber-500/80 uppercase tracking-[0.15em] mb-1 mt-3";
+  const filteredNpcs = npcs.filter((n) => {
+    const matchesSearch = n.name.toLowerCase().includes(search.toLowerCase()) || n.slug.toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+    if (roleFilter === 'ALL') return true;
+    try {
+      const parsed = JSON.parse(n.componentsData || '{}');
+      return Boolean(parsed.capabilities?.[roleFilter]);
+    } catch {
+      return false;
+    }
+  });
 
-  const getCap = (cap: 'shopkeeper' | 'banker' | 'questGiver' | 'mercenary' | 'companion' | 'trainer') => {
-    return form.componentsData.capabilities?.[cap] || false;
-  };
+  // ─── GALLERY VIEW ──────────────────────────────────────────────────────────
+  if (viewState === 'gallery') {
+    return (
+      <div className="flex flex-col h-full overflow-hidden bg-[#050b14] relative">
+        {/* Gallery Header */}
+        <div className="flex items-center justify-between p-5 border-b border-white/5 bg-black/20 shrink-0">
+          <div>
+            <h2 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-amber-400 via-amber-200 to-yellow-400 flex items-center gap-2">
+              <Globe className="text-amber-400" size={20} />
+              NPC Registry
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Merchants, quest givers, trainers, companions, and world citizens.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => void fetchNpcs()}
+              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors cursor-pointer"
+              title="Refresh"
+            >
+              <RefreshCw size={16} className={loading ? 'animate-spin text-amber-400' : ''} />
+            </button>
+            <button
+              onClick={handleNew}
+              className="px-5 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(245,158,11,0.3)] transition-all cursor-pointer"
+            >
+              <Plus size={16} strokeWidth={3} /> Create NPC
+            </button>
+          </div>
+        </div>
 
-  const filteredNpcs = npcs.filter(n => n.name.toLowerCase().includes(search.toLowerCase()) || n.slug.toLowerCase().includes(search.toLowerCase()));
+        {/* Toolbar: Search and Filter Chips */}
+        <div className="px-5 py-3 border-b border-slate-800/60 bg-[#07111c]/60 flex flex-wrap items-center justify-between gap-3">
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="w-4 h-4 text-amber-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search NPCs by name, slug, or title..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-[#050b14] border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-400 font-mono"
+            />
+          </div>
 
-  return (
-    <div className="relative h-full min-h-0">
-      <CatalogEditorShell
-        title="NPC Studio"
-        items={filteredNpcs}
-        activeId={selected?.slug || null}
-        getItemId={(n) => n.slug}
-        getItemName={(n) => n.name}
-        isDirty={() => isNew}
-        search={search}
-        onSearchChange={setSearch}
-        onSelect={(slug) => { const n = npcs.find(x => x.slug === slug); if (n) handleSelect(n); }}
-        onCreateNew={handleNew}
-        onSave={handleSave}
-        onDelete={handleDelete}
-        saving={false}
-        validationError={status?.type === 'error' ? status.msg : null}
-      >
-        {status?.type === 'success' && (
-          <div className="mb-2 flex items-center gap-1 rounded px-2 py-1 text-[10px] bg-emerald-900/40 text-emerald-200">
-            <CheckCircle2 size={12} />
-            {status.msg}
+          <div className="flex items-center gap-1 flex-wrap">
+            <button
+              onClick={() => setRoleFilter('ALL')}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer border",
+                roleFilter === 'ALL'
+                  ? "bg-amber-600/30 border-amber-500 text-amber-300"
+                  : "bg-black/30 border-slate-800 text-slate-400 hover:text-slate-200"
+              )}
+            >
+              All NPCs ({npcs.length})
+            </button>
+            {CAPABILITY_CONFIGS.map((cap) => (
+              <button
+                key={cap.key}
+                onClick={() => setRoleFilter(cap.key)}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer border flex items-center gap-1.5",
+                  roleFilter === cap.key
+                    ? "bg-amber-600/30 border-amber-500 text-amber-300"
+                    : "bg-black/30 border-slate-800 text-slate-400 hover:text-slate-200"
+                )}
+              >
+                <span>{cap.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Status Toast */}
+        {status && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4">
+            <div className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold shadow-xl border ${status.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-300' : 'bg-red-950/90 border-red-500/30 text-red-300'} backdrop-blur-md`}>
+              {status.type === 'success' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+              {status.msg}
+            </div>
           </div>
         )}
 
-        {(selected || isNew) ? (
-          <div className="flex flex-col h-full overflow-hidden">
+        {/* Gallery Cards Grid */}
+        <div className="flex-1 overflow-y-auto p-5 pb-20 custom-scrollbar">
+          {filteredNpcs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-4 my-16">
+              <Globe size={48} className="opacity-20" />
+              <p className="text-sm font-bold">No NPCs found matching your search.</p>
+              <button
+                onClick={handleNew}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-bold text-xs transition cursor-pointer shadow"
+              >
+                + Create NPC Now
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+              {filteredNpcs.map((npc) => {
+                let parsed: any = {};
+                try { parsed = JSON.parse(npc.componentsData || '{}'); } catch {}
+                const is3D = parsed.appearance?.assetProfileId === '3D Model' || !parsed.appearance?.assetProfileId;
+                const activeCaps = Object.entries(parsed.capabilities || {}).filter(([_, v]) => Boolean(v)).map(([k]) => k);
+                const title = parsed.identity?.title || parsed.title;
 
-            <div className="flex-1 overflow-y-auto space-y-2 p-1">
-              <div className="grid grid-cols-2 gap-2">
+                return (
+                  <div
+                    key={npc.slug}
+                    onClick={() => handleSelectNpc(npc)}
+                    className="group relative bg-[#0a101b]/80 border border-slate-800/80 hover:border-amber-500/50 rounded-2xl p-5 cursor-pointer overflow-hidden backdrop-blur-xl transition-all duration-300 flex flex-col hover:shadow-[0_8px_30px_rgba(245,158,11,0.1)] hover:-translate-y-1"
+                  >
+                    {/* Delete action overlay */}
+                    <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); void handleDelete(npc.slug); }}
+                        className="p-1.5 rounded-lg bg-black/60 hover:bg-red-950/80 text-red-400 hover:text-red-300 backdrop-blur-md transition-colors"
+                        title="Delete NPC"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+
+                    {/* Visual Preview */}
+                    <div className="flex justify-center items-center h-28 mb-4 relative z-0">
+                      <div className="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent rounded-xl" />
+                      {is3D ? (
+                        <div className="flex flex-col items-center justify-center gap-1.5 z-10">
+                          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                            <Cuboid size={24} />
+                          </div>
+                          <span className="text-[9px] font-bold text-amber-400/80 uppercase tracking-widest">
+                            {parsed.appearance?.assetId || '3D Model'}
+                          </span>
+                        </div>
+                      ) : (
+                        <CharacterSpritePreview
+                          assetProfileId={parsed.appearance?.assetId || 'adventurer'}
+                          size={48}
+                          scale={1.8}
+                        />
+                      )}
+                    </div>
+
+                    {/* NPC Info */}
+                    <div className="text-center flex-1 flex flex-col">
+                      <h3 className="text-sm font-black text-white truncate mb-0.5 group-hover:text-amber-300 transition-colors">
+                        {npc.name}
+                      </h3>
+                      <div className="text-[10px] text-slate-400 font-mono truncate mb-2">
+                        {title || npc.slug}
+                      </div>
+
+                      <p className="text-[10px] text-slate-400 line-clamp-2 leading-relaxed flex-1 italic mb-3">
+                        "{npc.description || parsed.behavior?.prompt || 'World NPC'}"
+                      </p>
+
+                      {/* Role Chips */}
+                      <div className="flex flex-wrap justify-center gap-1 mt-auto">
+                        {activeCaps.length > 0 ? (
+                          activeCaps.slice(0, 3).map((cap) => (
+                            <span
+                              key={cap}
+                              className="px-2 py-0.5 rounded text-[8.5px] font-bold bg-amber-500/15 text-amber-300 border border-amber-500/30 capitalize"
+                            >
+                              {cap}
+                            </span>
+                          ))
+                        ) : (
+                          <span className="px-2 py-0.5 rounded text-[8.5px] font-bold bg-slate-800 text-slate-400">
+                            Citizen
+                          </span>
+                        )}
+                        {activeCaps.length > 3 && (
+                          <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-slate-800 text-slate-400">
+                            +{activeCaps.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── EDITOR VIEW ──────────────────────────────────────────────────────────
+  return (
+    <div className="flex flex-col h-full overflow-hidden bg-[#050b14] relative">
+      {/* Editor Header */}
+      <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/40 shrink-0">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleBack}
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 transition-colors cursor-pointer"
+            title="Back to NPC List"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <div>
+            <h2 className="text-lg font-black text-white">{isNew ? 'Create NPC' : form.name}</h2>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              {isNew ? 'Drafting a new NPC actor template' : `Editing NPC actor definition: ${form.slug}`}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Live Validation Markers */}
+          <div className="hidden lg:flex items-center gap-3 mr-4">
+            <div className={`flex items-center gap-1.5 text-[10px] font-bold ${isSlugValid ? 'text-emerald-400/80' : 'text-red-400'}`}>
+              {isSlugValid ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />} Slug
+            </div>
+            <div className={`flex items-center gap-1.5 text-[10px] font-bold ${isVisualValid ? 'text-emerald-400/80' : 'text-red-400'}`}>
+              {isVisualValid ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />} Visuals
+            </div>
+            <div className={`flex items-center gap-1.5 text-[10px] font-bold text-amber-400/80`}>
+              <CheckCircle2 size={12} /> {activeCapCount} Active Roles
+            </div>
+          </div>
+
+          {!isNew && (
+            <button
+              onClick={handleDuplicate}
+              className="px-3 py-2 rounded-lg text-xs font-bold text-amber-300 hover:bg-amber-500/10 border border-amber-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Copy size={14} /> Clone
+            </button>
+          )}
+
+          <button
+            onClick={handleCopyFormJson}
+            className="px-3 py-2 rounded-lg text-xs font-bold text-slate-300 hover:bg-white/5 border border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
+          >
+            {copied ? <Check size={14} className="text-emerald-400" /> : <FileJson size={14} />} {copied ? 'Copied' : 'JSON'}
+          </button>
+
+          <button
+            onClick={() => void handleSave()}
+            disabled={loading || !isSlugValid || !form.name}
+            className="px-6 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-sm font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.3)] disabled:opacity-50 disabled:shadow-none transition-all cursor-pointer"
+          >
+            <Save size={16} /> {loading ? 'Saving...' : 'Save NPC'}
+          </button>
+        </div>
+      </div>
+
+      {/* Status Overlay */}
+      {status && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 animate-in fade-in zoom-in-95">
+          <div className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold shadow-xl border ${status.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-300' : 'bg-red-950/90 border-red-500/30 text-red-300'} backdrop-blur-md`}>
+            {status.type === 'success' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+            {status.msg}
+          </div>
+        </div>
+      )}
+
+      {/* Form Split Layout */}
+      <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* LEFT COLUMN: Identity & Capabilities (6 cols) */}
+          <div className="lg:col-span-6 space-y-6">
+            {/* Box 1: Core Identity */}
+            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-5 backdrop-blur-xl shadow-lg">
+              <div className="flex items-center gap-2 border-b border-amber-500/10 pb-3">
+                <Globe className="text-amber-400/80" size={16} />
+                <h3 className="text-xs font-black text-amber-400/80 uppercase tracking-widest">NPC Identity</h3>
+              </div>
+
+              <div>
+                <label className={labelCls}>NPC Full Name</label>
+                <input
+                  value={form.name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                  className={inputCls}
+                  placeholder="e.g. Master Blacksmith Cedric"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>NPC Name</label>
-                  <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className={inputCls} />
+                  <label className={labelCls}>System Slug</label>
+                  <input
+                    value={form.slug}
+                    onChange={(e) => setForm((prev) => ({ ...prev, slug: e.target.value.toLowerCase().replace(/\s+/g, '_') }))}
+                    className={inputCls}
+                    placeholder="e.g. npc_blacksmith_cedric"
+                    disabled={!isNew}
+                    style={{ opacity: isNew ? 1 : 0.6 }}
+                  />
                 </div>
                 <div>
-                  <label className={labelCls}>Global Slug</label>
-                  <input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} disabled={!isNew} className={inputCls} style={{opacity: isNew ? 1 : 0.5}} />
+                  <label className={labelCls}>Subtitle / Title</label>
+                  <input
+                    value={form.componentsData.title || ''}
+                    onChange={(e) => setForm((prev) => ({ ...prev, componentsData: { ...prev.componentsData, title: e.target.value } }))}
+                    className={inputCls}
+                    placeholder="e.g. Arms & Armor Merchant"
+                  />
                 </div>
               </div>
-              
+
+              <div>
+                <label className={labelCls}>Lore & Description</label>
+                <textarea
+                  value={form.description || ''}
+                  onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
+                  className={cn(inputCls, "resize-none h-20")}
+                  placeholder="Cedric has worked the anvil in Riverbend for thirty winters..."
+                  maxLength={180}
+                />
+              </div>
+            </div>
+
+            {/* Box 2: Roles & Capabilities */}
+            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-5 backdrop-blur-xl shadow-lg">
+              <div className="flex items-center justify-between border-b border-amber-500/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="text-amber-400/80" size={16} />
+                  <h3 className="text-xs font-black text-amber-400/80 uppercase tracking-widest">Roles & Capabilities</h3>
+                </div>
+                <span className="text-[10px] font-mono text-amber-400">
+                  {activeCapCount} enabled
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {CAPABILITY_CONFIGS.map((cap) => {
+                  const Icon = cap.icon;
+                  const isActive = getCap(cap.key);
+                  return (
+                    <button
+                      key={cap.key}
+                      type="button"
+                      onClick={() => toggleCapability(cap.key, !isActive)}
+                      className={cn(
+                        "p-3 rounded-xl border text-left transition-all cursor-pointer flex items-start gap-3",
+                        isActive
+                          ? "bg-amber-500/15 border-amber-500/50 shadow-[0_0_12px_rgba(245,158,11,0.1)]"
+                          : "bg-black/30 border-slate-800/80 hover:border-slate-700 text-slate-400"
+                      )}
+                    >
+                      <div className={cn("p-2 rounded-lg border", isActive ? cap.color : "bg-black/40 border-slate-800 text-slate-500")}>
+                        <Icon size={14} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className={cn("text-xs font-bold mb-0.5", isActive ? "text-amber-200" : "text-slate-300")}>
+                          {cap.label}
+                        </div>
+                        <div className="text-[9.5px] text-slate-400 leading-tight">
+                          {cap.desc}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Conditional Configuration for Trainer */}
+              {getCap('trainer') && (
+                <div className="p-3 bg-purple-950/20 border border-purple-800/40 rounded-xl space-y-2 animate-in fade-in">
+                  <label className={labelCls}>Trainer Party (Creature Slugs JSON)</label>
+                  <input
+                    value={form.componentsData.trainerParty || '[]'}
+                    onChange={(e) => setForm((prev) => ({ ...prev, componentsData: { ...prev.componentsData, trainerParty: e.target.value } }))}
+                    className={inputCls}
+                    placeholder='e.g. ["creature_fennec", "creature_cinder_pup"]'
+                  />
+                  <p className="text-[9.5px] text-purple-300/70">
+                    Defines the creatures this trainer summons during a turn-based creature battle.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Box 3: Dialogue & Interaction */}
+            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-4 backdrop-blur-xl shadow-lg">
+              <div className="flex items-center gap-2 border-b border-amber-500/10 pb-3">
+                <MessageSquare className="text-amber-400/80" size={16} />
+                <h3 className="text-xs font-black text-amber-400/80 uppercase tracking-widest">Dialogue & Interaction</h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Dialogue Tree ID</label>
+                  <input
+                    value={form.componentsData.behavior?.dialogueId || ''}
+                    onChange={(e) => setComponent('behavior', { dialogueId: e.target.value })}
+                    className={inputCls}
+                    placeholder={form.slug || 'e.g. cedric_greet'}
+                  />
+                </div>
+                <div>
+                  <label className={labelCls}>Interaction Prompt</label>
+                  <input
+                    value={form.componentsData.behavior?.prompt || 'Talk'}
+                    onChange={(e) => setComponent('behavior', { prompt: e.target.value })}
+                    className={inputCls}
+                    placeholder="e.g. Talk, Trade, Inspect"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelCls}>Movement / Patrol Mode</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'stationary', label: 'Stationary' },
+                    { id: 'wander', label: 'Wander Area' },
+                    { id: 'patrol', label: 'Patrol Path' },
+                  ].map((mode) => (
+                    <button
+                      key={mode.id}
+                      type="button"
+                      onClick={() => setComponent('behavior', { spawnType: mode.id })}
+                      className={cn(
+                        "py-2 rounded-lg border text-xs font-bold transition cursor-pointer",
+                        form.componentsData.behavior?.spawnType === mode.id
+                          ? "bg-amber-500/20 border-amber-500/60 text-amber-300"
+                          : "bg-black/30 border-slate-800 text-slate-400 hover:text-slate-200"
+                      )}
+                    >
+                      {mode.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: 3D Visual Selector & Engine Rules (6 cols) */}
+          <div className="lg:col-span-6 space-y-6">
+            {/* Box 4: Asset Selector & Live 3D Preview */}
+            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-5 backdrop-blur-xl shadow-lg">
+              <div className="flex items-center gap-2 border-b border-cyan-500/10 pb-3">
+                <Cuboid className="text-cyan-400/80" size={16} />
+                <h3 className="text-xs font-black text-cyan-400/80 uppercase tracking-widest">3D Model & Visuals</h3>
+              </div>
+
+              {/* Live 3D Canvas Preview */}
+              {getWorldModel().type === '3D Model' && getWorldModel().assetId && (
+                <div className="pb-2">
+                  <ArchetypeModelPreview3D
+                    baseAssetId={getWorldModel().assetId}
+                    modelScale={getWorldModel().scale ?? 0.8}
+                    modularAttachments={getModularAttachments()
+                      .filter((attachment) => attachment.defaultVisible !== false)
+                      .map((attachment) => ({
+                        ...attachment,
+                        type: attachment.type === '3D Sprite' ? '3D Model' : attachment.type || '3D Model',
+                      }))}
+                    className="h-80"
+                  />
+                </div>
+              )}
+
               <WorldModelSelector
                 value={getWorldModel()}
                 onChange={handleWorldModelChange}
                 label="NPC World Model"
+                allowSocketConfig={true}
               />
+
               {getWorldModel().type === '3D Model' && (
                 <ModelWardrobeEditor
                   modelAssetId={getWorldModel().assetId}
                   value={getModularAttachments()}
                   onChange={handleModularAttachmentsChange}
-                  title="NPC Items & Equipment"
+                  title="NPC Wardrobe & Equipped Gear"
                 />
               )}
+            </div>
 
-              <div className="mt-4 p-3 bg-black/40 border border-amber-900/30 rounded-lg">
-                <div className="text-[10px] font-black uppercase text-amber-500/70 mb-3 pb-1 border-b border-amber-900/30">
-                  Global Behaviors & Capabilities
+            {/* Box 5: Faction & Studio Deployment */}
+            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-4 backdrop-blur-xl shadow-lg">
+              <div className="flex items-center gap-2 border-b border-amber-500/10 pb-3">
+                <Shield className="text-amber-400/80" size={16} />
+                <h3 className="text-xs font-black text-amber-400/80 uppercase tracking-widest">Faction & Status</h3>
+              </div>
+
+              <div>
+                <label className={labelCls}>Faction / Alliance</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['Friendly', 'Neutral', 'Guild'].map((faction) => (
+                    <button
+                      key={faction}
+                      type="button"
+                      onClick={() => setForm((prev) => ({ ...prev, componentsData: { ...prev.componentsData, faction } }))}
+                      className={cn(
+                        "py-2 rounded-lg border text-xs font-bold transition cursor-pointer",
+                        (form.componentsData.faction || 'Friendly') === faction
+                          ? "bg-amber-500/20 border-amber-500/60 text-amber-300"
+                          : "bg-black/30 border-slate-800 text-slate-400 hover:text-slate-200"
+                      )}
+                    >
+                      {faction}
+                    </button>
+                  ))}
                 </div>
-                
-                <div className="mb-4">
-                  <label className="block text-[9px] font-black text-amber-500/80 uppercase tracking-[0.15em] mb-1">Dialogue Reference ID</label>
-                  <input 
-                    value={(form.componentsData as any).behavior?.dialogueId || ''} 
-                    onChange={e => setComponent('behavior', { dialogueId: e.target.value })} 
-                    className="w-full bg-[#050b14] border border-amber-900/50 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-amber-500 transition-colors"
-                    placeholder="E.g. demo_welcome"
-                  />
-                  <p className="text-[9px] text-slate-500 mt-1">Leaves blank to use the NPC's Global Slug as the default dialogue tree ID.</p>
-                </div>
-                
-                <div className="space-y-3">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={getCap('shopkeeper')} 
-                      onChange={e => toggleCapability('shopkeeper', e.target.checked)} 
-                      className="rounded bg-[#050b14] border-amber-900/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
-                    />
-                    <span className="text-[11px] text-amber-100 font-bold">Shopkeeper</span>
-                    <span className="text-[9px] text-slate-500 ml-1">— Can sell items to players.</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={getCap('banker')} 
-                      onChange={e => toggleCapability('banker', e.target.checked)} 
-                      className="rounded bg-[#050b14] border-amber-900/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
-                    />
-                    <span className="text-[11px] text-amber-100 font-bold">Banker</span>
-                    <span className="text-[9px] text-slate-500 ml-1">— Provides global storage access.</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={getCap('questGiver')} 
-                      onChange={e => toggleCapability('questGiver', e.target.checked)} 
-                      className="rounded bg-[#050b14] border-amber-900/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
-                    />
-                    <span className="text-[11px] text-amber-100 font-bold">Quest Giver</span>
-                    <span className="text-[9px] text-slate-500 ml-1">— Interacts with the Quest system.</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={getCap('mercenary')} 
-                      onChange={e => toggleCapability('mercenary', e.target.checked)} 
-                      className="rounded bg-[#050b14] border-amber-900/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
-                    />
-                    <span className="text-[11px] text-amber-100 font-bold">Mercenary</span>
-                    <span className="text-[9px] text-slate-500 ml-1">— Combat follower for hire.</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      checked={getCap('companion')} 
-                      onChange={e => toggleCapability('companion', e.target.checked)} 
-                      className="rounded bg-[#050b14] border-amber-900/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
-                    />
-                    <span className="text-[11px] text-amber-100 font-bold">Companion</span>
-                    <span className="text-[9px] text-slate-500 ml-1">— Non-combat follower.</span>
-                  </label>
-                  <div className="pt-2 border-t border-amber-900/20">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        checked={getCap('trainer')} 
-                        onChange={e => toggleCapability('trainer', e.target.checked)} 
-                        className="rounded bg-[#050b14] border-amber-900/50 text-amber-500 focus:ring-amber-500 focus:ring-offset-0"
-                      />
-                      <span className="text-[11px] text-amber-100 font-bold">Trainer (Battle)</span>
-                      <span className="text-[9px] text-slate-500 ml-1">— Fights the player using a party of creatures.</span>
-                    </label>
-                    {getCap('trainer') && (
-                      <div className="mt-2 pl-6">
-                        <label className="block text-[9px] font-black text-amber-500/80 uppercase tracking-[0.15em] mb-1">Trainer Party (JSON Array)</label>
-                        <input 
-                          value={(form.componentsData as any).trainerParty || '[]'} 
-                          onChange={e => setForm(prev => ({ ...prev, componentsData: { ...prev.componentsData, trainerParty: e.target.value } }))} 
-                          className="w-full bg-[#050b14] border border-amber-900/50 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-200 font-mono outline-none focus:border-amber-500 transition-colors"
-                          placeholder='e.g. ["creature_goblin", "creature_wolf"]'
-                        />
-                      </div>
-                    )}
+              </div>
+
+              <div className="pt-2 border-t border-white/5">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-emerald-950/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={16} />
+                    <span>Active in World Studio</span>
                   </div>
+                  <span className="text-[10px] text-emerald-400 font-mono">Ready to Place</span>
                 </div>
               </div>
             </div>
           </div>
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full text-slate-600">
-            <Smile size={48} className="opacity-20 mb-4" />
-            <p className="text-[10px] uppercase tracking-widest font-mono">Select an NPC template</p>
-          </div>
-        )}
-      </CatalogEditorShell>
+        </div>
+      </div>
     </div>
   );
 }

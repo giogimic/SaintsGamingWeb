@@ -29,37 +29,13 @@ export interface CanonicalAssetSeedRecord {
 export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
   const records: CanonicalAssetSeedRecord[] = [];
 
-  // 1. Foundational Full Models
+  // 1. Foundational Full Model - Brute ONLY
   const modelEntries = [
     {
-      def: CANONICAL_BUILTIN_MODELS.citizen,
-      tags: ["model", "3d", "character", "mixamo", "humanoid", "canonical", "citizen", "playable"],
-      categories: ["model", "character"],
-      fileSize: 2614500,
-    },
-    {
       def: CANONICAL_BUILTIN_MODELS.brute,
-      tags: ["model", "3d", "character", "manny", "humanoid", "canonical", "brute", "warrior", "playable"],
+      tags: ["model", "3d", "character", "manny", "humanoid", "canonical", "bundled", "brute", "warrior", "playable"],
       categories: ["model", "character"],
       fileSize: 14379200,
-    },
-    {
-      def: CANONICAL_BUILTIN_MODELS.adventurer,
-      tags: ["model", "3d", "character", "manny", "humanoid", "canonical", "adventurer", "explorer", "playable"],
-      categories: ["model", "character"],
-      fileSize: 15192864,
-    },
-    {
-      def: CANONICAL_BUILTIN_MODELS.golem,
-      tags: ["model", "3d", "creature", "monster", "beast", "canonical", "golem", "boss"],
-      categories: ["model", "creature", "monster"],
-      fileSize: 2582580,
-    },
-    {
-      def: CANONICAL_BUILTIN_MODELS.shadow_golem,
-      tags: ["model", "3d", "creature", "monster", "beast", "canonical", "shadow_golem", "boss"],
-      categories: ["model", "creature", "monster"],
-      fileSize: 3350000,
     },
   ];
 
@@ -102,25 +78,13 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
     });
   }
 
-  // 2. Modular Wardrobe Pieces for Citizen, Brute, Adventurer, and Stylized Girl
+  // 2. Modular Wardrobe Pieces for Brute
   const modularSets = [
-    {
-      model: CANONICAL_BUILTIN_MODELS.citizen,
-      pack: 'citizen-wardrobe',
-      fileSize: 450000,
-      getSource: (meshName: string) => `/game-assets/models/citizen/${meshName}.glb`,
-    },
     {
       model: CANONICAL_BUILTIN_MODELS.brute,
       pack: 'brute-armor',
       fileSize: 14379200,
       getSource: () => `/game-assets/models/humanoids/brute/brute.glb`,
-    },
-    {
-      model: CANONICAL_BUILTIN_MODELS.adventurer,
-      pack: 'adventurer-gear',
-      fileSize: 15192864,
-      getSource: () => `/game-assets/models/humanoids/adventurer/adventurer.glb`,
     },
   ];
 
@@ -128,7 +92,7 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
     if (!set.model?.modularParts) continue;
     const setName = set.model.id;
     for (const part of set.model.modularParts) {
-      const partSource = set.getSource(part.meshName);
+      const partSource = set.getSource();
       const metadata = {
         name: part.label,
         cat: part.category,
@@ -159,7 +123,7 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
         source: partSource,
         atlasSource: null,
         atlasFrame: null,
-        tags: JSON.stringify(['model', '3d', 'modular', 'character-component', setName, part.category]),
+        tags: JSON.stringify(['model', '3d', 'modular', 'character-component', 'canonical', 'bundled', setName, part.category]),
         categories: JSON.stringify(['model', 'modular', part.category]),
         metadata: JSON.stringify(metadata),
         customLabels: JSON.stringify({ en: `${part.label} (${set.model.name})`, name: `${part.label} (${set.model.name})` }),
@@ -174,6 +138,55 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
   return records;
 }
 
+export function buildCanonicalCharacterModelProfiles(): any[] {
+  return [
+    {
+      id: 'profile-brute',
+      slug: 'brute',
+      name: 'Brute',
+      description: 'Heavily armored warrior character with modular armor pieces and Greystone Manny locomotion.',
+      category: 'character',
+      gameId: 'saints',
+      baseModelAssetId: 'builtin-model-brute',
+      rigFamily: 'HUMANOID_BIPED',
+      skeletonType: 'manny',
+      transformData: JSON.stringify({ scale: 0.8, rotationY: 0, groundingOffsetY: 0, cameraHeightOffset: 0 }),
+      skeletonData: JSON.stringify({ boneMap: {} }),
+      animationData: JSON.stringify({
+        profileId: 'GreystoneManny',
+        actionSlots: {
+          idle: { clipName: 'idle', sourceKind: 'animation-set' },
+          walk_fwd: { clipName: 'walk_fwd', sourceKind: 'animation-set' },
+          run_fwd: { clipName: 'run_fwd', sourceKind: 'animation-set' },
+        }
+      }),
+      socketsData: JSON.stringify([
+        { name: 'RightHand', parentBone: 'Hand.R', position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
+        { name: 'LeftHand', parentBone: 'Hand.L', position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
+      ]),
+      materialsData: JSON.stringify({}),
+      modularData: JSON.stringify({
+        isCustomizable: true,
+        components: [
+          { assetId: 'builtin-piece-brute_head', category: 'face', label: 'Beast Head', defaultVisible: true },
+          { assetId: 'builtin-piece-brute_helmet', category: 'hat', label: 'Helmet', defaultVisible: false },
+          { assetId: 'builtin-piece-brute_torso', category: 'shirt', label: 'Armor Torso', defaultVisible: true },
+          { assetId: 'builtin-piece-brute_pants', category: 'pants', label: 'Armor Pants', defaultVisible: true },
+          { assetId: 'builtin-piece-brute_boots', category: 'shoes', label: 'War Boots', defaultVisible: true },
+          { assetId: 'builtin-piece-brute_harness', category: 'accessory', label: 'Shoulder Harness', defaultVisible: false },
+          { assetId: 'builtin-piece-brute_shoulder', category: 'accessory', label: 'Spiked Pauldron', defaultVisible: false },
+          { assetId: 'builtin-piece-brute_cape', category: 'back', label: 'Warrior Cape', defaultVisible: false },
+          { assetId: 'builtin-piece-brute_belt', category: 'belt', label: 'Chain Warbelt', defaultVisible: false },
+        ]
+      }),
+      tags: JSON.stringify(['canonical', 'bundled', 'manny', 'brute', 'warrior', 'playable']),
+      version: 1,
+      isDefault: true,
+      isActive: true,
+    }
+  ];
+}
+
 let hasSyncedCanonicalAssets = false;
 
 export async function syncCanonicalGameAssets(prismaClient: any): Promise<number> {
@@ -184,14 +197,26 @@ export async function syncCanonicalGameAssets(prismaClient: any): Promise<number
       await prismaClient.gameAsset.deleteMany({
         where: {
           OR: [
+            { id: { startsWith: 'builtin-model-', not: 'builtin-model-brute' } },
+            { id: { startsWith: 'builtin-piece-', not: { startsWith: 'builtin-piece-brute' } } },
+            { id: 'builtin-model-citizen' },
+            { id: 'builtin-model-adventurer' },
+            { id: 'builtin-model-golem' },
+            { id: 'builtin-model-shadow_golem' },
             { id: 'builtin-model-stylized_girl' },
             { id: { startsWith: 'stylized_girl_' } },
             { id: { startsWith: 'builtin-piece-stylized_girl' } },
-            { id: 'builtin-piece-adventurer_balaclava' },
-            { id: 'builtin-piece-adventurer_cloth_face' },
-            { id: 'builtin-piece-adventurer_jacket' },
-            { id: 'builtin-piece-adventurer_arms' },
+            { id: { startsWith: 'builtin-piece-citizen' } },
+            { id: { startsWith: 'builtin-piece-adventurer' } },
           ]
+        }
+      });
+    }
+
+    if (typeof prismaClient?.characterModelProfile?.deleteMany === 'function') {
+      await prismaClient.characterModelProfile.deleteMany({
+        where: {
+          slug: { not: 'brute' }
         }
       });
     }
@@ -216,6 +241,35 @@ export async function syncCanonicalGameAssets(prismaClient: any): Promise<number
         },
       });
       syncedCount++;
+    }
+
+    // Sync Canonical CharacterModelProfile records
+    if (typeof prismaClient?.characterModelProfile?.upsert === 'function') {
+      const profiles = buildCanonicalCharacterModelProfiles();
+      for (const profile of profiles) {
+        await prismaClient.characterModelProfile.upsert({
+          where: { slug: profile.slug },
+          create: profile,
+          update: {
+            name: profile.name,
+            description: profile.description,
+            category: profile.category,
+            baseModelAssetId: profile.baseModelAssetId,
+            rigFamily: profile.rigFamily,
+            skeletonType: profile.skeletonType,
+            transformData: profile.transformData,
+            skeletonData: profile.skeletonData,
+            animationData: profile.animationData,
+            socketsData: profile.socketsData,
+            materialsData: profile.materialsData,
+            modularData: profile.modularData,
+            tags: profile.tags,
+            version: profile.version,
+            isDefault: profile.isDefault,
+            isActive: true,
+          }
+        });
+      }
     }
 
     hasSyncedCanonicalAssets = true;

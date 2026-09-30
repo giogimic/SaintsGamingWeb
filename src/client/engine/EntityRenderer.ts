@@ -103,8 +103,9 @@ export class EntityRenderer {
       let visualTransform: any = undefined;
       let visualAnimations: any = undefined;
       let visualAnimationProfileId: string | undefined;
-
-      const worldPresentation = getWorldModelPresentation(visualData);
+      const worldPresentation = getWorldModelPresentation(visualData)
+        || getWorldModelPresentation(profileId)
+        || (defaultKind === 'player' ? getWorldModelPresentation('brute') : undefined);
       const modularAttachments: ModularAttachmentDef[] = worldPresentation?.modularAttachments || [];
 
       if (worldPresentation && worldPresentation.mode === '3D') {
@@ -453,7 +454,15 @@ export class EntityRenderer {
           mesh.computeWorldMatrix(true);
           modelWrapper.computeWorldMatrix(true); // CRITICAL: Must compute wrapper matrix before children
 
+          if (result.skeletons) {
+            result.skeletons.forEach((s) => {
+              s.useTextureToStoreBoneMatrices = true;
+            });
+          }
           const baseSkeleton = result.skeletons?.[0] || modelWrapper.getChildMeshes(false).find((m: any) => m.skeleton)?.skeleton;
+          if (baseSkeleton) {
+            baseSkeleton.useTextureToStoreBoneMatrices = true;
+          }
 
           // Attach modular components (clothing, armor, hats, weapons, etc.)
           if (data.modularAttachments && data.modularAttachments.length > 0) {
@@ -661,7 +670,9 @@ export class EntityRenderer {
           }
 
           if (result.animationGroups.length > 0) {
-            current.animationGroups = result.animationGroups;
+            current.animationGroups = result.animationGroups.filter(
+              (ag) => ag.targetedAnimations && ag.targetedAnimations.length > 0
+            );
           } else {
             current.animationGroups = [];
           }

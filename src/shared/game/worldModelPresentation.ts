@@ -48,56 +48,6 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
     defaultAnimationProfileId: 'GreystoneManny',
     modularParts: CHARACTER_MODEL_PROFILES.brute.modularParts,
   },
-  adventurer: {
-    id: 'adventurer',
-    name: 'Adventurer',
-    modelUrl: '/game-assets/models/humanoids/adventurer/adventurer.glb',
-    category: 'character',
-    skeleton: 'manny',
-    defaultAnimationProfileId: 'GreystoneManny',
-    modularParts: CHARACTER_MODEL_PROFILES.adventurer.modularParts,
-  },
-  citizen: {
-    id: 'citizen',
-    name: 'Citizen',
-    modelUrl: '/game-assets/models/citizen.glb',
-    category: 'character',
-    skeleton: 'mixamo',
-    defaultAnimationProfileId: 'MocapMobility',
-    modularParts: CHARACTER_MODEL_PROFILES.citizen.modularParts,
-  },
-  shadow_golem: {
-    id: 'shadow_golem',
-    name: 'Shadow Golem',
-    modelUrl: '/game-assets/models/creatures/golems/shadow_golem_attacks.glb',
-    category: 'monster',
-    skeleton: 'creature_custom',
-    embeddedAnimations: CHARACTER_MODEL_PROFILES.shadow_golem.embeddedAnimations,
-  },
-  golem: {
-    id: 'golem',
-    name: 'Golem',
-    modelUrl: '/game-assets/models/creatures/golems/golem_base.glb',
-    category: 'monster',
-    skeleton: 'creature_custom',
-    embeddedAnimations: CHARACTER_MODEL_PROFILES.golem.embeddedAnimations,
-  },
-  golem_base: {
-    id: 'golem_base',
-    name: 'Golem Base',
-    modelUrl: '/game-assets/models/creatures/golems/golem_base.glb',
-    category: 'monster',
-    skeleton: 'creature_custom',
-    embeddedAnimations: CHARACTER_MODEL_PROFILES.golem.embeddedAnimations,
-  },
-  stone_golem: {
-    id: 'stone_golem',
-    name: 'Stone Golem',
-    modelUrl: '/game-assets/models/creatures/golems/golem_base.glb',
-    category: 'monster',
-    skeleton: 'creature_custom',
-    embeddedAnimations: CHARACTER_MODEL_PROFILES.stone_golem.embeddedAnimations,
-  },
 };
 
 export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalModelDef | undefined {
@@ -106,8 +56,8 @@ export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalMod
   if (CANONICAL_BUILTIN_MODELS[key]) {
     return CANONICAL_BUILTIN_MODELS[key];
   }
-  if (key === 'golem_base' || key.includes('golem')) {
-    return CANONICAL_BUILTIN_MODELS.golem;
+  if (key.includes('brute')) {
+    return CANONICAL_BUILTIN_MODELS.brute;
   }
   return undefined;
 }
@@ -138,8 +88,7 @@ export function resolveModelAssetUrl(raw?: string | null): string | undefined {
   }
 
   // Canonical built-in model aliases - match on bare id or file basename
-  const baseKey = trimmed.toLowerCase().replace(/^.*[\\/]/, '').replace(/\.(glb|gltf|fbx|obj)$/i, '');
-  const canonical = CANONICAL_BUILTIN_MODELS[baseKey] || CANONICAL_BUILTIN_MODELS[trimmed.toLowerCase()];
+  const canonical = getCanonicalModelDef(trimmed);
   if (canonical) {
     return canonical.modelUrl;
   }
@@ -171,10 +120,23 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
 
   let data: any = value;
   if (typeof value === 'string') {
+    const trimmed = value.trim();
     try {
-      data = JSON.parse(value);
+      data = JSON.parse(trimmed);
     } catch {
-      return undefined;
+      data = undefined;
+    }
+    // If raw string was not valid JSON object or was array, treat it as a direct model reference
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      const canonical = getCanonicalModelDef(trimmed);
+      const resolvedUrl = resolveModelAssetUrl(trimmed);
+      if (canonical || resolvedUrl || trimmed.includes('brute') || /\.(glb|gltf|fbx)$/i.test(trimmed)) {
+        data = {
+          type: '3D Model',
+          assetId: canonical?.id || (trimmed.startsWith('/') ? undefined : trimmed),
+          modelUrl: canonical?.modelUrl || resolvedUrl,
+        };
+      }
     }
   }
   if (!data || typeof data !== 'object' || Array.isArray(data)) return undefined;
@@ -182,10 +144,20 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
   const model = data.worldModel || data;
   const modelType = model.type || model.assetProfileId;
   const candidateBaseUrl = model.modelUrl || model.source || (typeof model === 'object' && model?.url);
-  const rawId = model.assetId || candidateBaseUrl;
-  if (!rawId || (modelType !== '3D Model' && modelType !== 'MODEL')) return undefined;
+  const rawId = model.assetId || model.id || candidateBaseUrl;
 
-  const modelUrl = candidateBaseUrl || resolveModelAssetUrl(model.assetId) || resolveEntitySpriteUrl(model.assetId);
+  const canonicalLookup = getCanonicalModelDef(rawId)
+    || getCanonicalModelDef(candidateBaseUrl)
+    || getCanonicalModelDef(model.assetId);
+
+  const resolvedModelUrl = candidateBaseUrl
+    || resolveModelAssetUrl(model.assetId)
+    || resolveModelAssetUrl(rawId)
+    || canonicalLookup?.modelUrl;
+
+  if (!resolvedModelUrl && modelType !== '3D Model' && modelType !== 'MODEL') return undefined;
+
+  const modelUrl = resolvedModelUrl || resolveEntitySpriteUrl(model.assetId);
   if (!modelUrl) return undefined;
 
   const configuredAttachments = Array.isArray(data.modularAttachments)
@@ -227,13 +199,15 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
   const skeletonRequirements = model.skeletonRequirements ?? data.skeletonRequirements ?? data.assetDefinition?.skeletonRequirements;
   const materials = model.materials ?? data.materials ?? data.assetDefinition?.materials;
 
+  const canonicalDef = canonicalLookup
+    || (rawId && getCanonicalModelDef(String(rawId)))
+    || (model.assetId && getCanonicalModelDef(String(model.assetId)))
+    || CANONICAL_BUILTIN_MODELS.brute;
+
   const profile = getCharacterModelProfile(rawId)
     || getCharacterModelProfile(model.assetId)
-    || getCharacterModelProfile(modelUrl);
-
-  const canonicalDef = (rawId && CANONICAL_BUILTIN_MODELS[String(rawId).toLowerCase()])
-    || (model.assetId && CANONICAL_BUILTIN_MODELS[String(model.assetId).toLowerCase()])
-    || Object.values(CANONICAL_BUILTIN_MODELS).find(c => c.modelUrl === modelUrl);
+    || getCharacterModelProfile(modelUrl)
+    || (canonicalDef?.id ? getCharacterModelProfile(canonicalDef.id) : undefined);
 
   const resolvedAnimations = animations || (profile?.animationActionMap ? {
     mapped: profile.animationActionMap,
@@ -242,12 +216,12 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
 
   return {
     mode: '3D',
-    assetId: model.assetId,
-    animationProfileId: model.animationProfileId ?? data.animationProfileId ?? data.assetDefinition?.animationProfileId ?? canonicalDef?.defaultAnimationProfileId ?? profile?.defaultAnimationProfileId,
+    assetId: model.assetId || canonicalDef?.id || 'builtin-model-brute',
+    animationProfileId: model.animationProfileId ?? data.animationProfileId ?? data.assetDefinition?.animationProfileId ?? canonicalDef?.defaultAnimationProfileId ?? profile?.defaultAnimationProfileId ?? 'GreystoneManny',
     modelUrl,
     modularModelUrls,
     modularAttachments,
-    modelScale: Number.isFinite(scale) && scale > 0 ? Math.min(100, scale) : undefined,
+    modelScale: Number.isFinite(scale) && scale > 0 ? Math.min(100, scale) : (canonicalDef?.defaultScale ?? 0.8),
     cameraHeightOffset: Number.isFinite(camHeight) && camHeight > 0 ? camHeight : undefined,
     animations: resolvedAnimations,
     rigAnalysis,

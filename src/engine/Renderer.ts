@@ -573,7 +573,7 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
           const isEntityWalking = state.isMoving || dist > 0.01;
           const rawGroups = mesh.metadata?.animationGroups;
           const groups = Array.isArray(rawGroups)
-            ? rawGroups.filter((ag: any) => ag && typeof ag.play === 'function' && !ag.isDisposed)
+            ? rawGroups.filter((ag: any) => ag && typeof ag.play === 'function' && !ag.isDisposed && ag.targetedAnimations && ag.targetedAnimations.length > 0)
             : [];
 
           if (groups.length > 0) {
@@ -582,7 +582,7 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
               mesh.metadata._resolvedAnims.groups !== groups ||
               mesh.metadata._resolvedAnims.count !== groups.length
             ) {
-              const mapped = state.presentation?.animations?.mapped || {};
+              const mapped = state.presentation?.animations?.mapped || mesh.metadata?.presentation?.animations?.mapped || {};
               const isRunClip = (name: string) =>
                 /run|walk|jog|sprint|locomotion|move|forward|fwd|01_02_006/i.test(name);
               const isIdleClip = (name: string) =>
@@ -602,7 +602,9 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
                       ag.name === 'run' ||
                       ag.name === 'run_fwd' ||
                       ag.name === 'walk' ||
-                      ag.name === 'walk_fwd'
+                      ag.name === 'walk_fwd' ||
+                      ag.name === 'Jog/Jog_Fwd' ||
+                      isRunClip(ag.name || '')
                     );
                   })
                 : groups.filter((ag: any) => isRunClip(ag.name || ''));
@@ -612,7 +614,9 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
                     const idleName = typeof mapped.idle === 'string' ? mapped.idle : mapped.idle?.clip;
                     return (
                       (idleName && (ag.name === idleName || ag.name.includes(idleName))) ||
-                      ag.name === 'idle'
+                      ag.name === 'idle' ||
+                      ag.name === 'IdleAO/Idle' ||
+                      isIdleClip(ag.name || '')
                     );
                   })
                 : groups.filter((ag: any) => isIdleClip(ag.name || ''));
@@ -650,7 +654,12 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
             }
 
             const { runAnims, idleAnims } = mesh.metadata._resolvedAnims || { runAnims: [], idleAnims: [] };
-            const targetAnims = isEntityWalking ? runAnims : idleAnims;
+            let targetAnims = isEntityWalking ? runAnims : idleAnims;
+            if (targetAnims.length === 0) {
+              targetAnims = isEntityWalking
+                ? (idleAnims.length > 0 ? idleAnims : groups)
+                : (runAnims.length > 0 ? runAnims : groups);
+            }
 
             targetAnims.forEach((anim: any) => {
               if (anim && !anim.isPlaying) anim.play(true);
@@ -664,12 +673,14 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
               }
             });
             
-            // Stop all other animations to prevent bone morphing conflicts
-            groups.forEach((anim: any) => {
-              if (anim && !targetAnims.includes(anim) && anim.isPlaying) {
-                anim.stop();
-              }
-            });
+            // Stop all other animations to prevent bone morphing conflicts ONLY if targetAnims is active
+            if (targetAnims.length > 0) {
+              groups.forEach((anim: any) => {
+                if (anim && !targetAnims.includes(anim) && anim.isPlaying) {
+                  anim.stop();
+                }
+              });
+            }
           }
 
           // 4. 3D Mesh Rotation (Always active regardless of animation status)

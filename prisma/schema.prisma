@@ -923,8 +923,50 @@ model GameAsset {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @default(now()) @updatedAt
 
+  characterProfiles CharacterModelProfile[] @relation("ProfileBaseModel")
+
   @@index([gameId])
   @@index([type])
+}
+
+model CharacterModelProfile {
+  id               String      @id @default(cuid())
+  slug             String      @unique
+  name             String
+  description      String?
+  category         String      @default("character") // "character", "npc", "creature", "monster"
+  gameId           String?     @default("saints")
+
+  // Base 3D Model Asset reference
+  baseModelAssetId String?
+  baseModelAsset   GameAsset?  @relation("ProfileBaseModel", fields: [baseModelAssetId], references: [id], onDelete: SetNull)
+
+  // High-level Rig & Skeleton Taxonomy
+  rigFamily        String      @default("HUMANOID_BIPED") // "HUMANOID_BIPED", "CREATURE_CUSTOM", "QUADRUPED", "FLYER", "STATIC"
+  skeletonType     String      @default("mixamo")         // "mixamo", "manny", "creature_custom"
+
+  // Core Configuration JSON blobs (cross-platform, portable)
+  transformData    String      @default("{\"scale\":0.8,\"rotationY\":0,\"groundingOffsetY\":0,\"cameraHeightOffset\":0}")
+  skeletonData     String      @default("{\"boneMap\":{}}") // Remapped bone tokens
+  animationData    String      @default("{\"profileId\":\"\",\"actionSlots\":{}}") // Action slot mappings (idle, walk, run, jump, attack)
+  socketsData      String      @default("[]") // Mounting sockets (RightHand, LeftHand, etc.)
+  materialsData    String      @default("{}") // Material overrides / tintable flags
+  modularData      String      @default("{\"isCustomizable\":true,\"components\":[]}") // Available wardrobe parts & defaults
+
+  // Presentation & Preview
+  thumbnailUrl     String?
+  tags             String      @default("[]")
+  version          Int         @default(1)
+  isDefault        Boolean     @default(false)
+  isActive         Boolean     @default(true)
+
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([gameId])
+  @@index([category])
+  @@index([rigFamily])
+  @@index([baseModelAssetId])
 }
 
 model GameConfig {
@@ -1705,39 +1747,43 @@ model NpcDialogueTree {
 }
 
 model NpcDef {
-  id             String   @id @default(cuid())
-  slug           String   @unique
-  gameId         String   @default("saints")
-  name           String
-  description    String?
-  componentsData String   @default("{}") // JSON containing BaseEntityDefinition components
-  visualData     String   @default("[]") // JSON representing 2D/3D model assets
-  roles          String   @default("[]") // JSON array: ["SHOP", "QUEST_GIVER", "MERCENARY", "COMPANION", "TRAINER"]
-  trainerParty   String   @default("[]") // JSON array of creature slugs if trainer
-  version        Int      @default(1)
-  isPublished    Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                      String   @id @default(cuid())
+  slug                    String   @unique
+  gameId                  String   @default("saints")
+  name                    String
+  description             String?
+  characterModelProfileId String?  // Optional reference to CharacterModelProfile
+  componentsData          String   @default("{}") // JSON containing BaseEntityDefinition components
+  visualData              String   @default("[]") // JSON representing 2D/3D model assets
+  roles                   String   @default("[]") // JSON array: ["SHOP", "QUEST_GIVER", "MERCENARY", "COMPANION", "TRAINER"]
+  trainerParty            String   @default("[]") // JSON array of creature slugs if trainer
+  version                 Int      @default(1)
+  isPublished             Boolean  @default(false)
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   @@index([gameId])
+  @@index([characterModelProfileId])
 }
 
 model MonsterDef {
-  id             String   @id @default(cuid())
-  slug           String   @unique
-  gameId         String   @default("saints")
-  name           String
-  description    String?
-  visualData     String   @default("[]") // Shared asset setup with archetypes
-  elementType    String   @default("None") // Solar, Hydro, Bio, Volt, etc.
-  abilities      String   @default("[]") // JSON list of ability slugs
-  equipment      String   @default("[]") // JSON list of equipped item slugs
-  dropList       String   @default("[]") // JSON list of item slugs + chances
-  baseStats      String   @default("{}") // JSON: HP, Attack, Defense, etc.
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                      String   @id @default(cuid())
+  slug                    String   @unique
+  gameId                  String   @default("saints")
+  name                    String
+  description             String?
+  characterModelProfileId String?  // Optional reference to CharacterModelProfile
+  visualData              String   @default("[]") // Shared asset setup with archetypes
+  elementType             String   @default("None") // Solar, Hydro, Bio, Volt, etc.
+  abilities               String   @default("[]") // JSON list of ability slugs
+  equipment               String   @default("[]") // JSON list of equipped item slugs
+  dropList                String   @default("[]") // JSON list of item slugs + chances
+  baseStats               String   @default("{}") // JSON: HP, Attack, Defense, etc.
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   @@index([gameId])
+  @@index([characterModelProfileId])
 }
 
 model QuestTemplate {
@@ -1850,42 +1896,45 @@ model StarterPerk {
 }
 
 model StarterHero {
-  id                String   @id @default(cuid())
-  slug              String   @unique // e.g. "warrior", "mystic" — used as stable key
+  id                      String   @id @default(cuid())
+  slug                    String   @unique // e.g. "warrior", "mystic" — used as stable key
   /// World profile id (Studio active profile / WorldMap.gameId)
-  gameId            String   @default("saints")
-  name              String // Display name on card
-  classId           String // Must match CLASSES[] id: WARRIOR | MAGE | THIEF
-  assetProfileId    String   @default("adventurer") // Key in GAME_SPRITES (no extension), e.g. "warrior"
+  gameId                  String   @default("saints")
+  name                    String // Display name on card
+  classId                 String // Must match CLASSES[] id: WARRIOR | MAGE | THIEF
+  assetProfileId          String   @default("adventurer") // Key in GAME_SPRITES (no extension), e.g. "warrior"
+  characterModelProfileId String?  // Reference to CharacterModelProfile
   /// Optional: id of a GameAsset bundle (see AssetIngestOptions.bundleId / lpcPackImporter)
   /// representing a full modular/composited character sprite. When set, renderers may
   /// prefer this over assetProfileId; assetProfileId remains required as the legacy fallback.
-  assetBundleId     String?
-  visualData        String   @default("[]") // JSON array of visual component layers
-  flavor            String // Short 1-line description shown on card
-  tag               String   @default("Balanced") // Difficulty/style badge text
-  tagColor          String   @default("#a78bfa") // Hex color for the badge
-  sortOrder         Int      @default(0) // Display order in HERO_PICK grid
-  isActive          Boolean  @default(true) // Toggle off to hide without deleting
-  startingMap       String   @default("DEMO_SANDBOX")
-  startingX         Int      @default(14)
-  startingY         Int      @default(15)
-  startingInventory String   @default("{\"capture_script\":10,\"patch_kit\":5}") // JSON
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  assetBundleId           String?
+  visualData              String   @default("[]") // JSON array of visual component layers
+  flavor                  String // Short 1-line description shown on card
+  tag                     String   @default("Balanced") // Difficulty/style badge text
+  tagColor                String   @default("#a78bfa") // Hex color for the badge
+  sortOrder               Int      @default(0) // Display order in HERO_PICK grid
+  isActive                Boolean  @default(true) // Toggle off to hide without deleting
+  startingMap             String   @default("DEMO_SANDBOX")
+  startingX               Int      @default(14)
+  startingY               Int      @default(15)
+  startingInventory       String   @default("{\"capture_script\":10,\"patch_kit\":5}") // JSON
+  createdAt               DateTime @default(now())
+  updatedAt               DateTime @updatedAt
 
   @@index([gameId])
+  @@index([characterModelProfileId])
 }
 
 // Studio-editable creature catalog (mirrors StarterHero ease-of-edit).
 // Add rows via Studio Creatures panel — no code change required for new species.
 model CreatureDef {
-  id                    String   @id @default(cuid())
-  slug                  String   @unique // e.g. "agnite", "rockitten"
+  id                      String   @id @default(cuid())
+  slug                    String   @unique // e.g. "agnite", "rockitten"
   /// World profile id; null/empty = shared across all Studio profiles
-  gameId                String?  @default("saints")
-  name                  String // Display name
-  dexNumber             Int      @default(0)
+  gameId                  String?  @default("saints")
+  name                    String // Display name
+  dexNumber               Int      @default(0)
+  characterModelProfileId String?  // Optional reference to CharacterModelProfile
   // Types (Saints elements). Secondary may be "None".
   typePrimary           String // Solar | Hydro | Bio | Volt | Geo | Cryo | Aero | Cyber
   typeSecondary         String   @default("None")

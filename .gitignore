@@ -118,3 +118,5 @@ run_local_*.js
 /samp-server/
 delete_system_maps.ts
 
+/public/game-assets/models/delete-later/
+*.db-journal

@@ -1,76 +1,213 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  PawPrint, Plus, Trash2, Save, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle,
+  FileJson, Copy, Check, ChevronLeft, Cuboid, Flame, Shield, Swords, Zap,
+  Clock, Sparkles, Filter, Search, Dna, Compass, Camera
+} from 'lucide-react';
 import {
   getAllCreatureDefs,
   upsertCreatureDef,
   deleteCreatureDef,
   toggleCreatureDefActive,
-  importCreatureDefsJson,
 } from '@/app/actions/game/creature-defs';
 import {
-  CREATURE_ELEMENT_TYPES,
-  CREATURE_ASSET_OPTIONS,
-  CREATURE_CATEGORIES,
-  CREATURE_MYTHOS_FAMILIES,
-  CreatureCategory,
   CreatureDefData,
-  CreaturePassive,
   emptyCreatureDef,
+  CREATURE_ELEMENT_TYPES,
+  CREATURE_MYTHOS_FAMILIES,
+  CreatureElementType,
+  CreatureMythosType,
   creatureAssetUrl,
+  resolveEntitySpriteUrl,
 } from '@/shared/game/creatureCatalog';
-import {
-  Plus, Trash2, Save, RefreshCw, Eye, EyeOff, Database, FileJson, CheckCircle2, AlertCircle, Coins, ExternalLink, Filter, PawPrint, Skull, Shield, Wand2, Camera,
-} from 'lucide-react';
-import { useEditorStore } from '../editor-store';
-import { useGameStore } from '../../store';
-import { CatalogEditorShell } from '../components/CatalogEditorShell';
-import { useDefinitionFormHistory } from '../hooks/useDefinitionFormHistory';
-import { RegistryCombobox } from '../components/RegistryCombobox';
-import { DroppableAssetInput } from '../components/DroppableAssetInput';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
 import { ModelWardrobeEditor } from '../components/ModelWardrobeEditor';
 import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
+import { ArchetypeModelPreview3D } from '../hero-studio/ArchetypeModelPreview3D';
+import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
+import { useEditorStore } from '../editor-store';
 import { useCreatureDefs } from '@/web/hooks/studio-data';
+import { cn } from '@/shared/lib/utils';
 
-const inputCls =
-  'w-full bg-input border border-border rounded-lg px-2.5 py-1.5 text-[11px] text-foreground font-mono outline-none focus:border-sg-gold transition-colors';
-const labelCls = 'block text-[9px] font-black text-muted-foreground uppercase tracking-[0.15em] mb-1';
+const CREATURE_STAGES = ['Basic', 'Stage 1', 'Stage 2', 'Legendary'] as const;
 
-function creatureResourceKey(form: CreatureDefData, isNew: boolean): string {
-  if (isNew || !form.slug) return 'creature:new';
-  return `creature:${form.slug}`;
-}
-
-function isCreatureForm(value: unknown): value is CreatureDefData {
-  return Boolean(value && typeof value === 'object' && 'slug' in value && 'name' in value);
-}
+const inputCls = "w-full bg-[#050b14] border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 font-mono outline-none focus:border-rose-500/50 focus:ring-1 focus:ring-rose-500/20 transition-all placeholder:text-slate-700";
+const labelCls = "block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5";
 
 export function CreatureDefEditorPanel() {
   const activeGameId = useEditorStore((s) => s.activeGameId);
   const { creatureDefs: list, isLoading, mutateCreatureDefs } = useCreatureDefs(activeGameId);
-  
-  const [categoryFilter, setCategoryFilter] = useState<'all' | CreatureCategory>('all');
-  const [form, setForm] = useState<CreatureDefData>({ ...emptyCreatureDef(), gameId: activeGameId });
+
+  // View Mode: 'gallery' | 'edit' | 'cameras'
+  const [viewState, setViewState] = useState<'gallery' | 'edit'>('gallery');
+
+  // Form State
+  const [selected, setSelected] = useState<CreatureDefData | null>(null);
+  const [form, setForm] = useState<CreatureDefData>({
+    ...emptyCreatureDef(),
+    gameId: activeGameId,
+    category: 'beast',
+    typePrimary: 'Normal',
+    typeSecondary: 'None',
+    mythos: 'Beastial',
+    stage: 'Basic',
+    baseHp: 45,
+    physicalPower: 50,
+    physicalDefense: 45,
+    abilityPower: 50,
+    abilityDefense: 45,
+    combatTempo: 60,
+    catchRate: 190,
+    starterLevel: 5,
+    isWildSpawn: true,
+  });
   const [isNew, setIsNew] = useState(false);
+
+  // UI State
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const [showJson, setShowJson] = useState(false);
-  const [jsonInput, setJsonInput] = useState('');
-  const [assetFilter, setAssetFilter] = useState('');
-  const [lootTables, setLootTables] = useState<Array<{ id: string; name: string }>>([]);
-  const [abilitiesList, setAbilitiesList] = useState<Array<{ slug: string; name: string }>>([]);
-  const [viewMode, setViewMode] = useState<'catalog' | 'cameras'>('catalog');
   const [search, setSearch] = useState('');
-  const isNewRef = useRef(isNew);
-  isNewRef.current = isNew;
+  const [elementFilter, setElementFilter] = useState<'ALL' | string>('ALL');
+  const [copied, setCopied] = useState(false);
 
+  // Filter out hostile monsters to show turn-based creatures and companions
+  const creaturesOnly = useMemo(() => {
+    return list.filter((c) => c.category !== 'monster' && c.tag !== 'Monster');
+  }, [list]);
+
+  const showStatus = (type: 'success' | 'error', msg: string) => {
+    setStatus({ type, msg });
+    setTimeout(() => setStatus(null), 3500);
+  };
+
+  const f = <K extends keyof CreatureDefData>(key: K, val: CreatureDefData[K]) => {
+    setForm((prev) => ({ ...prev, [key]: val }));
+  };
+
+  const handleSelectCreature = (c: CreatureDefData) => {
+    setSelected(c);
+    setForm({
+      ...c,
+      category: 'beast',
+      typePrimary: c.typePrimary || 'Normal',
+      typeSecondary: c.typeSecondary || 'None',
+      mythos: c.mythos || 'Beastial',
+      stage: c.stage || 'Basic',
+    });
+    setIsNew(false);
+    setViewState('edit');
+  };
+
+  const handleNew = () => {
+    const nextDex = creaturesOnly.length > 0 ? Math.max(...creaturesOnly.map((c) => c.dexNumber || 0)) + 1 : 1;
+    const freshSlug = `creature_${Math.floor(Date.now() / 1000)}`;
+    const newCreature: CreatureDefData = {
+      ...emptyCreatureDef(),
+      slug: freshSlug,
+      name: 'New Creature',
+      gameId: activeGameId,
+      category: 'beast',
+      dexNumber: nextDex,
+      typePrimary: 'Normal',
+      typeSecondary: 'None',
+      mythos: 'Beastial',
+      stage: 'Basic',
+      baseHp: 50,
+      physicalPower: 50,
+      physicalDefense: 50,
+      abilityPower: 50,
+      abilityDefense: 50,
+      combatTempo: 50,
+      catchRate: 190,
+      starterLevel: 5,
+      isWildSpawn: true,
+      isActive: true,
+      spriteOverworld: JSON.stringify({ worldModel: { type: '3D Model', assetId: 'brute', scale: 0.8 } }),
+    };
+    setSelected(null);
+    setForm(newCreature);
+    setIsNew(true);
+    setViewState('edit');
+  };
+
+  const handleBack = () => {
+    setViewState('gallery');
+  };
+
+  const handleSave = async () => {
+    if (!form.slug || !form.name) {
+      showStatus('error', 'Slug and Name are required.');
+      return;
+    }
+
+    setLoading(true);
+    const payload: CreatureDefData = {
+      ...form,
+      gameId: activeGameId,
+      category: 'beast',
+      spriteOverworld: form.spriteOverworld || JSON.stringify({ worldModel: { type: '3D Model', assetId: 'brute', scale: 0.8 } }),
+    };
+
+    const res = await upsertCreatureDef(payload);
+    setLoading(false);
+
+    if (res.success) {
+      showStatus('success', `${form.name} saved successfully!`);
+      setIsNew(false);
+      mutateCreatureDefs();
+    } else {
+      showStatus('error', res.error || 'Failed to save creature.');
+    }
+  };
+
+  const handleDelete = async (slug: string) => {
+    if (!confirm(`Permanently delete creature "${slug}"?`)) return;
+    setLoading(true);
+    const res = await deleteCreatureDef(slug);
+    setLoading(false);
+
+    if (res.success) {
+      showStatus('success', 'Creature deleted.');
+      if (selected?.slug === slug) {
+        setSelected(null);
+        setIsNew(false);
+        setViewState('gallery');
+      }
+      mutateCreatureDefs();
+    } else {
+      showStatus('error', res.error || 'Failed to delete.');
+    }
+  };
+
+  const handleDuplicate = () => {
+    if (!form.slug) return;
+    const newSlug = `${form.slug}_copy_${Math.floor(Math.random() * 900 + 100)}`;
+    setSelected(null);
+    setForm({
+      ...form,
+      slug: newSlug,
+      name: `${form.name} (Copy)`,
+      dexNumber: (form.dexNumber || 0) + 1,
+    });
+    setIsNew(true);
+    showStatus('success', 'Cloned creature into new draft. Make changes and Save.');
+  };
+
+  const handleCopyFormJson = () => {
+    navigator.clipboard.writeText(JSON.stringify(form, null, 2));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // World Model representation helpers
   const getWorldModel = (): WorldModelValue => {
     try {
       const parsed = JSON.parse(form.spriteOverworld || '{}');
       if (parsed.worldModel) return parsed.worldModel;
     } catch {}
-    return { type: '2D Sprite', assetId: form.spriteOverworld || '' };
+    return { type: '3D Model', assetId: form.spriteOverworld || 'brute', scale: 0.8 };
   };
 
   const handleWorldModelChange = (val: WorldModelValue) => {
@@ -106,1141 +243,641 @@ export function CreatureDefEditorPanel() {
     f('spriteOverworld', JSON.stringify(parsed));
   };
 
-  const resourceKey = creatureResourceKey(form, isNew);
-  const {
-    canUndoDefinition,
-    canRedoDefinition,
-    syncFormRef,
-    onFieldFocus,
-    onFieldBlur,
-    commitStructural,
-    applyHistory,
-    clearDefinitionStackFor,
-  } = useDefinitionFormHistory<CreatureDefData>(resourceKey);
-
-  syncFormRef(form);
-
-  const load = useCallback(async () => {
-    try {
-      const lootRes = await fetch(`/api/loot/tables?gameId=${encodeURIComponent(activeGameId)}`);
-      const lootData = await lootRes.json();
-      if (lootRes.ok && lootData.items) {
-        setLootTables(lootData.items.map((t: any) => ({ id: t.id, name: t.name })));
-      }
-      
-      const abilityRes = await fetch('/api/studio/abilities');
-      const abilityData = await abilityRes.json();
-      if (abilityData.success) {
-        setAbilitiesList(abilityData.data.map((a: any) => ({ slug: a.slug, name: a.name })));
-      }
-    } catch {
-      // fallback
-    }
-  }, [activeGameId]);
-
-  useEffect(() => {
-    void load();
-    clearDefinitionStackFor('creature:new');
-    setForm({ ...emptyCreatureDef(), gameId: activeGameId });
-    setIsNew(false);
-  }, [load, activeGameId, clearDefinitionStackFor]);
-
-  const addLootRef = () => {
-    const firstTable = lootTables[0]?.id || 'default_loot';
-    const next = {
-      ...form,
-      lootTableRefs: [...(form.lootTableRefs || []), { tableId: firstTable, label: 'normal' }],
-    };
-    commitStructural(next);
-    setForm(next);
-  };
-
-  const updateLootRef = (idx: number, patch: { tableId?: string; label?: string }) => {
-    const nextRefs = [...(form.lootTableRefs || [])];
-    if (nextRefs[idx]) {
-      nextRefs[idx] = { ...nextRefs[idx], ...patch };
-      const next = { ...form, lootTableRefs: nextRefs };
-      commitStructural(next);
-      setForm(next);
-    }
-  };
-
-  const removeLootRef = (idx: number) => {
-    const next = { ...form, lootTableRefs: form.lootTableRefs!.filter((_, i) => i !== idx) };
-    commitStructural(next);
-    setForm(next);
-  };
-
-  const addAbilitySlot = () => {
-    const firstAbility = abilitiesList[0]?.slug || 'strike';
-    const next = {
-      ...form,
-      abilities: [...(form.abilities || []), { abilitySlug: firstAbility, currentCooldown: 0 }],
-    };
-    commitStructural(next);
-    setForm(next);
-  };
-
-  const updateAbilitySlot = (idx: number, updates: any) => {
-    const arr = [...(form.abilities || [])];
-    arr[idx] = { ...arr[idx], ...updates };
-    const next = { ...form, abilities: arr };
-    commitStructural(next);
-    setForm(next);
-  };
-
-  const removeAbilitySlot = (idx: number) => {
-    const next = { ...form, abilities: (form.abilities || []).filter((_, i) => i !== idx) };
-    commitStructural(next);
-    setForm(next);
-  };
-
+  // Evolutions helper
   const addEvolution = () => {
-    const next = {
-      ...form,
-      evolutions: [...(form.evolutions || []), { targetSlug: '', atLevel: 10 }],
-    };
-    commitStructural(next);
-    setForm(next);
+    f('evolutions', [...(form.evolutions || []), { targetSlug: '', atLevel: 16 }]);
   };
 
-  const updateEvolution = (idx: number, updates: any) => {
-    const arr = [...(form.evolutions || [])];
-    arr[idx] = { ...arr[idx], ...updates };
-    const next = { ...form, evolutions: arr };
-    commitStructural(next);
-    setForm(next);
+  const updateEvolution = (idx: number, patch: any) => {
+    const list = [...(form.evolutions || [])];
+    list[idx] = { ...list[idx], ...patch };
+    f('evolutions', list);
   };
 
   const removeEvolution = (idx: number) => {
-    const next = { ...form, evolutions: (form.evolutions || []).filter((_, i) => i !== idx) };
-    commitStructural(next);
-    setForm(next);
+    f('evolutions', (form.evolutions || []).filter((_, i) => i !== idx));
   };
 
-  const handleOpenLootTable = (tableId: string) => {
-    useEditorStore.getState().openPanel('loot');
-    useGameStore.getState().showToast(`Opened Loot Editor for ${tableId}`);
-  };
+  // Live validation markers
+  const isSlugValid = Boolean(form.slug && /^[a-z0-9_]+$/.test(form.slug));
+  const isVisualValid = Boolean(form.spriteOverworld);
+  const isStatsValid = form.baseHp > 0 && form.catchRate > 0;
+  const totalStats = form.baseHp + form.physicalPower + form.physicalDefense + form.abilityPower + form.abilityDefense + form.combatTempo;
 
-  const showStatus = (type: 'success' | 'error', msg: string) => {
-    setStatus({ type, msg });
-    setTimeout(() => setStatus(null), 3500);
-  };
+  const filteredCreatures = creaturesOnly.filter((c) => {
+    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.slug.toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+    if (elementFilter === 'ALL') return true;
+    return c.typePrimary === elementFilter || c.typeSecondary === elementFilter;
+  });
 
-  const f = <K extends keyof CreatureDefData>(key: K, value: CreatureDefData[K]) =>
-    setForm((prev) => ({ ...prev, [key]: value }));
+  // ─── GALLERY VIEW ──────────────────────────────────────────────────────────
+  if (viewState === 'gallery') {
+    return (
+      <div className="flex flex-col h-full overflow-hidden bg-[#050b14] relative">
+        {/* Gallery Header */}
+        <div className="flex items-center justify-between p-5 border-b border-white/5 bg-black/20 shrink-0">
+          <div>
+            <h2 className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-rose-400 via-pink-300 to-amber-300 flex items-center gap-2">
+              <PawPrint className="text-rose-400" size={20} />
+              Creature Registry
+            </h2>
+            <p className="text-xs text-slate-400 mt-1">
+              Turn-based companion battlers, evolutions, capture rates, and species dex.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => void mutateCreatureDefs()}
+              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 transition-colors cursor-pointer"
+              title="Refresh"
+            >
+              <RefreshCw size={16} className={isLoading ? 'animate-spin text-rose-400' : ''} />
+            </button>
+            <button
+              onClick={handleNew}
+              className="px-5 py-2.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold flex items-center gap-2 shadow-[0_0_20px_rgba(244,63,94,0.3)] transition-all cursor-pointer"
+            >
+              <Plus size={16} strokeWidth={3} /> Create Creature
+            </button>
+          </div>
+        </div>
 
-  const handleSelect = (c: CreatureDefData) => {
-    clearDefinitionStackFor(creatureResourceKey(form, isNewRef.current));
-    setForm({ ...c });
-    setIsNew(false);
-  };
+        {/* Toolbar: Search and Element Filter Chips */}
+        <div className="px-5 py-3 border-b border-slate-800/60 bg-[#07111c]/60 flex flex-wrap items-center justify-between gap-3">
+          <div className="relative flex-1 min-w-[240px]">
+            <Search className="w-4 h-4 text-rose-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <input
+              type="text"
+              placeholder="Search creatures by name or slug..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full bg-[#050b14] border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-rose-400 font-mono"
+            />
+          </div>
 
-  const handleNew = () => {
-    clearDefinitionStackFor(creatureResourceKey(form, isNewRef.current));
-    setForm({ ...emptyCreatureDef(), gameId: activeGameId, sortOrder: list.length + 1 });
-    setIsNew(true);
-  };
+          <div className="flex items-center gap-1 flex-wrap">
+            <button
+              onClick={() => setElementFilter('ALL')}
+              className={cn(
+                "px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer border",
+                elementFilter === 'ALL'
+                  ? "bg-rose-600/30 border-rose-500 text-rose-300"
+                  : "bg-black/30 border-slate-800 text-slate-400 hover:text-slate-200"
+              )}
+            >
+              All Species ({creaturesOnly.length})
+            </button>
+            {['Fire', 'Water', 'Nature', 'Electric', 'Ice', 'Shadow', 'Holy', 'Dragon'].map((elem) => (
+              <button
+                key={elem}
+                onClick={() => setElementFilter(elem)}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg text-[10px] font-bold transition cursor-pointer border",
+                  elementFilter === elem
+                    ? "bg-rose-600/30 border-rose-500 text-rose-300"
+                    : "bg-black/30 border-slate-800 text-slate-400 hover:text-slate-200"
+                )}
+              >
+                {elem}
+              </button>
+            ))}
+          </div>
+        </div>
 
-  const handleSave = async () => {
-    if (!form.slug || !form.name || !form.spriteOverworld) {
-      showStatus('error', 'Slug, name, and overworld sprite required.');
-      return;
-    }
-    setLoading(true);
-    
-    // Optimistic Update
-    const newForm = { ...form, gameId: form.gameId ?? activeGameId };
-    if (isNew) {
-      mutateCreatureDefs([...list, newForm as CreatureDefData], false);
-    } else {
-      mutateCreatureDefs(list.map(c => c.slug === form.slug ? newForm : c), false);
-    }
-
-    const res = await upsertCreatureDef(newForm);
-    setLoading(false);
-    
-    if (res.success) {
-      showStatus('success', `${form.name} saved.`);
-      clearDefinitionStackFor(creatureResourceKey(form, isNew));
-      setIsNew(false);
-      mutateCreatureDefs(); // Revalidate
-    } else {
-      mutateCreatureDefs(); // Rollback
-      showStatus('error', res.error || 'Save failed');
-    }
-  };
-
-  const handleDelete = async (slug: string) => {
-    if (!confirm(`Delete ${slug}?`)) return;
-    
-    // Optimistic Update
-    mutateCreatureDefs(list.filter(c => c.slug !== slug), false);
-    
-    const res = await deleteCreatureDef(slug);
-    if (res.success) {
-      showStatus('success', 'Deleted.');
-      mutateCreatureDefs(); // Revalidate
-      if (form.slug === slug) {
-        clearDefinitionStackFor(creatureResourceKey(form, false));
-        setForm(emptyCreatureDef());
-        setIsNew(false);
-      }
-    } else {
-      mutateCreatureDefs(); // Rollback
-      showStatus('error', res.error || 'Delete failed');
-    }
-  };
-
-  const updatePassive = (idx: number, patch: Partial<CreaturePassive>, structural = false) => {
-    const passives = form.passives.map((p, i) => (i === idx ? { ...p, ...patch } : p));
-    if (patch.isDefault) {
-      for (let i = 0; i < passives.length; i++) passives[i].isDefault = i === idx;
-    }
-    const next = { ...form, passives };
-    if (structural) commitStructural(next);
-    setForm(next);
-  };
-
-  const addPassive = () => {
-    const next: CreatureDefData = {
-      ...form,
-      passives: [
-        ...form.passives,
-        {
-          id: `passive_${form.passives.length + 1}`,
-          name: 'New Passive',
-          description: '',
-          isDefault: form.passives.length === 0,
-        },
-      ],
-    };
-    commitStructural(next);
-    setForm(next);
-  };
-
-  const setSpriteKey = (kind: 'overworld' | 'battle', key: string) => {
-    const next: CreatureDefData =
-      kind === 'overworld'
-        ? { ...form, spriteOverworld: key }
-        : { ...form, spriteBattle: key };
-    commitStructural(next);
-    setForm(next);
-  };
-
-  const assets = CREATURE_ASSET_OPTIONS.filter(
-    (a) => !assetFilter || a.key.includes(assetFilter.toLowerCase()) || a.label.toLowerCase().includes(assetFilter.toLowerCase())
-  );
-
-  return (
-    <>
-      <div className="h-full flex flex-col bg-[#050b14]/95 text-slate-200 overflow-hidden relative">
-      <div className="flex bg-black/40 border-b border-slate-900 text-[10px] font-mono">
-        <button
-          onClick={() => setViewMode('catalog')}
-          className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 transition-all ${
-            viewMode === 'catalog' ? 'bg-amber-500/20 text-amber-400 font-bold border-b-2 border-amber-500' : 'text-slate-400 hover:bg-white/5'
-          }`}
-        >
-          <Database className="w-3 h-3" />
-          Creature Catalog
-        </button>
-        <button
-          onClick={() => setViewMode('cameras')}
-          className={`flex-1 py-1.5 flex items-center justify-center gap-1.5 transition-all ${
-            viewMode === 'cameras' ? 'bg-indigo-500/20 text-indigo-400 font-bold border-b-2 border-indigo-500' : 'text-slate-400 hover:bg-white/5'
-          }`}
-        >
-          <Camera className="w-3 h-3" />
-          Souls & Cameras
-        </button>
-      </div>
-
-      <div className="flex-1 overflow-hidden relative">
-        {viewMode === 'cameras' && (
-          <div className="p-4 space-y-4 overflow-y-auto h-full custom-scrollbar">
-            <div className="bg-card/40 border border-border/40 rounded-xl p-4 space-y-4">
-              <div className="flex items-center gap-2 border-b border-border/40 pb-3">
-                <Camera className="w-4 h-4 text-indigo-400" />
-                <h3 className="font-bold text-slate-200">Souls & Cameras Settings</h3>
-              </div>
-              <div className="text-[11px] text-muted-foreground">
-                Camera tracking, focal lengths, and character Soul parameters have been relocated here.
-              </div>
+        {/* Status Toast */}
+        {status && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 animate-in slide-in-from-top-4">
+            <div className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold shadow-xl border ${status.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-300' : 'bg-red-950/90 border-red-500/30 text-red-300'} backdrop-blur-md`}>
+              {status.type === 'success' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+              {status.msg}
             </div>
           </div>
         )}
 
-        {viewMode === 'catalog' && (() => {
-          const filteredList = list.filter((c) => {
-            const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.slug.toLowerCase().includes(search.toLowerCase());
-            const matchesCategory = categoryFilter === 'all' || (c.category || 'beast') === categoryFilter;
-            return matchesSearch && matchesCategory;
-          });
-          
-          return (
-            <CatalogEditorShell
-              title="Creature Catalog"
-              items={filteredList}
-              activeId={isNew ? null : form.slug}
-              getItemId={(c) => c.slug}
-              getItemName={(c) => c.name}
-              isDirty={() => isNew || canUndoDefinition}
-              search={search}
-              onSearchChange={setSearch}
-              onSelect={(slug) => { const c = list.find(x => x.slug === slug); if (c) handleSelect(c); }}
-              onCreateNew={handleNew}
-              onSave={() => handleSave()}
-              onDelete={() => handleDelete(form.slug)}
-              saving={loading}
-              validationError={status?.type === 'error' ? status.msg : null}
-              canUndoDefinition={canUndoDefinition}
-              canRedoDefinition={canRedoDefinition}
-              onUndoDefinition={() => applyHistory('undo', (value) => { if (isCreatureForm(value)) setForm(value); })}
-              onRedoDefinition={() => applyHistory('redo', (value) => { if (isCreatureForm(value)) setForm(value); })}
-              toolbar={
-                <div className="flex flex-wrap items-center gap-2">
-                  <select
-                    className="bg-black/40 border border-[#806f47]/30 rounded px-2 py-1 text-[9px] text-slate-300 font-bold uppercase"
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value as any)}
-                  >
-                    <option value="all">All Types</option>
-                    <option value="beast">Beasts</option>
-                    <option value="monster">Monsters</option>
-                    <option value="mercenary">Mercs</option>
-                  </select>
-                  <button type="button" onClick={() => setShowJson((v) => !v)} className="flex items-center gap-1 rounded border border-[#806f47]/30 bg-transparent px-2 py-1 text-slate-300">
-                    <FileJson size={10} /> JSON
-                  </button>
-                  <button type="button" onClick={() => void load()} className="rounded border border-[#806f47]/30 p-1 text-slate-400">
-                    <RefreshCw size={12} />
-                  </button>
-                </div>
-              }
-            >
-              {status?.type === 'success' && (
-                <div className="mb-2 flex items-center gap-1 rounded px-2 py-1 text-[10px] bg-emerald-900/40 text-emerald-200">
-                  <CheckCircle2 size={12} />
-                  {status.msg}
-                </div>
-              )}
+        {/* Gallery Cards Grid */}
+        <div className="flex-1 overflow-y-auto p-5 pb-20 custom-scrollbar">
+          {filteredCreatures.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-slate-500 gap-4 my-16">
+              <PawPrint size={48} className="opacity-20" />
+              <p className="text-sm font-bold">No creatures found matching your filters.</p>
+              <button
+                onClick={handleNew}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-bold text-xs transition cursor-pointer shadow"
+              >
+                + Create Creature Now
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-5">
+              {filteredCreatures.map((creature) => {
+                let parsed: any = {};
+                try { parsed = JSON.parse(creature.spriteOverworld || '{}'); } catch {}
+                const is3D = parsed.worldModel?.type === '3D Model' || parsed.type === '3D Model' || !creature.spriteOverworld.includes('.png');
 
-      {showJson && (
-        <div className="mb-3 space-y-2 border-b border-[#806f47]/20 pb-3">
-          <textarea
-            className={`${inputCls} h-24`}
-            placeholder="Paste CreatureDef JSON array…"
-            value={jsonInput}
-            onChange={(e) => setJsonInput(e.target.value)}
-          />
+                return (
+                  <div
+                    key={creature.slug}
+                    onClick={() => handleSelectCreature(creature)}
+                    className="group relative bg-[#0a101b]/80 border border-slate-800/80 hover:border-rose-500/50 rounded-2xl p-5 cursor-pointer overflow-hidden backdrop-blur-xl transition-all duration-300 flex flex-col hover:shadow-[0_8px_30px_rgba(244,63,94,0.15)] hover:-translate-y-1"
+                  >
+                    {/* Top Dex # & Delete overlay */}
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-mono text-rose-400/80 font-bold">
+                        #{String(creature.dexNumber || 0).padStart(3, '0')}
+                      </span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); void handleDelete(creature.slug); }}
+                        className="p-1 rounded-lg bg-black/60 hover:bg-red-950/80 text-red-400 hover:text-red-300 backdrop-blur-md transition-colors opacity-0 group-hover:opacity-100"
+                        title="Delete Creature"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+
+                    {/* Visual Preview */}
+                    <div className="flex justify-center items-center h-28 mb-3 relative z-0">
+                      <div className="absolute inset-0 bg-gradient-to-t from-rose-500/5 to-transparent rounded-xl" />
+                      {is3D ? (
+                        <div className="flex flex-col items-center justify-center gap-1.5 z-10">
+                          <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center justify-center text-rose-400 shadow-[0_0_15px_rgba(244,63,94,0.2)]">
+                            <Cuboid size={24} />
+                          </div>
+                          <span className="text-[9px] font-bold text-rose-400/80 uppercase tracking-widest truncate max-w-[100px]">
+                            {parsed.worldModel?.assetId || '3D Model'}
+                          </span>
+                        </div>
+                      ) : (
+                        <CharacterSpritePreview
+                          assetProfileId={creature.spriteOverworld}
+                          size={48}
+                          scale={1.8}
+                        />
+                      )}
+                    </div>
+
+                    {/* Creature Info */}
+                    <div className="text-center flex-1 flex flex-col">
+                      <h3 className="text-sm font-black text-white truncate mb-0.5 group-hover:text-rose-300 transition-colors">
+                        {creature.name}
+                      </h3>
+                      <div className="text-[10px] text-slate-400 font-mono truncate mb-2">
+                        {creature.slug}
+                      </div>
+
+                      {/* Element Badges */}
+                      <div className="flex items-center justify-center gap-1.5 mb-2.5 flex-wrap">
+                        {creature.typePrimary && (
+                          <span className="px-2 py-0.5 rounded text-[8.5px] font-bold bg-rose-950/70 text-rose-300 border border-rose-800/80">
+                            {creature.typePrimary}
+                          </span>
+                        )}
+                        {creature.typeSecondary && creature.typeSecondary !== 'None' && creature.typeSecondary !== 'none' && (
+                          <span className="px-2 py-0.5 rounded text-[8.5px] font-bold bg-amber-950/70 text-amber-300 border border-amber-800/80">
+                            {creature.typeSecondary}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Catch Rate & Stats Line */}
+                      <div className="grid grid-cols-2 gap-1 text-[9.5px] font-mono text-slate-400 bg-black/40 p-2 rounded-lg border border-slate-800/60 mt-auto">
+                        <div>Catch: <strong className="text-emerald-400">{creature.catchRate}</strong></div>
+                        <div>BST: <strong className="text-white">{creature.baseHp + creature.physicalPower + creature.physicalDefense + creature.abilityPower + creature.abilityDefense + creature.combatTempo}</strong></div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // ─── EDITOR VIEW ──────────────────────────────────────────────────────────
+  return (
+    <div className="flex flex-col h-full overflow-hidden bg-[#050b14] relative">
+      {/* Editor Header */}
+      <div className="flex items-center justify-between p-4 border-b border-white/5 bg-black/40 shrink-0">
+        <div className="flex items-center gap-4">
           <button
-            type="button"
-            className="rounded bg-emerald-700 px-3 py-1.5 font-bold text-white"
-            onClick={async () => {
-              setLoading(true);
-              const res = await importCreatureDefsJson(jsonInput);
-              setLoading(false);
-              if (res.success) {
-                showStatus('success', `Imported ${res.count}`);
-                setShowJson(false);
-                await load();
-              } else showStatus('error', res.error || 'Import failed');
-            }}
+            onClick={handleBack}
+            className="p-2 rounded-xl bg-white/5 hover:bg-white/10 text-slate-300 transition-colors cursor-pointer"
+            title="Back to Creature List"
           >
-            Import
+            <ChevronLeft size={18} />
           </button>
+          <div>
+            <h2 className="text-lg font-black text-white">{isNew ? 'Create Creature' : form.name}</h2>
+            <p className="text-[10px] text-slate-400 mt-0.5">
+              {isNew ? 'Drafting a new turn-based creature species' : `Editing creature definition: ${form.slug}`}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Live Validation Markers */}
+          <div className="hidden lg:flex items-center gap-3 mr-4">
+            <div className={`flex items-center gap-1.5 text-[10px] font-bold ${isSlugValid ? 'text-emerald-400/80' : 'text-red-400'}`}>
+              {isSlugValid ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />} Slug
+            </div>
+            <div className={`flex items-center gap-1.5 text-[10px] font-bold ${isVisualValid ? 'text-emerald-400/80' : 'text-red-400'}`}>
+              {isVisualValid ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />} Visuals
+            </div>
+            <div className={`flex items-center gap-1.5 text-[10px] font-bold ${isStatsValid ? 'text-emerald-400/80' : 'text-red-400'}`}>
+              {isStatsValid ? <CheckCircle2 size={12} /> : <AlertCircle size={12} />} Battle Stats
+            </div>
+          </div>
+
+          {!isNew && (
+            <button
+              onClick={handleDuplicate}
+              className="px-3 py-2 rounded-lg text-xs font-bold text-rose-300 hover:bg-rose-500/10 border border-rose-500/30 flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <Copy size={14} /> Clone
+            </button>
+          )}
+
           <button
-            type="button"
-            className="ml-2 rounded border border-slate-600 px-3 py-1.5 text-slate-300"
-            onClick={() => {
-              navigator.clipboard.writeText(JSON.stringify(emptyCreatureDef(), null, 2));
-              showStatus('success', 'Copied seed JSON');
-            }}
+            onClick={handleCopyFormJson}
+            className="px-3 py-2 rounded-lg text-xs font-bold text-slate-300 hover:bg-white/5 border border-slate-700 flex items-center gap-1.5 transition-all cursor-pointer"
           >
-            Copy seed JSON
+            {copied ? <Check size={14} className="text-emerald-400" /> : <FileJson size={14} />} {copied ? 'Copied' : 'JSON'}
           </button>
+
+          <button
+            onClick={() => void handleSave()}
+            disabled={loading || !isSlugValid || !isStatsValid || !form.name}
+            className="px-6 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-sm font-bold flex items-center gap-2 shadow-[0_0_15px_rgba(244,63,94,0.3)] disabled:opacity-50 disabled:shadow-none transition-all cursor-pointer"
+          >
+            <Save size={16} /> {loading ? 'Saving...' : 'Save Creature'}
+          </button>
+        </div>
+      </div>
+
+      {/* Status Overlay */}
+      {status && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 animate-in fade-in zoom-in-95">
+          <div className={`flex items-center gap-2 rounded-full px-4 py-2 text-xs font-bold shadow-xl border ${status.type === 'success' ? 'bg-emerald-950/90 border-emerald-500/30 text-emerald-300' : 'bg-red-950/90 border-red-500/30 text-red-300'} backdrop-blur-md`}>
+            {status.type === 'success' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+            {status.msg}
+          </div>
         </div>
       )}
 
-      <div className="space-y-3 pr-1">
-          {(isNew || form.slug) && (
-            <>
-              {/* Category & Identity */}
-              <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg border border-amber-500/30 bg-amber-500/5">
-                <div>
-                  <label className={labelCls}>Taxonomy Category</label>
-                  <select
-                    className={inputCls}
-                    value={form.category || 'beast'}
-                    onFocus={onFieldFocus}
-                    onBlur={onFieldBlur}
-                    onChange={(e) => {
-                      const nextCat = e.target.value as CreatureCategory;
-                      const next = { ...form, category: nextCat };
-                      commitStructural(next);
-                      setForm(next);
-                    }}
-                  >
-                    {CREATURE_CATEGORIES.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className={labelCls}>Profile (gameId)</label>
-                  <input
-                    className={inputCls}
-                    value={form.gameId ?? ''}
-                    onFocus={onFieldFocus}
-                    onBlur={onFieldBlur}
-                    onChange={(e) => f('gameId', e.target.value || null)}
-                    placeholder="saints / custom / empty=shared"
-                  />
-                </div>
+      {/* Form Split Layout */}
+      <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* LEFT COLUMN: Identity & Battle Stats (6 cols) */}
+          <div className="lg:col-span-6 space-y-6">
+            {/* Box 1: Core Creature Identity & Species Dex */}
+            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-5 backdrop-blur-xl shadow-lg">
+              <div className="flex items-center gap-2 border-b border-rose-500/10 pb-3">
+                <PawPrint className="text-rose-400/80" size={16} />
+                <h3 className="text-xs font-black text-rose-400/80 uppercase tracking-widest">Species Identity</h3>
               </div>
 
-              <div className="p-2.5 rounded-lg border border-border bg-black/20">
-                <label className={labelCls}>Mythos (Family)</label>
-                <select
+              <div>
+                <label className={labelCls}>Creature Name</label>
+                <input
+                  value={form.name}
+                  onChange={(e) => f('name', e.target.value)}
                   className={inputCls}
-                  value={form.mythos || 'Beastial'}
-                  onFocus={onFieldFocus}
-                  onBlur={onFieldBlur}
-                  onChange={(e) => f('mythos', e.target.value)}
-                >
-                  <option value="Beastial">Select Mythos (Custom)</option>
-                  {CREATURE_MYTHOS_FAMILIES.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="e.g. Fennec Flare"
+                />
               </div>
 
-              {/* Monster Specific Controls */}
-              {form.category === 'monster' && (
-                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg border border-rose-500/30 bg-rose-500/5">
-                  <div>
-                    <label className={labelCls + ' text-rose-300'}>Aggro Radius (Tiles)</label>
-                    <input
-                      type="number"
-                      className={inputCls}
-                      value={form.aggroRadius ?? 5}
-                      onFocus={onFieldFocus}
-                      onBlur={onFieldBlur}
-                      onChange={(e) => f('aggroRadius', Number(e.target.value))}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls + ' text-rose-300'}>Respawn Timer (Sec)</label>
-                    <input
-                      type="number"
-                      className={inputCls}
-                      value={form.respawnSec ?? 30}
-                      onFocus={onFieldFocus}
-                      onBlur={onFieldBlur}
-                      onChange={(e) => f('respawnSec', Number(e.target.value))}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Mercenary Specific Controls */}
-              {form.category === 'mercenary' && (
-                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg border border-violet-500/30 bg-violet-500/5">
-                  <div>
-                    <label className={labelCls + ' text-violet-300'}>Hire Cost (Gold)</label>
-                    <input
-                      type="number"
-                      className={inputCls}
-                      value={form.hireCost ?? 100}
-                      onFocus={onFieldFocus}
-                      onBlur={onFieldBlur}
-                      onChange={(e) => f('hireCost', Number(e.target.value))}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls + ' text-violet-300'}>Faction / Guild ID</label>
-                    <input
-                      className={inputCls}
-                      value={form.factionId || ''}
-                      onFocus={onFieldFocus}
-                      onBlur={onFieldBlur}
-                      onChange={(e) => f('factionId', e.target.value || undefined)}
-                      placeholder="e.g. iron_vanguard"
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Beast Specific Controls */}
-              {(!form.category || form.category === 'beast') && (
-                <div className="grid grid-cols-2 gap-2 p-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5">
-                  <div>
-                    <label className={labelCls + ' text-emerald-300'}>Dex Number</label>
-                    <input
-                      type="number"
-                      className={inputCls}
-                      value={form.dexNumber || 0}
-                      onFocus={onFieldFocus}
-                      onBlur={onFieldBlur}
-                      onChange={(e) => f('dexNumber', Number(e.target.value))}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls + ' text-emerald-300'}>Catch Rate (Multiplier)</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      className={inputCls}
-                      value={form.catchRate ?? 1}
-                      onFocus={onFieldFocus}
-                      onBlur={onFieldBlur}
-                      onChange={(e) => f('catchRate', Number(e.target.value))}
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>Slug</label>
+                  <label className={labelCls}>System Slug</label>
                   <input
-                    className={inputCls}
                     value={form.slug}
+                    onChange={(e) => f('slug', e.target.value.toLowerCase().replace(/\s+/g, '_'))}
+                    className={inputCls}
+                    placeholder="e.g. creature_fennec_flare"
                     disabled={!isNew}
-                    onFocus={onFieldFocus}
-                    onBlur={onFieldBlur}
-                    onChange={(e) => f('slug', e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                    style={{ opacity: isNew ? 1 : 0.6 }}
                   />
                 </div>
                 <div>
-                  <label className={labelCls}>Name</label>
+                  <label className={labelCls}>Dex Number</label>
                   <input
+                    type="number"
+                    value={form.dexNumber || 1}
+                    onChange={(e) => f('dexNumber', Number(e.target.value))}
                     className={inputCls}
-                    value={form.name}
-                    onFocus={onFieldFocus}
-                    onBlur={onFieldBlur}
-                    onChange={(e) => f('name', e.target.value)}
+                    min={1}
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className={labelCls}>Type Primary</label>
+                  <label className={labelCls}>Mythos Family</label>
                   <select
+                    value={form.mythos || 'Beastial'}
+                    onChange={(e) => f('mythos', e.target.value as CreatureMythosType)}
                     className={inputCls}
-                    value={form.typePrimary}
-                    onFocus={onFieldFocus}
-                    onBlur={onFieldBlur}
-                    onChange={(e) => f('typePrimary', e.target.value)}
                   >
-                    {CREATURE_ELEMENT_TYPES.filter((t) => t !== 'None').map((t) => (
-                      <option key={t} value={t}>{t}</option>
+                    {CREATURE_MYTHOS_FAMILIES.map((family) => (
+                      <option key={family} value={family}>{family}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className={labelCls}>Type Secondary</label>
+                  <label className={labelCls}>Evolution Stage</label>
                   <select
+                    value={form.stage || 'Basic'}
+                    onChange={(e) => f('stage', e.target.value)}
                     className={inputCls}
-                    value={form.typeSecondary}
-                    onFocus={onFieldFocus}
-                    onBlur={onFieldBlur}
-                    onChange={(e) => f('typeSecondary', e.target.value)}
                   >
-                    {CREATURE_ELEMENT_TYPES.map((t) => (
-                      <option key={t} value={t}>{t}</option>
+                    {CREATURE_STAGES.map((st) => (
+                      <option key={st} value={st}>{st}</option>
                     ))}
                   </select>
                 </div>
               </div>
 
-              {/* ── World Model ── */}
+              {/* Elemental Typing */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Primary Element</label>
+                  <select
+                    value={form.typePrimary || 'Normal'}
+                    onChange={(e) => f('typePrimary', e.target.value as CreatureElementType)}
+                    className={inputCls}
+                  >
+                    {CREATURE_ELEMENT_TYPES.map((elem) => (
+                      <option key={elem} value={elem}>{elem}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className={labelCls}>Secondary Element</label>
+                  <select
+                    value={form.typeSecondary || 'None'}
+                    onChange={(e) => f('typeSecondary', e.target.value as CreatureElementType)}
+                    className={inputCls}
+                  >
+                    {CREATURE_ELEMENT_TYPES.map((elem) => (
+                      <option key={elem} value={elem}>{elem}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelCls}>Dex Lore & Description</label>
+                <textarea
+                  value={form.flavor || ''}
+                  onChange={(e) => f('flavor', e.target.value)}
+                  className={cn(inputCls, "resize-none h-20")}
+                  placeholder="Inhabits volcanic foothills, using its embers to ward off predators..."
+                  maxLength={180}
+                />
+              </div>
+            </div>
+
+            {/* Box 2: Turn-Based Battle Stats */}
+            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-4 backdrop-blur-xl shadow-lg">
+              <div className="flex items-center justify-between border-b border-rose-500/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <Swords className="text-rose-400/80" size={16} />
+                  <h3 className="text-xs font-black text-rose-400/80 uppercase tracking-widest">Base Battle Stats</h3>
+                </div>
+                <span className="text-[10px] font-mono text-rose-400 font-bold">
+                  Base Stat Total: {totalStats}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {[
+                  { key: 'baseHp', label: 'HP', icon: Flame, color: 'text-emerald-400' },
+                  { key: 'physicalPower', label: 'Attack', icon: Swords, color: 'text-red-400' },
+                  { key: 'physicalDefense', label: 'Defense', icon: Shield, color: 'text-blue-400' },
+                  { key: 'abilityPower', label: 'Sp. Atk', icon: Zap, color: 'text-purple-400' },
+                  { key: 'abilityDefense', label: 'Sp. Def', icon: Shield, color: 'text-indigo-400' },
+                  { key: 'combatTempo', label: 'Speed', icon: Clock, color: 'text-amber-400' },
+                ].map((stat) => (
+                  <div key={stat.key} className="bg-black/30 p-2.5 rounded-xl border border-slate-800/60">
+                    <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+                      <span className={stat.color}>{stat.label}</span>
+                    </label>
+                    <input
+                      type="number"
+                      value={form[stat.key as keyof CreatureDefData] as number}
+                      onChange={(e) => f(stat.key as keyof CreatureDefData, Number(e.target.value) as any)}
+                      className={inputCls}
+                      min={1}
+                      max={255}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Box 3: Capture & Growth */}
+            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-4 backdrop-blur-xl shadow-lg">
+              <div className="flex items-center gap-2 border-b border-rose-500/10 pb-3">
+                <Compass className="text-rose-400/80" size={16} />
+                <h3 className="text-xs font-black text-rose-400/80 uppercase tracking-widest">Capture & Growth</h3>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className={labelCls}>Catch Rate (1 - 255)</label>
+                  <input
+                    type="number"
+                    value={form.catchRate ?? 190}
+                    onChange={(e) => f('catchRate', Number(e.target.value))}
+                    className={inputCls}
+                    min={1}
+                    max={255}
+                  />
+                  <span className="text-[9.5px] text-slate-500 mt-1 block">
+                    Lower values mean harder to capture in spheres (e.g. 3 = Legendary, 255 = Common).
+                  </span>
+                </div>
+                <div>
+                  <label className={labelCls}>Starter / Wild Level</label>
+                  <input
+                    type="number"
+                    value={form.starterLevel ?? 5}
+                    onChange={(e) => f('starterLevel', Number(e.target.value))}
+                    className={inputCls}
+                    min={1}
+                    max={100}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => f('isStarter', !form.isStarter)}
+                  className={cn(
+                    "p-2.5 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-between",
+                    form.isStarter
+                      ? "bg-amber-500/15 border-amber-500/40 text-amber-300"
+                      : "bg-black/30 border-slate-800 text-slate-400"
+                  )}
+                >
+                  <span>Starter Creature</span>
+                  <span className="text-[10px] font-mono">{form.isStarter ? 'YES' : 'NO'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => f('isWildSpawn', !form.isWildSpawn)}
+                  className={cn(
+                    "p-2.5 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center justify-between",
+                    form.isWildSpawn
+                      ? "bg-rose-500/15 border-rose-500/40 text-rose-300"
+                      : "bg-black/30 border-slate-800 text-slate-400"
+                  )}
+                >
+                  <span>Wild Encounter</span>
+                  <span className="text-[10px] font-mono">{form.isWildSpawn ? 'ENABLED' : 'DISABLED'}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN: 3D/2D Visual Selector, Evolutions & Status (6 cols) */}
+          <div className="lg:col-span-6 space-y-6">
+            {/* Box 4: Asset Selector & Live 3D/2D Preview */}
+            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-5 backdrop-blur-xl shadow-lg">
+              <div className="flex items-center gap-2 border-b border-cyan-500/10 pb-3">
+                <Cuboid className="text-cyan-400/80" size={16} />
+                <h3 className="text-xs font-black text-cyan-400/80 uppercase tracking-widest">3D Overworld & Sprites</h3>
+              </div>
+
+              {/* Live 3D Canvas Preview */}
+              {getWorldModel().type === '3D Model' && getWorldModel().assetId && (
+                <div className="pb-2">
+                  <ArchetypeModelPreview3D
+                    baseAssetId={getWorldModel().assetId}
+                    modelScale={getWorldModel().scale ?? 0.8}
+                    modularAttachments={getModularAttachments()
+                      .filter((attachment) => attachment.defaultVisible !== false)
+                      .map((attachment) => ({
+                        ...attachment,
+                        type: attachment.type === '3D Sprite' ? '3D Model' : attachment.type || '3D Model',
+                      }))}
+                    className="h-80"
+                  />
+                </div>
+              )}
+
               <WorldModelSelector
                 value={getWorldModel()}
                 onChange={handleWorldModelChange}
-                label="Creature World Model"
+                label="Overworld Creature Representation"
+                allowSocketConfig={true}
               />
-              {getWorldModel().type === '3D Model' && (
-                <ModelWardrobeEditor
-                  modelAssetId={getWorldModel().assetId}
-                  value={getModularAttachments()}
-                  onChange={handleModularAttachmentsChange}
-                  title="Creature Character Items"
-                />
-              )}
 
-              {/* ── Battle Appearance ── */}
-              <section className="mt-4 p-3 bg-black/40 rounded-lg border border-cyan-500/10">
-                <div
-                  className="text-[9px] font-black text-cyan-500/60 uppercase tracking-[0.2em] mb-2 pb-1"
-                  style={{ borderBottom: '1px solid rgba(6,182,212,0.1)' }}
-                >
-                  Battle Appearance
-                </div>
-                <label className={labelCls}>Front Battle Sprite (Base / Enemy)</label>
-                <div className="flex items-center gap-2 mb-3">
-                  <DroppableAssetInput
-                    className={inputCls}
+              {/* 2D Battle Sprites */}
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800/60">
+                <div>
+                  <label className={labelCls}>Front Battle Sprite</label>
+                  <input
                     value={form.spriteBattle || ''}
-                    onFocus={onFieldFocus}
-                    onBlur={onFieldBlur}
                     onChange={(e) => f('spriteBattle', e.target.value)}
-                    onAssetDropped={(key) => f('spriteBattle', key)}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      useEditorStore.getState().openAssetPicker({
-                        filterType: 'CREATURE',
-                        title: 'Select Creature Battle Sprite',
-                        onSelect: (selectedId) => f('spriteBattle', selectedId),
-                      });
-                    }}
-                    className="px-2 py-1.5 shrink-0 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] font-bold rounded border border-cyan-500/30 transition-colors whitespace-nowrap cursor-pointer"
-                  >
-                    Browse Library
-                  </button>
-                </div>
-                <label className={labelCls}>Back Battle Sprite (Player Side)</label>
-                <div className="flex items-center gap-2 mb-2">
-                  <DroppableAssetInput
                     className={inputCls}
-                    value={form.spriteBack || ''}
-                    onFocus={onFieldFocus}
-                    onBlur={onFieldBlur}
-                    onChange={(e) => f('spriteBack', e.target.value)}
-                    onAssetDropped={(key) => f('spriteBack', key)}
+                    placeholder="e.g. creatures/fennec_battle.png"
                   />
-                  <button
-                    type="button"
-                    onClick={() => {
-                      useEditorStore.getState().openAssetPicker({
-                        filterType: 'CREATURE',
-                        title: 'Select Creature Back Sprite',
-                        onSelect: (selectedId) => f('spriteBack', selectedId),
-                      });
-                    }}
-                    className="px-2 py-1.5 shrink-0 bg-cyan-900/50 hover:bg-cyan-800 text-cyan-200 text-[10px] font-bold rounded border border-cyan-500/30 transition-colors whitespace-nowrap cursor-pointer"
-                  >
-                    Browse Library
-                  </button>
                 </div>
-              </section>
-
-              <div>
-                <label className={labelCls}>Stats</label>
-                <div className="grid grid-cols-3 gap-1">
-                  {(
-                    [
-                      ['baseHp', 'HP'],
-                      ['physicalPower', 'Phys Pwr'],
-                      ['physicalDefense', 'Phys Def'],
-                      ['abilityPower', 'Ability Pwr'],
-                      ['abilityDefense', 'Ability Def'],
-                      ['combatTempo', 'Tempo'],
-                      ['catchRate', 'Catch'],
-                      ['starterLevel', 'Level'],
-                      ['dexNumber', 'Dex #'],
-                    ] as const
-                  ).map(([key, label]) => (
-                    <div key={key}>
-                      <span className="text-[8px] text-slate-500">{label}</span>
-                      <input
-                        type="number"
-                        className={inputCls}
-                        value={form[key] as number}
-                        onFocus={onFieldFocus}
-                        onBlur={onFieldBlur}
-                        onChange={(e) => f(key, Number(e.target.value))}
-                      />
-                    </div>
-                  ))}
+                <div>
+                  <label className={labelCls}>Back Battle Sprite</label>
+                  <input
+                    value={form.spriteBack || ''}
+                    onChange={(e) => f('spriteBack', e.target.value)}
+                    className={inputCls}
+                    placeholder="e.g. creatures/fennec_back.png"
+                  />
                 </div>
+              </div>
+            </div>
 
-                {/* Visual Stat Breakdown & BST (Phase 8 Track E5) */}
-                <div className="mt-2.5 p-2 rounded bg-black/50/50 border border-[#806f47]/20 space-y-1.5">
-                  <div className="flex items-center justify-between text-[9px] font-bold text-slate-400">
-                    <span className="uppercase tracking-wider">Stat Distribution</span>
-                    <span className="text-amber-300 font-mono">
-                      BST: {(form.baseHp || 0) + (form.physicalPower || 0) + (form.physicalDefense || 0) + (form.abilityPower || 0) + (form.abilityDefense || 0) + (form.combatTempo || 0)}
-                    </span>
-                  </div>
-                  <div className="space-y-1">
-                    {[
-                      { label: 'HP', val: form.baseHp || 0, max: 200, color: 'bg-emerald-500' },
-                      { label: 'Atk', val: form.physicalPower || 0, max: 200, color: 'bg-rose-500' },
-                      { label: 'Def', val: form.physicalDefense || 0, max: 200, color: 'bg-blue-500' },
-                      { label: 'SpA', val: form.abilityPower || 0, max: 200, color: 'bg-purple-500' },
-                      { label: 'SpD', val: form.abilityDefense || 0, max: 200, color: 'bg-cyan-500' },
-                      { label: 'Spe', val: form.combatTempo || 0, max: 200, color: 'bg-amber-500' },
-                    ].map((st) => (
-                      <div key={st.label} className="flex items-center gap-2 text-[8px] font-mono">
-                        <span className="w-6 text-slate-400 font-bold">{st.label}</span>
-                        <div className="flex-1 h-1.5 bg-transparent rounded-full overflow-hidden border border-[#806f47]/20">
-                          <div
-                            className={`h-full ${st.color} rounded-full transition-all duration-300`}
-                            style={{ width: `${Math.min(100, Math.round((st.val / st.max) * 100))}%` }}
+            {/* Box 5: Evolution Line */}
+            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-4 backdrop-blur-xl shadow-lg">
+              <div className="flex items-center justify-between border-b border-rose-500/10 pb-3">
+                <div className="flex items-center gap-2">
+                  <Dna className="text-rose-400/80" size={16} />
+                  <h3 className="text-xs font-black text-rose-400/80 uppercase tracking-widest">Evolution Line</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={addEvolution}
+                  className="px-2.5 py-1 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/40 text-[10px] font-bold transition flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus size={12} /> Add Evolution
+                </button>
+              </div>
+
+              {(form.evolutions || []).length === 0 ? (
+                <div className="text-center py-4 text-xs text-slate-500">
+                  No evolutions defined. This species does not evolve.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(form.evolutions || []).map((evo, idx) => (
+                    <div key={idx} className="p-3 bg-black/40 rounded-xl border border-slate-800 flex items-center gap-3">
+                      <div className="flex-1 grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="text-[8px] font-bold text-slate-400 uppercase">Target Species Slug</label>
+                          <input
+                            value={evo.targetSlug}
+                            onChange={(e) => updateEvolution(idx, { targetSlug: e.target.value })}
+                            className={inputCls}
+                            placeholder="e.g. creature_fennec_pyre"
                           />
                         </div>
-                        <span className="w-7 text-right text-slate-200 font-bold">{st.val}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className={labelCls + ' mb-0'}>Passives (default + potential)</label>
-                  <button type="button" onClick={addPassive} className="text-emerald-400 text-[9px]">+ Add</button>
-                </div>
-                <div className="space-y-2">
-                  {form.passives.map((p, idx) => (
-                    <div key={idx} className="border border-[#806f47]/20 rounded p-2 space-y-1">
-                      <div className="flex gap-1 items-center">
-                        <input
-                          className={inputCls}
-                          value={p.id}
-                          onFocus={onFieldFocus}
-                          onBlur={onFieldBlur}
-                          onChange={(e) => updatePassive(idx, { id: e.target.value })}
-                          placeholder="id"
-                        />
-                        <input
-                          className={inputCls}
-                          value={p.name}
-                          onFocus={onFieldFocus}
-                          onBlur={onFieldBlur}
-                          onChange={(e) => updatePassive(idx, { name: e.target.value })}
-                          placeholder="name"
-                        />
-                        <label className="flex items-center gap-1 text-[9px] text-slate-400 shrink-0">
-                          <input
-                            type="checkbox"
-                            checked={!!p.isDefault}
-                            onChange={(e) => updatePassive(idx, { isDefault: e.target.checked }, true)}
-                          />
-                          Default
-                        </label>
-                      </div>
-                      <textarea
-                        className={inputCls}
-                        rows={2}
-                        value={p.description}
-                        onFocus={onFieldFocus}
-                        onBlur={onFieldBlur}
-                        onChange={(e) => updatePassive(idx, { description: e.target.value })}
-                        placeholder="Description"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 gap-2">
-                <div>
-                  <label className={labelCls}>World skill name</label>
-                  <input
-                    className={inputCls}
-                    value={form.worldSkillName}
-                    onFocus={onFieldFocus}
-                    onBlur={onFieldBlur}
-                    onChange={(e) => f('worldSkillName', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>World skill description</label>
-                  <textarea
-                    className={inputCls}
-                    rows={2}
-                    value={form.worldSkillDescription}
-                    onFocus={onFieldFocus}
-                    onBlur={onFieldBlur}
-                    onChange={(e) => f('worldSkillDescription', e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className={labelCls}>Flavor</label>
-                  <textarea
-                    className={inputCls}
-                    rows={2}
-                    value={form.flavor}
-                    onFocus={onFieldFocus}
-                    onBlur={onFieldBlur}
-                    onChange={(e) => f('flavor', e.target.value)}
-                  />
-                </div>
-              </div>
-
-              {/* Loot Drop Tables Section (Phase 8 Track B4) */}
-              <div className="p-2.5 rounded border border-amber-500/30 bg-[#050b14]/70 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-[#cbb26a] uppercase tracking-wider">
-                    <Coins className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Loot Drop Tables</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={addLootRef}
-                    className="flex items-center gap-1 text-[9px] text-emerald-400 hover:text-emerald-300 transition-colors bg-emerald-950/40 border border-emerald-800/40 px-2 py-0.5 rounded cursor-pointer"
-                  >
-                    <Plus className="w-2.5 h-2.5" />
-                    <span>Add Loot Table</span>
-                  </button>
-                </div>
-
-                {(!form.lootTableRefs || form.lootTableRefs.length === 0) ? (
-                  <p className="text-[10px] text-slate-500 italic py-1">No loot tables attached to this creature.</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {form.lootTableRefs.map((ref, idx) => (
-                      <div key={idx} className="flex items-center gap-1.5 bg-black/50/40 border border-[#806f47]/20 rounded p-1.5 text-[11px]">
-                        <select
-                          value={ref.label || 'normal'}
-                          onChange={(e) => updateLootRef(idx, { label: e.target.value })}
-                          className="bg-[#111a2a] border border-[#806f47]/30 rounded px-1.5 py-1 text-[10px] text-amber-300 font-bold outline-none cursor-pointer"
-                        >
-                          <option value="normal">Normal</option>
-                          <option value="rare">Rare Drop</option>
-                          <option value="boss">Boss Drop</option>
-                          <option value="gather">Gather</option>
-                        </select>
-
-                        {lootTables.length > 0 ? (
-                          <RegistryCombobox
-                            value={ref.tableId}
-                            onChange={(val) => updateLootRef(idx, { tableId: val })}
-                            options={lootTables.map(t => ({ value: t.id, label: `${t.name} (${t.id})` }))}
-                            className="flex-1"
-                          />
-                        ) : (
-                          <input
-                            type="text"
-                            value={ref.tableId}
-                            onChange={(e) => updateLootRef(idx, { tableId: e.target.value })}
-                            placeholder="table_id"
-                            className="flex-1 bg-[#111a2a] border border-[#806f47]/30 rounded px-2 py-1 text-[10px] text-slate-200 outline-none"
-                          />
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => handleOpenLootTable(ref.tableId)}
-                          className="flex items-center gap-1 text-[9px] text-amber-400 hover:text-amber-300 transition-colors bg-amber-950/40 border border-amber-800/40 px-2 py-1 rounded cursor-pointer shrink-0"
-                          title="Open in Loot Manager"
-                        >
-                          <ExternalLink className="w-2.5 h-2.5" />
-                          <span>View Loot →</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => removeLootRef(idx)}
-                          className="p-1 text-red-400 hover:bg-red-950/40 rounded transition-colors cursor-pointer shrink-0"
-                          title="Remove table reference"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Abilities Section */}
-              <div className="p-2.5 rounded border border-fuchsia-500/30 bg-[#050b14]/70 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-fuchsia-400 uppercase tracking-wider">
-                    <Wand2 className="w-3.5 h-3.5 text-fuchsia-400" />
-                    <span>Creature Abilities</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={addAbilitySlot}
-                    className="flex items-center gap-1 text-[9px] text-fuchsia-400 hover:text-fuchsia-300 transition-colors bg-fuchsia-950/40 border border-fuchsia-800/40 px-2 py-0.5 rounded cursor-pointer"
-                  >
-                    <Plus className="w-2.5 h-2.5" />
-                    <span>Add Ability</span>
-                  </button>
-                </div>
-
-                {(!form.abilities || form.abilities.length === 0) ? (
-                  <p className="text-[10px] text-slate-500 italic py-1">No abilities attached to this creature. (Consider adding elements to get suggestions in Ability Studio)</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {form.abilities.map((slot, idx) => (
-                      <div key={idx} className="flex items-center gap-1.5 bg-black/50/40 border border-fuchsia-900/40 rounded p-1.5 text-[11px]">
-                        {abilitiesList.length > 0 ? (
-                          <RegistryCombobox
-                            value={slot.abilitySlug}
-                            onChange={(val) => updateAbilitySlot(idx, { abilitySlug: val })}
-                            options={abilitiesList.map(a => ({ value: a.slug, label: `${a.name} (${a.slug})` }))}
-                            className="flex-1"
-                          />
-                        ) : (
-                          <input
-                            type="text"
-                            value={slot.abilitySlug}
-                            onChange={(e) => updateAbilitySlot(idx, { abilitySlug: e.target.value })}
-                            placeholder="ability_slug"
-                            className="flex-1 bg-[#111a2a] border border-fuchsia-900/40 rounded px-2 py-1 text-[10px] text-slate-200 outline-none"
-                          />
-                        )}
-
-                        <button
-                          type="button"
-                          onClick={() => { useEditorStore.getState().openPanel('abilities'); }}
-                          className="flex items-center gap-1 text-[9px] text-fuchsia-400 hover:text-fuchsia-300 transition-colors bg-fuchsia-950/40 border border-fuchsia-800/40 px-2 py-1 rounded cursor-pointer shrink-0"
-                          title="Open in Ability Studio"
-                        >
-                          <ExternalLink className="w-2.5 h-2.5" />
-                          <span>View Ability →</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => removeAbilitySlot(idx)}
-                          className="p-1 text-red-400 hover:bg-red-950/40 rounded transition-colors cursor-pointer shrink-0"
-                          title="Remove ability"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Evolutions Section */}
-              <div className="p-2.5 rounded border border-blue-500/30 bg-[#050b14]/70 space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-[10px] font-bold text-blue-400 uppercase tracking-wider">
-                    <PawPrint className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Evolutions</span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={addEvolution}
-                    className="flex items-center gap-1 text-[9px] text-blue-400 hover:text-blue-300 transition-colors bg-blue-950/40 border border-blue-800/40 px-2 py-0.5 rounded cursor-pointer"
-                  >
-                    <Plus className="w-2.5 h-2.5" />
-                    <span>Add Evolution</span>
-                  </button>
-                </div>
-
-                {(!form.evolutions || form.evolutions.length === 0) ? (
-                  <p className="text-[10px] text-slate-500 italic py-1">No evolutions. This creature does not evolve further.</p>
-                ) : (
-                  <div className="space-y-1.5">
-                    {form.evolutions.map((evo, idx) => (
-                      <div key={idx} className="flex flex-col gap-1.5 bg-black/50/40 border border-blue-900/40 rounded p-1.5 text-[11px]">
-                        <div className="flex gap-1.5 items-center">
-                          <RegistryCombobox
-                            value={evo.targetSlug}
-                            onChange={(val) => updateEvolution(idx, { targetSlug: val })}
-                            options={list.map(c => ({ value: c.slug, label: `${c.name} (${c.slug})` }))}
-                            className="flex-1"
-                          />
+                        <div>
+                          <label className="text-[8px] font-bold text-slate-400 uppercase">Level Req.</label>
                           <input
                             type="number"
-                            value={evo.atLevel || ''}
-                            onChange={(e) => updateEvolution(idx, { atLevel: Number(e.target.value) || undefined })}
-                            placeholder="Lvl Req"
-                            title="Level Requirement"
-                            className="w-16 bg-[#111a2a] border border-blue-900/40 rounded px-2 py-1 text-[10px] text-slate-200 outline-none"
+                            value={evo.atLevel || 16}
+                            onChange={(e) => updateEvolution(idx, { atLevel: Number(e.target.value) })}
+                            className={inputCls}
+                            min={1}
                           />
-                          <button
-                            type="button"
-                            onClick={() => removeEvolution(idx)}
-                            className="p-1 text-red-400 hover:bg-red-950/40 rounded transition-colors cursor-pointer shrink-0"
-                            title="Remove evolution"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
                         </div>
-                        <div className="flex gap-1.5 items-center">
-                          <input
-                            type="text"
-                            value={evo.itemRequired || ''}
-                            onChange={(e) => updateEvolution(idx, { itemRequired: e.target.value || undefined })}
-                            placeholder="Item Req"
-                            title="Item Requirement"
-                            className="flex-1 bg-[#111a2a] border border-blue-900/40 rounded px-2 py-1 text-[10px] text-slate-200 outline-none"
-                          />
-                          <select
-                            value={evo.timeOfDay || ''}
-                            onChange={(e) => updateEvolution(idx, { timeOfDay: e.target.value || undefined })}
-                            title="Time of Day"
-                            className="flex-1 bg-[#111a2a] border border-blue-900/40 rounded px-1.5 py-1 text-[10px] text-slate-200 outline-none cursor-pointer"
-                          >
-                            <option value="">Any Time</option>
-                            <option value="DAY">Daytime</option>
-                            <option value="NIGHT">Nighttime</option>
-                            <option value="DUSK">Dusk</option>
-                            <option value="DAWN">Dawn</option>
-                          </select>
-                        </div>
-                        <input
-                          type="text"
-                          value={evo.statRequirement || ''}
-                          onChange={(e) => updateEvolution(idx, { statRequirement: e.target.value || undefined })}
-                          placeholder='Stat Req (e.g. {"attack": 100})'
-                          title="Stat Requirement (JSON)"
-                          className="w-full bg-[#111a2a] border border-blue-900/40 rounded px-2 py-1 text-[10px] text-slate-200 outline-none"
-                        />
-                        {/* Visual graph connecting the sprite of form and evo target */}
-                        {evo.targetSlug && (
-                          <div className="flex items-center gap-2 pt-1 pb-1 justify-center relative">
-                            <img src={creatureAssetUrl(form.spriteOverworld)} className="w-8 h-8 object-contain pixelated" alt="current" />
-                            <div className="flex-1 max-w-[60px] h-0 border-t-2 border-dashed border-blue-500/50 relative">
-                               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[8px] font-bold text-blue-400 bg-black/80 px-1 rounded">EVOLVES</div>
-                            </div>
-                            <img src={creatureAssetUrl(list.find(c => c.slug === evo.targetSlug)?.spriteOverworld)} className="w-8 h-8 object-contain pixelated" alt="target" />
-                          </div>
-                        )}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              <div className="p-2 rounded border border-[#806f47]/30 bg-[#050b14]/60 space-y-2">
-                <div className="text-[10px] font-bold text-[#cbb26a] uppercase tracking-wider">Shiny variant</div>
-                <div className="flex flex-wrap gap-3 items-center">
-                  <label className="flex items-center gap-1 text-slate-300">
-                    <input
-                      type="checkbox"
-                      checked={form.shinyEnabled !== false}
-                      onChange={(e) => {
-                        const next = { ...form, shinyEnabled: e.target.checked };
-                        commitStructural(next);
-                        setForm(next);
-                      }}
-                    />{' '}
-                    Shinies enabled
-                  </label>
-                  <label className="flex items-center gap-1 text-slate-300">
-                    <input
-                      type="checkbox"
-                      checked={form.shinyUseGlobalChance !== false}
-                      onChange={(e) => {
-                        const next = { ...form, shinyUseGlobalChance: e.target.checked };
-                        commitStructural(next);
-                        setForm(next);
-                      }}
-                    />{' '}
-                    Sync global chance
-                  </label>
+                      <button
+                        type="button"
+                        onClick={() => removeEvolution(idx)}
+                        className="p-1.5 text-slate-500 hover:text-red-400 rounded-lg hover:bg-red-950/40 transition cursor-pointer"
+                        title="Remove Evolution"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                {form.shinyUseGlobalChance === false && (
-                  <div>
-                    <label className={labelCls}>Own shiny chance %</label>
-                    <input
-                      type="number"
-                      step="0.1"
-                      min={0}
-                      max={100}
-                      className={inputCls}
-                      value={form.shinyChancePercent ?? 0.5}
-                      onFocus={onFieldFocus}
-                      onBlur={onFieldBlur}
-                      onChange={(e) => f('shinyChancePercent', parseFloat(e.target.value) || 0)}
-                    />
-                  </div>
-                )}
-                <p className="text-[10px] text-slate-500">
-                  Optional shiny images — leave empty to use the default look. Tag <code className="text-[#cbb26a]">shiny</code> is applied on roll.
-                </p>
-                <div className="grid grid-cols-1 gap-2">
-                  <div>
-                    <label className={labelCls}>Shiny overworld (optional)</label>
-                    <input
-                      className={inputCls}
-                      value={form.shinySpriteOverworld || ''}
-                      onFocus={onFieldFocus}
-                      onBlur={onFieldBlur}
-                      onChange={(e) => f('shinySpriteOverworld', e.target.value || null)}
-                      placeholder="defaults to overworld sprite"
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Shiny battle (optional)</label>
-                    <input
-                      className={inputCls}
-                      value={form.shinySpriteBattle || ''}
-                      onFocus={onFieldFocus}
-                      onBlur={onFieldBlur}
-                      onChange={(e) => f('shinySpriteBattle', e.target.value || null)}
-                      placeholder="defaults to battle sprite"
-                    />
-                  </div>
-                  <div>
-                    <label className={labelCls}>Shiny back (optional)</label>
-                    <input
-                      className={inputCls}
-                      value={form.shinySpriteBack || ''}
-                      onFocus={onFieldFocus}
-                      onBlur={onFieldBlur}
-                      onChange={(e) => f('shinySpriteBack', e.target.value || null)}
-                      placeholder="defaults to back sprite"
-                    />
-                  </div>
-                </div>
-              </div>
+              )}
+            </div>
 
-              <div className="flex flex-wrap gap-3 items-center">
-                <label className="flex items-center gap-1 text-slate-300">
-                  <input
-                    type="checkbox"
-                    checked={form.isStarter}
-                    onChange={(e) => {
-                      const next = { ...form, isStarter: e.target.checked };
-                      commitStructural(next);
-                      setForm(next);
-                    }}
-                  />{' '}
-                  Starter
-                </label>
-                <label className="flex items-center gap-1 text-slate-300">
-                  <input
-                    type="checkbox"
-                    checked={form.isWildSpawn}
-                    onChange={(e) => {
-                      const next = { ...form, isWildSpawn: e.target.checked };
-                      commitStructural(next);
-                      setForm(next);
-                    }}
-                  />{' '}
-                  Wild spawn
-                </label>
-                <label className="flex items-center gap-1 text-slate-300">
-                  <input
-                    type="checkbox"
-                    checked={form.isActive}
-                    onChange={(e) => {
-                      const next = { ...form, isActive: e.target.checked };
-                      commitStructural(next);
-                      setForm(next);
-                    }}
-                  />{' '}
-                  Active
-                </label>
-              </div>
-            </>
-          )}
-          {!isNew && !form.slug && (
-            <div className="mt-10 text-center text-slate-500">Select a creature or click New / Seed.</div>
-          )}
+            {/* Box 6: Live Status Toggle */}
+            <div className="bg-[#0a101b]/80 border border-slate-800/80 rounded-2xl p-5 space-y-4 backdrop-blur-xl shadow-lg">
+              <button
+                type="button"
+                onClick={() => f('isActive', !form.isActive)}
+                className={cn(
+                  "w-full flex justify-between items-center px-4 py-2.5 rounded-lg text-xs font-bold transition-all cursor-pointer border",
+                  form.isActive
+                    ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-300"
+                    : "bg-red-500/15 border-red-500/40 text-red-300"
+                )}
+              >
+                <span>{form.isActive ? 'Active in Live Game' : 'Hidden from Players (Draft)'}</span>
+                {form.isActive ? <Eye size={14} /> : <EyeOff size={14} />}
+              </button>
+            </div>
+          </div>
         </div>
-      </CatalogEditorShell>
-          );
-        })()}
       </div>
     </div>
-    </>
   );
 }

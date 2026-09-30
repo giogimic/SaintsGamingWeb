@@ -233,7 +233,29 @@ interface StructureOption {
 }
 
 // ── Constants ────────────────────────────────────────────────────────
-const SUPPORTED_ROLES = ['Character', 'NPC', 'Enemy', 'Creature', 'Player', 'Prop', 'Equipment', 'Weapon'] as const;
+const SUPPORTED_ROLES = [
+  'Archetype',
+  'NPC',
+  'Monster',
+  'Creature',
+  'Character',
+  'Equipment',
+  'Weapon',
+  'Prop',
+] as const;
+
+const ROLE_META: Record<string, { label: string; icon: string; badge: string }> = {
+  Archetype: { label: 'Archetype (Player)', icon: '👑', badge: 'Playable Character Foundation' },
+  NPC: { label: 'NPC', icon: '👤', badge: 'Non-Player Entity' },
+  Monster: { label: 'Monster', icon: '👾', badge: 'Action Combat Hostile / Boss' },
+  Creature: { label: 'Creature', icon: '🐉', badge: 'Turn-Based Battler / Pet' },
+  Character: { label: 'Character', icon: '🧑', badge: 'Base Humanoid Model' },
+  Equipment: { label: 'Equipment', icon: '🛡️', badge: 'Armor & Wearable Gear' },
+  Weapon: { label: 'Weapon', icon: '⚔️', badge: 'Main / Offhand Armament' },
+  Prop: { label: 'Prop', icon: '🧱', badge: 'Scenery & Interactive Object' },
+  Player: { label: 'Player', icon: '🎮', badge: 'Player Hero' },
+  Enemy: { label: 'Enemy', icon: '⚔️', badge: 'Hostile Entity' },
+};
 
 const STRUCTURE_OPTIONS: StructureOption[] = [
   {
@@ -800,7 +822,7 @@ export function AssetDefinitionStudio({
           if (firstCompatibleClip) autoAnimMap['idle'] = embeddedAnimationChoiceId(firstCompatibleClip.clipName);
         }
 
-        const isActorModel = taxonomy.suggestedRoles.some(role => ['Character', 'NPC', 'Enemy', 'Player'].includes(role));
+        const isActorModel = taxonomy.suggestedRoles.some(role => ['Archetype', 'Character', 'NPC', 'Monster', 'Enemy', 'Player', 'Creature'].includes(role));
         const isHumanoidRig = parsed.rigAnalysis.family === 'HUMANOID_BIPED' || parsed.rigAnalysis.isHumanoid;
         let recommendedProfileId = '';
         if (parsed.animations.length === 0 && isActorModel && isHumanoidRig) {
@@ -808,7 +830,16 @@ export function AssetDefinitionStudio({
           const namedProfile = ANIMATION_PROFILES.find(profile =>
             normalizedModelName.includes(profile.id.toLowerCase().replace(/manny$/i, '').replace(/[^a-z0-9]/g, ''))
           );
-          const profile = namedProfile || getAnimationProfile('MocapMobility');
+          const isMannySkeleton = (
+            parsed.rigAnalysis.label?.toLowerCase().includes('manny') ||
+            Boolean(parsed.rigAnalysis.detectedStandardBones?.pelvis) ||
+            parsed.bones.some((b) => /^(pelvis|spine_0[1-5]|upperarm_l|thigh_l)$/i.test(b.name)) ||
+            !parsed.bones.some((b) => /mixamorig/i.test(b.name))
+          );
+          const defaultProfile = isMannySkeleton
+            ? (getAnimationProfile('GreystoneManny') || getAnimationProfile('MocapMobility'))
+            : (getAnimationProfile('MocapMobility') || getAnimationProfile('GreystoneManny'));
+          const profile = namedProfile || defaultProfile;
           if (profile) {
             recommendedProfileId = profile.id;
             for (const slot of Object.keys(profile.slotMap) as AnimationSlot[]) {
@@ -869,14 +900,14 @@ export function AssetDefinitionStudio({
       warnings.push("No roles assigned. This asset might not show up in typical Studio filters.");
     }
 
-    const isActor = roles.includes('Character') || roles.includes('NPC') || roles.includes('Enemy') || roles.includes('Player');
+    const isActor = roles.some(r => ['Archetype', 'Character', 'NPC', 'Monster', 'Enemy', 'Player', 'Creature'].includes(r));
     if (isActor) {
       if (!animMap.idle && !animationProfileId) warnings.push("No 'Idle' action is mapped. The model can still publish, but it may not animate while standing.");
       if (!boneMap['Root'] && !boneMap['Hips']) warnings.push("Actor roles typically need a Root or Hips bone mapped for movement.");
     }
     
-    if (roles.includes('Weapon')) {
-      if (!boneMap['Root']) warnings.push("Weapons typically require a Root bone to attach to hands properly.");
+    if (roles.includes('Weapon') || roles.includes('Equipment')) {
+      if (!boneMap['Root']) warnings.push("Weapons and equipment typically require a Root bone to attach to hands or mount sockets properly.");
     }
 
     if (errors.length > 0) {
@@ -1102,7 +1133,66 @@ export function AssetDefinitionStudio({
       }
 
       const registeredAsset = data.gameAsset || data.usableAsset || data.asset || data;
-      showToast?.(`3D Asset Published: ${assetName}`);
+
+      // Automatically generate / sync first-class CharacterModelProfile if publishing an actor role
+      const isActor = finalRoles.some((r) => ['Archetype', 'Character', 'NPC', 'Monster', 'Enemy', 'Player', 'Creature'].includes(r));
+      if (isActor && registeredAsset?.id) {
+        try {
+          const profileSlug = (modularSetName || assetName).toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+          const isCreatureRole = finalRoles.includes('Creature');
+          const isMonsterRole = finalRoles.includes('Monster') || finalRoles.includes('Enemy');
+          const profileCategory = isCreatureRole ? 'creature' : (isMonsterRole ? 'monster' : 'character');
+
+          const isManny = (
+            (parsedGLB?.rigAnalysis?.label || '').toLowerCase().includes('manny') ||
+            Boolean(parsedGLB?.rigAnalysis?.detectedStandardBones?.pelvis) ||
+            (parsedGLB?.bones || []).some((b) => /^(pelvis|spine_0[1-5]|upperarm_l|thigh_l)$/i.test(b.name)) ||
+            !(parsedGLB?.bones || []).some((b) => /mixamorig/i.test(b.name))
+          );
+          const skeletonType = isManny ? 'manny' : 'mixamo';
+
+          await fetch('/api/profiles/character', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              slug: profileSlug,
+              name: assetName,
+              category: profileCategory,
+              baseModelAssetId: registeredAsset.id,
+              rigFamily: parsedGLB?.rigAnalysis?.family || 'HUMANOID_BIPED',
+              skeletonType,
+              transformData: {
+                scale: modelScale,
+                rotationY: modelRotationY,
+                groundingOffsetY: modelGrounding,
+                cameraHeightOffset: modelCameraYOffset,
+              },
+              skeletonData: { boneMap },
+              animationData: {
+                profileId: animationProfileId,
+                actionSlots: mappedAnimationChoices,
+              },
+              socketsData: attachments,
+              materialsData: materialConfig,
+              modularData: {
+                isCustomizable: finalStructure === 'Modular',
+                components: additionalItems.filter(i => i.enabled).map(i => ({
+                  assetId: i.id,
+                  category: i.category,
+                  label: i.name || i.file.name,
+                  defaultVisible: true,
+                })),
+              },
+              tags: tagList,
+              version: 1,
+            }),
+          });
+        } catch (profileErr) {
+          console.warn('[AssetDefinitionStudio] Profile sync notice:', profileErr);
+        }
+      }
+
+      showToast?.(`3D Asset & Profile Published: ${assetName}`);
       AssetManager.getInstance().broadcastRefresh();
       setPublishedAsset(registeredAsset);
       onSuccess(registeredAsset);
@@ -1481,22 +1571,29 @@ export function AssetDefinitionStudio({
 
                 {/* Supported Roles — Visual chips */}
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-2 uppercase tracking-wider">Supported Roles</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-[10px] text-slate-400 uppercase tracking-wider">Supported Roles</label>
+                    <span className="text-[9px] text-slate-500 font-mono">Archetype · NPC · Monster · Creature · Equipment · Weapon · Prop</span>
+                  </div>
                   <div className="flex flex-wrap gap-2">
                     {SUPPORTED_ROLES.map(r => {
                       const active = roles.includes(r);
+                      const meta = ROLE_META[r];
                       return (
                         <button
                           key={r}
+                          type="button"
                           onClick={() => toggleRole(r)}
-                          className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition-all border ${
+                          title={meta?.badge || r}
+                          className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition-all border flex items-center gap-1.5 cursor-pointer ${
                             active 
-                              ? 'bg-amber-600/20 border-amber-500/60 text-amber-200 shadow-[0_0_6px_rgba(202,162,66,0.15)]' 
+                              ? 'bg-amber-600/25 border-amber-500/80 text-amber-200 shadow-[0_0_8px_rgba(202,162,66,0.2)]' 
                               : 'bg-slate-900 border-slate-700 text-slate-400 hover:border-slate-500 hover:text-slate-300'
                           }`}
                         >
-                          {active && <span className="mr-1">✓</span>}
-                          {r}
+                          <span>{meta?.icon || '🏷️'}</span>
+                          <span>{meta?.label || r}</span>
+                          {active && <span className="text-amber-400 text-xs ml-0.5">✓</span>}
                         </button>
                       );
                     })}

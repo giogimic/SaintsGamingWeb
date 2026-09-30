@@ -7,6 +7,8 @@ export type DetectedAssetCategory =
   | 'modular_piece'
   | 'weapon'
   | 'prop'
+  | 'creature'
+  | 'monster'
   | 'creature_monster';
 
 export interface AssetTaxonomyResult {
@@ -68,7 +70,7 @@ export function detectAssetTaxonomy(
       category: 'modular_base',
       structure: 'Modular',
       label: 'Modular Base Character',
-      suggestedRoles: ['Character', 'Player', 'NPC'],
+      suggestedRoles: ['Archetype', 'Character', 'Player', 'NPC'],
       confidence: 'high',
       reason: 'User selected Modular Base Body upload mode.',
       scaleSuggestion: { recommendedScale, scaleType, explanation: scaleExplanation, detectedHeight: height, normalizedHeight: 1.75 },
@@ -78,7 +80,7 @@ export function detectAssetTaxonomy(
       category: 'modular_piece',
       structure: 'ModularItem',
       label: 'Modular Equipment / Piece',
-      suggestedRoles: ['Item', 'Equipment', 'Armor'],
+      suggestedRoles: ['Equipment', 'Armor', 'Item'],
       confidence: 'high',
       reason: 'User selected Modular Wardrobe & Armor upload mode.',
       scaleSuggestion: { recommendedScale: isLargeCentimeters ? 0.01 : 1.0, scaleType: isLargeCentimeters ? 'UNREAL_CENTIMETERS' : 'COMPACT_ITEM', explanation: 'Preserved native modular piece scale.', detectedHeight: height, normalizedHeight: height },
@@ -88,17 +90,37 @@ export function detectAssetTaxonomy(
       category: 'weapon',
       structure: 'Complete',
       label: 'Weapon / Tool Model',
-      suggestedRoles: ['Weapon', 'Tool', 'Item'],
+      suggestedRoles: ['Weapon', 'Equipment', 'Item'],
       confidence: 'high',
       reason: 'User selected Weapons & Equipment upload mode.',
       scaleSuggestion: { recommendedScale: isLargeCentimeters ? 0.01 : 1.0, scaleType: isLargeCentimeters ? 'UNREAL_CENTIMETERS' : 'COMPACT_ITEM', explanation: 'Preserved weapon scale.', detectedHeight: height, normalizedHeight: height },
+    };
+  } else if (intentHint === 'creature') {
+    return {
+      category: 'creature',
+      structure: 'Complete',
+      label: 'Creature (Turn-Based Battler)',
+      suggestedRoles: ['Creature', 'NPC'],
+      confidence: 'high',
+      reason: 'User selected Creature upload mode (turn-based companion/battler).',
+      scaleSuggestion: { recommendedScale, scaleType, explanation: scaleExplanation, detectedHeight: height, normalizedHeight: 1.75 },
+    };
+  } else if (intentHint === 'monster') {
+    return {
+      category: 'monster',
+      structure: 'Complete',
+      label: 'Monster (Action Combat)',
+      suggestedRoles: ['Monster', 'NPC'],
+      confidence: 'high',
+      reason: 'User selected Monster upload mode (action-combat hostile/boss).',
+      scaleSuggestion: { recommendedScale, scaleType, explanation: scaleExplanation, detectedHeight: height, normalizedHeight: 1.75 },
     };
   } else if (intentHint === 'creature_monster') {
     return {
       category: 'creature_monster',
       structure: 'Complete',
       label: 'Creature / Monster Model',
-      suggestedRoles: ['Creature', 'Enemy', 'NPC'],
+      suggestedRoles: ['Creature', 'Monster', 'NPC'],
       confidence: 'high',
       reason: 'User selected Creature & Mount upload mode.',
       scaleSuggestion: { recommendedScale, scaleType, explanation: scaleExplanation, detectedHeight: height, normalizedHeight: 1.75 },
@@ -118,7 +140,7 @@ export function detectAssetTaxonomy(
       category: 'complete_character',
       structure: 'Complete',
       label: 'Complete Humanoid Character',
-      suggestedRoles: ['Character', 'NPC', 'Enemy'],
+      suggestedRoles: ['Archetype', 'Character', 'NPC', 'Monster'],
       confidence: 'high',
       reason: 'User selected Complete Character upload mode.',
       scaleSuggestion: { recommendedScale, scaleType, explanation: scaleExplanation, detectedHeight: height, normalizedHeight: 1.75 },
@@ -140,7 +162,7 @@ export function detectAssetTaxonomy(
       category: 'modular_base',
       structure: 'Modular',
       label: 'Modular Base Character',
-      suggestedRoles: ['Character', 'Player', 'NPC'],
+      suggestedRoles: ['Archetype', 'Character', 'Player', 'NPC'],
       confidence: 'high',
       reason: 'Name matches modular base body patterns (e.g. Body, BaseMesh).',
       scaleSuggestion: {
@@ -235,7 +257,7 @@ export function detectAssetTaxonomy(
       category: 'modular_piece',
       structure: 'ModularItem',
       label: pieceLabel,
-      suggestedRoles: ['Equipment', 'Prop'],
+      suggestedRoles: ['Equipment', 'Armor', 'Item'],
       modularSlot,
       confidence: 'high',
       reason: `Matches modular component naming convention for [${modularSlot}].`,
@@ -250,15 +272,34 @@ export function detectAssetTaxonomy(
   }
 
   // Check 4: Creature / Monster / Animal
-  const isCreatureName = /(creature|monster|dragon|beast|bat|wolf|spider|spider_model|animal|dog|cat|horse|bird|fish|golem|demon|fiend|bear|tiger|deer|chicken|kitty|pinguin|penguin|lion)/i.test(lower);
+  const isMonsterName = /(monster|boss|minion|hostile|enemy|zombie|skeleton|orc|goblin|fiend|demon|golem)/i.test(lower);
+  const isCreatureName = /(creature|dragon|beast|bat|wolf|spider|spider_model|animal|dog|cat|horse|bird|fish|bear|tiger|deer|chicken|kitty|pinguin|penguin|lion)/i.test(lower);
   const isCreatureRig = rigAnalysis?.isQuadruped || rigAnalysis?.isFlyer || rigAnalysis?.family === 'QUADRUPED_BEAST' || rigAnalysis?.family === 'WINGED_FLYER';
+
+  if (isMonsterName) {
+    return {
+      category: 'monster',
+      structure: 'Complete',
+      label: 'Monster (Action Combat)',
+      suggestedRoles: ['Monster', 'NPC'],
+      confidence: 'high',
+      reason: 'Matches action-combat monster / hostile naming pattern.',
+      scaleSuggestion: {
+        recommendedScale,
+        scaleType,
+        explanation: scaleExplanation,
+        detectedHeight: height,
+        normalizedHeight: 1.75,
+      },
+    };
+  }
 
   if (isCreatureName || isCreatureRig) {
     return {
-      category: 'creature_monster',
+      category: 'creature',
       structure: 'Complete',
-      label: 'Creature / Monster Model',
-      suggestedRoles: ['Creature', 'Enemy', 'NPC'],
+      label: 'Creature (Turn-Based Battler)',
+      suggestedRoles: ['Creature', 'Monster', 'NPC'],
       confidence: isCreatureRig ? 'high' : 'medium',
       reason: isCreatureRig ? `Rig matches ${rigAnalysis?.family} creature taxonomy.` : 'Matches creature naming pattern.',
       scaleSuggestion: {
@@ -293,14 +334,14 @@ export function detectAssetTaxonomy(
 
   // Check 6: Complete Character (Default for skinned humanoids or character names)
   // e.g. SKM_DKM_Armor.obj, skeleton_model_110.fbx, CHARACTER.glb
-  const isCharacterName = /(character|knight|paladin|mage|warrior|rogue|ranger|hero|villain|npc|soldier|guard|skeleton|zombie|orc|goblin|boss|assassin|priest)/i.test(lower);
+  const isCharacterName = /(character|knight|paladin|mage|warrior|rogue|ranger|hero|villain|npc|soldier|guard|assassin|priest)/i.test(lower);
   const isHumanoidRig = rigAnalysis?.isHumanoid || rigAnalysis?.family === 'HUMANOID_BIPED';
 
   return {
     category: 'complete_character',
     structure: 'Complete',
-    label: isHumanoidRig ? 'Complete Humanoid Character' : 'Complete 3D Model',
-    suggestedRoles: ['Character', 'NPC', 'Enemy'],
+    label: isHumanoidRig ? 'Playable Archetype / Character' : 'Complete 3D Model',
+    suggestedRoles: ['Archetype', 'Character', 'NPC', 'Monster'],
     confidence: isCharacterName || isHumanoidRig ? 'high' : 'medium',
     reason: isHumanoidRig
       ? 'Detected standard humanoid skeletal rig.'

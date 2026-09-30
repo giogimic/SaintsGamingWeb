@@ -81,14 +81,27 @@ export async function wipeNonBundledRealmContent(prisma: any): Promise<WipeRealm
   await prisma.creatureElement.deleteMany({});
   await prisma.elementEffectiveness.deleteMany({});
 
-  // 5. Wipe non-bundled game assets (preserving any asset tagged 'bundled')
+  // 5. Wipe non-bundled game assets (preserving any asset tagged 'bundled' or 'canonical')
   await prisma.gameAsset.deleteMany({
     where: {
-      NOT: {
-        tags: { contains: 'bundled' },
-      },
+      AND: [
+        { NOT: { tags: { contains: 'bundled' } } },
+        { NOT: { tags: { contains: 'canonical' } } },
+      ],
     },
   });
+
+  // 5b. Wipe non-bundled character model profiles (preserving any profile tagged 'bundled' or 'canonical')
+  if (typeof (prisma as any)?.characterModelProfile?.deleteMany === 'function') {
+    await (prisma as any).characterModelProfile.deleteMany({
+      where: {
+        AND: [
+          { NOT: { tags: { contains: 'bundled' } } },
+          { NOT: { tags: { contains: 'canonical' } } },
+        ],
+      },
+    });
+  }
 
   // 6. Reset setup settings to fresh install state
   const setupKeysToReset = [

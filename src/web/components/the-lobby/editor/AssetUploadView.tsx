@@ -141,10 +141,10 @@ export function AssetUploadView({
   const [libraryAssets, setLibraryAssets] = useState<GameAssetItem[]>([]);
   const [isLoadingLibrary, setIsLoadingLibrary] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<'ALL' | 'CHARACTERS' | 'MODULAR' | 'WEAPONS' | 'CREATURES' | 'PROPS' | '2D'>(
+  const [libraryCategoryFilter, setLibraryCategoryFilter] = useState<'ALL' | 'CHARACTERS' | 'MODULAR' | 'MONSTERS' | 'CREATURES' | 'WEAPONS' | 'PROPS' | '2D'>(
     (activeAssetPicker?.categoryFilter as any) || (activeAssetPicker?.filterType === 'CREATURE' ? 'CREATURES' : 'ALL')
   );
-  const [librarySlotFilter, setLibrarySlotFilter] = useState<'ALL' | 'head' | 'shirt' | 'pants' | 'shoes' | 'back' | 'accessory'>(
+  const [librarySlotFilter, setLibrarySlotFilter] = useState<'ALL' | 'head' | 'shirt' | 'pants' | 'shoes' | 'gloves' | 'back' | 'belt' | 'accessory'>(
     (activeAssetPicker?.slotFilter as any) || 'ALL'
   );
   const [totalLibraryCount, setTotalLibraryCount] = useState(0);
@@ -460,9 +460,12 @@ export function AssetUploadView({
           (a.tags || []).includes('character-component') ||
           (a.tags || []).includes('modular');
         if (isModular) return false;
+        const isCreature = (a.tags || []).some((t) => /creature|pet|companion|familiar/i.test(t));
+        const isMonster = (a.tags || []).some((t) => /monster|boss|hostile/i.test(t));
+        if (isCreature || isMonster) return false;
         return (
-          (a.tags || []).some((t) => /playable|hero|character|humanoid|actor/i.test(t)) ||
-          (a.categories || []).some((c) => /character|npc/i.test(c)) ||
+          (a.tags || []).some((t) => /playable|hero|character|humanoid|actor|archetype/i.test(t)) ||
+          (a.categories || []).some((c) => /character|npc|archetype/i.test(c)) ||
           !a.isModularComponent
         );
       });
@@ -497,30 +500,46 @@ export function AssetUploadView({
               (s) => slot === s || tags.includes(s)
             );
           }
+          if (librarySlotFilter === 'gloves') {
+            return ['gloves', 'hands', 'gauntlets', 'bracers'].some(
+              (s) => slot === s || tags.includes(s)
+            );
+          }
           if (librarySlotFilter === 'back') {
             return ['back', 'cape', 'bag', 'backpack', 'wings', 'shoulder'].some(
               (s) => slot === s || tags.includes(s)
             );
           }
+          if (librarySlotFilter === 'belt') {
+            return ['belt', 'waist', 'sash', 'girdle'].some(
+              (s) => slot === s || tags.includes(s)
+            );
+          }
           if (librarySlotFilter === 'accessory') {
-            return ['accessory', 'gloves', 'belt', 'hands', 'tool', 'gear'].some(
+            return ['accessory', 'jewelry', 'ring', 'necklace', 'tool', 'gear'].some(
               (s) => slot === s || tags.includes(s)
             );
           }
         }
         return true;
       });
+    } else if (libraryCategoryFilter === 'MONSTERS') {
+      list = list.filter(
+        (a) =>
+          (a.tags || []).some((t) => /monster|boss|hostile|enemy/i.test(t)) ||
+          (a.categories || []).some((c) => /monster|enemy/i.test(c))
+      );
+    } else if (libraryCategoryFilter === 'CREATURES') {
+      list = list.filter(
+        (a) =>
+          (a.tags || []).some((t) => /creature|pet|companion|familiar|beast/i.test(t)) ||
+          (a.categories || []).some((c) => /creature/i.test(c))
+      );
     } else if (libraryCategoryFilter === 'WEAPONS') {
       list = list.filter(
         (a) =>
           (a.tags || []).some((t) => /weapon|sword|shield|bow|axe|tool/i.test(t)) ||
           (a.categories || []).some((c) => /item|weapon/i.test(c))
-      );
-    } else if (libraryCategoryFilter === 'CREATURES') {
-      list = list.filter(
-        (a) =>
-          (a.tags || []).some((t) => /creature|monster|beast|dragon|golem/i.test(t)) ||
-          (a.categories || []).some((c) => /creature|monster/i.test(c))
       );
     } else if (libraryCategoryFilter === 'PROPS') {
       list = list.filter(
@@ -646,7 +665,7 @@ export function AssetUploadView({
           <div className="text-[10px] text-slate-500 flex items-center gap-2">
             <span>Saints 3D Asset Pipeline</span>
             <span className="text-slate-600">·</span>
-            <span className="text-[#cbb26a]">v2.2.032</span>
+            <span className="text-[#cbb26a]">v2.2.075</span>
           </div>
         )}
       </div>
@@ -687,7 +706,7 @@ export function AssetUploadView({
                 <span>1. Select Model Type & Ingestion System</span>
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
                 {/* 1: Complete Character */}
                 <button
                   type="button"
@@ -698,10 +717,10 @@ export function AssetUploadView({
                     <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 group-hover:scale-105 transition-transform">
                       <Users className="w-4 h-4" />
                     </div>
-                    <span className="font-bold text-xs text-amber-300">Complete Character</span>
+                    <span className="font-bold text-xs text-amber-300">Playable Archetype / Actor</span>
                   </div>
                   <p className="text-[10px] text-slate-400 leading-tight">
-                    Humanoids, heroes, NPCs, skeletons with skeletal rigs & animations.
+                    Humanoids, heroes, NPCs, characters with skeletal rigs & animations.
                   </p>
                 </button>
 
@@ -718,7 +737,7 @@ export function AssetUploadView({
                     <span className="font-bold text-xs text-emerald-300">Modular Base Body</span>
                   </div>
                   <p className="text-[10px] text-slate-400 leading-tight">
-                    Reference base mesh meant to mount modular wardrobe & armor pieces.
+                    Reference base mesh (e.g. Brute, Citizen) meant to mount modular wardrobe & armor.
                   </p>
                 </button>
 
@@ -735,7 +754,7 @@ export function AssetUploadView({
                     <span className="font-bold text-xs text-cyan-300">Modular Armor & Clothes</span>
                   </div>
                   <p className="text-[10px] text-slate-400 leading-tight">
-                    Hair, hats/helmets, shirts, pants, boots, gloves, back accessories.
+                    Hair, hats/helmets, shirts, pants, boots, gloves, back accessories, belts.
                   </p>
                 </button>
 
@@ -756,24 +775,41 @@ export function AssetUploadView({
                   </p>
                 </button>
 
-                {/* 5: Creatures & Mounts */}
+                {/* 5: Creatures (Turn-Based) */}
                 <button
                   type="button"
-                  onClick={() => handleIntentClick('creature_monster')}
+                  onClick={() => handleIntentClick('creature')}
                   className="bg-[#07111c] border border-orange-500/30 hover:border-orange-400 hover:bg-[#231208] p-3 rounded-xl text-left transition-all hover:scale-[1.01] cursor-pointer group"
                 >
                   <div className="flex items-center gap-2 mb-1.5">
                     <div className="w-7 h-7 rounded-lg bg-orange-500/20 text-orange-400 flex items-center justify-center border border-orange-500/30 group-hover:scale-105 transition-transform">
                       <PawPrint className="w-4 h-4" />
                     </div>
-                    <span className="font-bold text-xs text-orange-300">Creatures & Mounts</span>
+                    <span className="font-bold text-xs text-orange-300">Creatures (Turn-Based)</span>
                   </div>
                   <p className="text-[10px] text-slate-400 leading-tight">
-                    Turn-based capture creatures, quadruped beasts, flyers, monster bosses.
+                    Turn-based capture creatures, familiars, companion battle beasts.
                   </p>
                 </button>
 
-                {/* 6: Props & Scenery */}
+                {/* 6: Monsters (Action Combat) */}
+                <button
+                  type="button"
+                  onClick={() => handleIntentClick('monster')}
+                  className="bg-[#07111c] border border-rose-500/30 hover:border-rose-400 hover:bg-[#280c14] p-3 rounded-xl text-left transition-all hover:scale-[1.01] cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <div className="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30 group-hover:scale-105 transition-transform">
+                      <AlertCircle className="w-4 h-4" />
+                    </div>
+                    <span className="font-bold text-xs text-rose-300">Monsters (Action Combat)</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-tight">
+                    Hostile world monsters, dungeon beasts, and real-time action bosses.
+                  </p>
+                </button>
+
+                {/* 7: Props & Scenery */}
                 <button
                   type="button"
                   onClick={() => handleIntentClick('prop')}
@@ -790,24 +826,24 @@ export function AssetUploadView({
                   </p>
                 </button>
 
-                {/* 7: Animation Clips */}
+                {/* 8: Animation Clips */}
                 <button
                   type="button"
                   onClick={() => handleIntentClick('animation_pack')}
-                  className="bg-[#07111c] border border-rose-500/30 hover:border-rose-400 hover:bg-[#280c14] p-3 rounded-xl text-left transition-all hover:scale-[1.01] cursor-pointer group"
+                  className="bg-[#07111c] border border-amber-500/30 hover:border-amber-400 hover:bg-[#281c0c] p-3 rounded-xl text-left transition-all hover:scale-[1.01] cursor-pointer group"
                 >
                   <div className="flex items-center gap-2 mb-1.5">
-                    <div className="w-7 h-7 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center border border-rose-500/30 group-hover:scale-105 transition-transform">
+                    <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30 group-hover:scale-105 transition-transform">
                       <Film className="w-4 h-4" />
                     </div>
-                    <span className="font-bold text-xs text-rose-300">Animation Clips</span>
+                    <span className="font-bold text-xs text-amber-300">Animation Clips</span>
                   </div>
                   <p className="text-[10px] text-slate-400 leading-tight">
                     Companion FBX/GLB animation files to bind to existing rigs.
                   </p>
                 </button>
 
-                {/* 8: 2D Sprites & Sheets */}
+                {/* 9: 2D Sprites & Sheets */}
                 <button
                   type="button"
                   onClick={() => handleIntentClick('2d_sprite')}
@@ -1016,9 +1052,10 @@ export function AssetUploadView({
                 {(
                   [
                     { id: 'ALL', label: 'All Models', icon: '📦' },
-                    { id: 'CHARACTERS', label: 'Playable Characters', icon: '👑' },
+                    { id: 'CHARACTERS', label: 'Playable Archetypes', icon: '👑' },
                     { id: 'MODULAR', label: 'Modular Wardrobe', icon: '👕' },
-                    { id: 'CREATURES', label: 'Creatures & Monsters', icon: '🐉' },
+                    { id: 'CREATURES', label: 'Creatures (Turn-Based)', icon: '🐉' },
+                    { id: 'MONSTERS', label: 'Monsters (Combat)', icon: '👾' },
                     { id: 'WEAPONS', label: 'Weapons', icon: '⚔️' },
                     { id: 'PROPS', label: 'Props', icon: '🧱' },
                     { id: '2D', label: '2D Sprites', icon: '🖼️' },
@@ -1081,8 +1118,10 @@ export function AssetUploadView({
                     { id: 'shirt', label: '👕 Tops & Torso' },
                     { id: 'pants', label: '👖 Bottoms & Legs' },
                     { id: 'shoes', label: '👟 Footwear' },
+                    { id: 'gloves', label: '🧤 Gloves & Hands' },
+                    { id: 'belt', label: '🥋 Belt & Waist' },
                     { id: 'back', label: '🎒 Back & Cape' },
-                    { id: 'accessory', label: '🧤 Accessories' },
+                    { id: 'accessory', label: '💍 Accessories' },
                   ] as const
                 ).map((slot) => (
                   <button
@@ -1144,10 +1183,19 @@ export function AssetUploadView({
                       (asset.tags || []).includes('character-component') ||
                       (asset.tags || []).includes('modular')
                     );
-                    const isCreature = (asset.tags || []).some((t) => /creature|monster|beast|dragon|golem/i.test(t));
-                    const isPlayableBase = !isModular && !isCreature && (
-                      (asset.tags || []).some((t) => /playable|hero|character|humanoid|actor/i.test(t)) ||
-                      (asset.categories || []).some((c) => /character|npc/i.test(c))
+                    const isCreature = (asset.tags || []).some((t) => /creature|companion|pet|capture/i.test(t)) ||
+                      (asset.categories || []).some((c) => /creature/i.test(c));
+                    const isMonster = !isCreature && (
+                      (asset.tags || []).some((t) => /monster|boss|beast|dragon|golem|enemy|hostile/i.test(t)) ||
+                      (asset.categories || []).some((c) => /monster/i.test(c))
+                    );
+                    const isWeapon = !isModular && (
+                      (asset.tags || []).some((t) => /weapon|sword|axe|bow|staff|dagger|gun|shield/i.test(t)) ||
+                      (asset.categories || []).some((c) => /weapon/i.test(c))
+                    );
+                    const isPlayableBase = !isModular && !isCreature && !isMonster && !isWeapon && (
+                      (asset.tags || []).some((t) => /playable|hero|character|humanoid|actor|archetype/i.test(t)) ||
+                      (asset.categories || []).some((c) => /character|npc|archetype/i.test(c))
                     );
                     const slotName = asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat;
                     const setName = asset.metadata?.modularSetName || asset.metadata?.assetDefinition?.modularSetName || (asset.tags || []).find((t) => ['citizen', 'brute', 'adventurer', 'golem'].includes(t.toLowerCase()));
@@ -1158,7 +1206,11 @@ export function AssetUploadView({
                         className={`bg-[#07111c] border rounded-xl p-3 flex flex-col justify-between transition-all group hover:bg-[#0c1828] ${
                           isPlayableBase
                             ? 'border-amber-500/40 hover:border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.06)]'
-                            : 'border-slate-800 hover:border-cyan-500/40'
+                            : isMonster
+                              ? 'border-red-500/30 hover:border-red-400'
+                              : isCreature
+                                ? 'border-purple-500/30 hover:border-purple-400'
+                                : 'border-slate-800 hover:border-cyan-500/40'
                         }`}
                       >
                         <div>
@@ -1170,6 +1222,12 @@ export function AssetUploadView({
                                   <User className="w-6 h-6 text-amber-400 group-hover:scale-110 transition-transform" />
                                 ) : isModular ? (
                                   <Shirt className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+                                ) : isCreature ? (
+                                  <span className="text-xl group-hover:scale-110 transition-transform">🐉</span>
+                                ) : isMonster ? (
+                                  <span className="text-xl group-hover:scale-110 transition-transform">👾</span>
+                                ) : isWeapon ? (
+                                  <span className="text-xl group-hover:scale-110 transition-transform">⚔️</span>
                                 ) : (
                                   <Cuboid className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
                                 )
@@ -1190,7 +1248,7 @@ export function AssetUploadView({
                               <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                                 {isPlayableBase ? (
                                   <span className="px-1.5 py-0.5 rounded text-[8.5px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                                    👑 PLAYABLE BASE
+                                    👑 PLAYABLE ARCHETYPE
                                   </span>
                                 ) : isModular ? (
                                   <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-cyan-950/70 text-cyan-300 border border-cyan-800 flex items-center gap-1">
@@ -1199,6 +1257,14 @@ export function AssetUploadView({
                                 ) : isCreature ? (
                                   <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-purple-950/70 text-purple-300 border border-purple-800 flex items-center gap-1">
                                     🐉 CREATURE
+                                  </span>
+                                ) : isMonster ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-red-950/70 text-red-300 border border-red-800 flex items-center gap-1">
+                                    👾 MONSTER
+                                  </span>
+                                ) : isWeapon ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-amber-950/70 text-amber-300 border border-amber-800 flex items-center gap-1">
+                                    ⚔️ WEAPON
                                   </span>
                                 ) : (
                                   <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60">
@@ -1252,7 +1318,7 @@ export function AssetUploadView({
                               <Check className="w-3.5 h-3.5" />
                               <span>
                                 {activeAssetPicker?.categoryFilter === 'CHARACTERS' || isPlayableBase
-                                  ? 'Select Character Base'
+                                  ? 'Select Archetype Base'
                                   : isModular
                                     ? 'Equip Wardrobe Piece'
                                     : 'Select Model'}

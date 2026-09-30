@@ -100,7 +100,7 @@ import { AssetManager } from './assets/AssetManager';
 import { applyAnimationProfileFallback } from '../shared/game/animationProfiles';
 import { getDefaultModelWardrobeSocket } from '../shared/game/modelWardrobe';
 import { attachModularComponent, findBabylonBone } from './helpers/babylonAttachmentHelpers';
-import { resolveModelAssetUrl, CANONICAL_BUILTIN_MODELS, getModelModularComponents } from '../shared/game/worldModelPresentation';
+import { resolveModelAssetUrl, CANONICAL_BUILTIN_MODELS, getModelModularComponents, getCanonicalModelDef } from '../shared/game/worldModelPresentation';
 import type { ModularAttachmentDef } from '../shared/game/canonicalAsset';
 
 export interface RenderedChunk {
@@ -4171,6 +4171,14 @@ export class BabylonEngine {
             const pres = entity.presentation as any;
             const baseRoot = root;
             const baseSkeleton = result.skeletons?.[0] || baseRoot.getChildMeshes(false).find((m: any) => m.skeleton)?.skeleton;
+            if (result.skeletons) {
+              result.skeletons.forEach((s) => {
+                s.useTextureToStoreBoneMatrices = true;
+              });
+            }
+            if (baseSkeleton) {
+              baseSkeleton.useTextureToStoreBoneMatrices = true;
+            }
 
             // Create a wrapper to hold our custom scale so glTF animations don't overwrite it
             const modelWrapper = new TransformNode(`modelWrapper_${entity.id}_0`, this.scene);
@@ -4187,7 +4195,13 @@ export class BabylonEngine {
             modelWrapper.computeWorldMatrix(true);
 
             if (result.animationGroups && result.animationGroups.length > 0) {
-              allAnimationGroups.push(...result.animationGroups);
+              result.animationGroups.forEach((ag) => {
+                if (!ag.targetedAnimations || ag.targetedAnimations.length === 0) {
+                  ag.dispose();
+                } else {
+                  allAnimationGroups.push(ag);
+                }
+              });
             }
 
             // Attach modular components (clothing, armor, hats, weapons, etc.)
@@ -4445,16 +4459,18 @@ export class BabylonEngine {
               || sourceAssetPresentation?.assetDefinition?.animations
               || sourceAsset?.metadata?.animations;
             const actorAnimations = pres?.animations || pres?.assetDefinition?.animations;
-            const canonicalDef = Object.values(CANONICAL_BUILTIN_MODELS).find(c =>
-              c.id === pres?.assetId || c.modelUrl === pres?.modelUrl || c.modelUrl === sourceAsset?.source
-            );
+            const canonicalDef = getCanonicalModelDef(pres?.assetId)
+              || getCanonicalModelDef(pres?.modelUrl)
+              || getCanonicalModelDef(sourceAsset?.source)
+              || CANONICAL_BUILTIN_MODELS.brute;
             const profileId = pres?.animationProfileId
               || pres?.assetDefinition?.animationProfileId
               || sourceAssetPresentation?.animationProfileId
               || sourceAssetPresentation?.assetDefinition?.animationProfileId
               || sourceAsset?.metadata?.animationProfileId
               || sourceAsset?.metadata?.assetDefinition?.animationProfileId
-              || canonicalDef?.defaultAnimationProfileId;
+              || canonicalDef?.defaultAnimationProfileId
+              || 'GreystoneManny';
             const mergedAnimationConfig = {
               ...(sourceAssetAnimations || {}),
               ...(actorAnimations || {}),
@@ -4473,8 +4489,19 @@ export class BabylonEngine {
               || rigAnalysis.isHumanoid === true;
             const animationConfig = applyAnimationProfileFallback(
               mergedAnimationConfig,
-              isHumanoidRig ? (profileId || 'MocapMobility') : undefined,
+              isHumanoidRig ? (profileId || 'GreystoneManny') : undefined,
             );
+
+            // Persist the resolved animation configuration back to entity presentation and mesh metadata
+            if (entity.presentation) {
+              entity.presentation.animations = animationConfig;
+              entity.presentation.animationProfileId = profileId;
+            }
+            if (currentMesh.metadata) {
+              currentMesh.metadata.presentation = currentMesh.metadata.presentation || {};
+              currentMesh.metadata.presentation.animations = animationConfig;
+              currentMesh.metadata.presentation.animationProfileId = profileId;
+            }
 
             if (animationConfig?.mapped) {
               const mapped = animationConfig.mapped;
@@ -4509,8 +4536,8 @@ export class BabylonEngine {
                     mesh.metadata._resolvedAnims = null;
 
                     const isMoving = mesh.metadata.isMoving;
-                    const isRunSlot = slot.includes('run') || slot.includes('walk') || slot.includes('jog');
-                    const isIdleSlot = slot.includes('idle');
+                    const isRunSlot = slot === 'run' || slot === 'run_fwd' || slot === 'walk' || slot === 'walk_fwd' || slot.includes('run') || slot.includes('walk') || slot.includes('jog');
+                    const isIdleSlot = slot === 'idle' || slot.includes('idle');
                     const shouldPlay = (isMoving && isRunSlot) || (!isMoving && isIdleSlot) || !mesh.metadata.animationGroups.some((g: any) => g.isPlaying);
 
                     if (shouldPlay) {

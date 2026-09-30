@@ -141,13 +141,8 @@ export function EntityStudioSuite() {
       </div>
 
       {/* ─── Main Area ─── */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background/50">
-        <div className="h-12 border-b border-slate-800/60 bg-[#050b14]/80 flex items-center px-4 shrink-0 backdrop-blur-md">
-          <h3 className="text-sm font-black text-slate-200 tracking-wider">
-            {WORKSPACE_META[activeWorkspace].label}
-          </h3>
-        </div>
-        <div className="flex-1 overflow-auto p-4 custom-scrollbar">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden bg-[#050b14]">
+        <div className="flex-1 overflow-hidden min-h-0">
           {renderContent()}
         </div>
       </div>

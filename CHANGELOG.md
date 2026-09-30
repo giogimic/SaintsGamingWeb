@@ -1,3 +1,78 @@
+## [2.2.075] - 2026-09-30
+- **Archetype-Unified Studio Redesign for NPCs, Monsters, and Creatures**:
+  - **NPC Studio (`NpcEditorPanel.tsx`)**:
+    - Replaced legacy catalog master-detail view with two-phase Gallery and 12-Column Split Editor matching Archetype Studio UX.
+    - Integrated live 3D preview canvas (`ArchetypeModelPreview3D`) with interactive OrbitControls, model scale, and modular wardrobe editor for hats, outfits, and held accessories.
+    - Added dedicated capability selectors for canonical NPC roles: Shopkeeper (with Shop ID), Quest Giver (with Quest Slug), Creature Trainer (with Trainer Party JSON), Mercenary (combat hire cost), Companion, and Banker.
+    - Added dialogue reference linking, movement/patrol modes (Stationary, Wander, Patrol), and live validation markers.
+  - **Monster Studio (`MonsterEditorPanel.tsx`)**:
+    - Upgraded from raw stat inputs to the full Archetype-style workspace with visual card gallery and live 3D character viewport.
+    - Tailored real-time action-combat stats: Base HP, Physical Attack, Physical Defense, Ability Attack, Ability Defense, Combat Tempo / Speed, Attack Range.
+    - Added combat classifications (Minion, Elite, Dungeon Boss, World Boss) with distinct threat badges and element affinities from `CREATURE_ELEMENT_TYPES`.
+    - Added encounter AI and loot rules: Aggro Radius, Respawn Timers, AI Hostility, Loot Table references, and Gold/Exp rewards.
+  - **Creature Studio (`CreatureDefEditorPanel.tsx`)**:
+    - Transformed turn-based creature editor into rich Gallery and 12-Column Split Editor with live 3D canvas and 2D battle sprite previews.
+    - Tailored turn-based battle stats and elemental typing: Primary and Secondary elements, Base Stat Total (BST) calculation.
+    - Added capture and growth mechanics: Catch Rate (1-255 capture sphere difficulty), Starter Level, Wild Spawn toggle, Starter Creature toggle, and Shiny variant sprite definitions.
+    - Integrated Evolution Line manager (target species slug, level requirement, required evolution items) and passive abilities.
+  - **Entity Studio Suite Layout (`EntityStudioSuite.tsx`)**:
+    - Removed redundant header wrappers and restrictive padding, allowing all entity workspaces to fill full height cleanly with unified dark aesthetics.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.075` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, `src/web/components/shared/navbar.tsx`, and `AssetUploadView.tsx`.
+
+## [2.2.074] - 2026-09-30
+- **Asset Upload Window & Studio System Realignment (Canonical Archetypes, Creatures, Monsters & Manny Rig Auto-Detection)**:
+  - **Asset Taxonomy & Intent Alignment (`assetTaxonomy.ts`, `AssetUploadView.tsx`)**:
+    - Realigned upload taxonomy, intent cards, role mappings, and library filters with authoritative Saints Gaming Rules (Rules 8 & 9):
+      - `Archetype` (playable character foundation), `NPC` (non-player character), `Monster` (real-time action combat), `Creature` (turn-based battler/companion), `Equipment` / `Item`, `Weapon`, `Prop`.
+      - Explicitly separated turn-based `Creatures` (capture spheres, companion training) from real-time `Monsters` (action combat, boss encounters, drops).
+      - Rebuilt upload intent picker into 9 canonical cards with accurate descriptions and auto-configured role tagging.
+      - Expanded modular wardrobe slot filters to include all 8 canonical slots (`head`, `shirt`, `pants`, `shoes`, `gloves`, `belt`, `back`, `accessory`).
+      - Updated library category toolbar chips and model card badge rendering with rich icons (`👑 PLAYABLE ARCHETYPE`, `👕 MODULAR`, `🐉 CREATURE`, `👾 MONSTER`, `⚔️ WEAPON`).
+  - **Asset Definition Studio & Rig Auto-Detection (`AssetDefinitionStudio.tsx`)**:
+    - Expanded supported roles to canonical options with role metadata badges and descriptions.
+    - Updated skeleton rig analysis to detect UE Manny bone hierarchies (`pelvis`, `spine_01..05`, `upperarm_l`, `thigh_l`), automatically assigning `GreystoneManny` animation profile to prevent Mixamo retargeting failures.
+    - Synced first-class `CharacterModelProfile` creation on publish with canonical category (`'character' | 'monster' | 'creature'`) and skeleton type (`'manny' | 'mixamo'`).
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.074` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, and `src/web/components/shared/navbar.tsx`.
+
+## [2.2.073] - 2026-09-30
+- **Bundled Asset Purge to Brute & End-to-End Manny 3D Animation Fix**:
+  - **Bundled Asset Purge (Only Brute Retained)**:
+    - Retained only `brute` across the database, `canonicalAssetsSync.ts`, `worldModelPresentation.ts`, `characterProfiles.ts`, and filesystem.
+    - Purged 39 non-brute `GameAsset` records and 4 non-brute `CharacterModelProfile` records from the SQLite database.
+    - Preserved exactly 10 canonical GameAsset records: `builtin-model-brute` + 9 modular armor pieces (`builtin-piece-brute_*`).
+  - **UE Manny Skeleton Retargeting & Greystone Manny Locomotion Fix (`BabylonEngine.ts`, `Renderer.ts`, `EntityRenderer.ts`)**:
+    - Resolved `profileId` mismatch: entity models with `assetId: 'builtin-model-brute'` or model URLs now cleanly resolve to `CANONICAL_BUILTIN_MODELS.brute` and fallback to `GreystoneManny` rather than failing to Mixamo bones (`MocapMobility`).
+    - Disposed and filtered empty dummy animation groups (e.g. embedded `Take 001` in `brute.glb` with 0 animation tracks), preventing them from hijacking idle and run states.
+    - Set `useTextureToStoreBoneMatrices = true` on imported skeletons across engines to support full bone uniform matrices without WebGL clipping.
+    - Persisted resolved `animationConfig` back to `entity.presentation.animations` and `mesh.metadata.presentation.animations`, ensuring `Renderer.ts` receives complete slot mappings (`idle`, `run_fwd`, `walk_fwd`).
+    - Prevented premature animation stop in `Renderer.ts`: if `targetAnims` is empty (e.g. while an external locomotion clip is downloading over HTTP), the engine keeps the previous playing clip alive rather than freezing into a static bind pose.
+  - **Presentation Fallback & Studio 3D Preview (`worldModelPresentation.ts`, `ArchetypeModelPreview3D.tsx`, `VoxelCanvasBabylon.tsx`, `TileCanvasBabylon.tsx`, `PlaytestRuntime.tsx`)**:
+    - Enhanced `getWorldModelPresentation()` to parse direct model string identifiers (`'brute'`, `'builtin-model-brute'`, model paths) and automatically fallback to Brute with GreystoneManny animations for players.
+    - Added fallback external Idle animation loading in `ArchetypeModelPreview3D.tsx` (`/animations/Paragon/GreystoneManny/IdleAO/Idle.glb`) when models have no embedded animation tracks.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.073` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, and `src/web/components/shared/navbar.tsx`.
+
+## [2.2.072] - 2026-09-30
+- **Dedicated Character Model Profile Schema (Option A), Canonical Asset Tag Alignment & Universal Ingestion Service**:
+  - **First-Class `CharacterModelProfile` Schema (`prisma/schema.prisma`, `prepare-prisma.js`)**:
+    - Created dedicated `CharacterModelProfile` model in Prisma with explicit relation to `GameAsset` (`baseModelAssetId`), supporting `rigFamily`, `skeletonType`, and structured JSON blocks (`transformData`, `skeletonData`, `animationData`, `socketsData`, `materialsData`, `modularData`).
+    - Added optional `characterModelProfileId` reference to `NpcDef`, `MonsterDef`, `StarterHero`, and `CreatureDef` models for seamless entity editor integration without duplicating 3D model assets.
+    - Updated `scripts/prepare-prisma.js` to ensure all profile JSON columns convert to `@db.LongText` on MySQL/MariaDB while functioning natively in SQLite.
+    - Successfully pushed schema update and regenerated Prisma Client v6.2.0.
+  - **Canonical Tag Alignment & Realm Wipe Preservation (`canonicalAssetsSync.ts`, `wipeRealmService.ts`)**:
+    - Resolved critical wipe vulnerability where canonical assets possessed tag `'canonical'` instead of `'bundled'`: added `'bundled'` and `'canonical'` tags to all 5 foundational models and 44 modular wardrobe pieces.
+    - Updated `wipeRealmService.ts` to protect both `'bundled'` and `'canonical'` assets and character model profiles from being deleted during realm wipes.
+    - Added `buildCanonicalCharacterModelProfiles()` to seed first-class profiles for `adventurer`, `brute`, `citizen`, `golem`, and `shadow_golem` into the database.
+  - **Profile API & Studio Publishing Auto-Sync (`characterProfileService.ts`, `route.ts`, `AssetDefinitionStudio.tsx`)**:
+    - Implemented `src/server/services/characterProfileService.ts` for querying, filtering, and upserting profiles.
+    - Created `app/api/profiles/character/route.ts` providing authenticated REST endpoints for character model profile management.
+    - Updated `AssetDefinitionStudio.tsx` to automatically generate and register a `CharacterModelProfile` upon publishing character or creature models.
+    - Fixed `citizen.glb` file resolution by deploying canonical mesh to `public/game-assets/models/citizen.glb` for Debian Linux parity.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.072` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, and `src/web/components/shared/navbar.tsx`.
+
 ## [2.2.071] - 2026-09-30
 - **Adaptive Character Rotation, Camera-Relative Steering & 3D Animation Guarding**:
   - **Adaptive Screen-Facing & 3D Character Rotation (`Renderer.ts`)**:

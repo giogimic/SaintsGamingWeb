@@ -103,7 +103,13 @@ if (isSqlite) {
     'gates',
     'gatesData',
     'proceduralConfig',
-    'manifestData'
+    'manifestData',
+    'transformData',
+    'skeletonData',
+    'animationData',
+    'socketsData',
+    'materialsData',
+    'modularData'
   ];
   for (const col of longTextCols) {
     const regex = new RegExp(`^([ \\t]*${col}[ \\t]+String\\??[ \\t]*(?:@[^\\n\\/]+)*)([ \\t]*(?:\\/\\/.*)?)?$`, 'gm');

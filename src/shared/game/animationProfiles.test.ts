@@ -44,18 +44,26 @@ describe('Animation Profiles & World Model Presentation', () => {
     const brutePresentation = getWorldModelPresentation({
       type: '3D Model',
       assetId: 'brute',
-      modelUrl: '/game-assets/models/brute.glb',
+      modelUrl: '/game-assets/models/humanoids/brute/brute.glb',
     });
     expect(brutePresentation).toBeDefined();
     expect(brutePresentation?.animationProfileId).toBe('GreystoneManny');
 
-    const citizenPresentation = getWorldModelPresentation({
+    const builtinBrutePresentation = getWorldModelPresentation({
       type: '3D Model',
-      assetId: 'citizen',
-      modelUrl: '/game-assets/models/citizen.glb',
+      assetId: 'builtin-model-brute',
     });
-    expect(citizenPresentation).toBeDefined();
-    expect(citizenPresentation?.animationProfileId).toBe('MocapMobility');
+    expect(builtinBrutePresentation).toBeDefined();
+    expect(builtinBrutePresentation?.animationProfileId).toBe('GreystoneManny');
+
+    const jsonBrutePresentation = getWorldModelPresentation(JSON.stringify({
+      worldModel: {
+        type: '3D Model',
+        assetId: 'builtin-model-brute',
+      }
+    }));
+    expect(jsonBrutePresentation).toBeDefined();
+    expect(jsonBrutePresentation?.animationProfileId).toBe('GreystoneManny');
   });
 
   it('COMMON_SLOT_MAP defaults use Jog/Jog_Fwd for running slots', () => {
