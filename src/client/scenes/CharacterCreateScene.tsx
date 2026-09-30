@@ -312,11 +312,19 @@ export function CharacterCreateScene() {
     setAppearanceTab(heroHasModel ? 'WARDROBE' : 'BASE');
     setassetProfileId(hero.assetProfileId);
     setVisualData(hero.visualData || '[]');
-    setSelectedWardrobeAssetIds(
-      parseModelWardrobeItems(hero.visualData)
-        .filter((item) => item.defaultVisible !== false)
-        .map((item) => item.assetId)
-    );
+    const initialWardrobe = parseModelWardrobeItems(hero.visualData);
+    const hasCreationTagged = initialWardrobe.some((item) => item.availableInCharacterCreation);
+    const defaultVisibleIds = initialWardrobe
+      .filter((item) => {
+        const isOffered = hasCreationTagged ? item.availableInCharacterCreation : true;
+        if (!isOffered) return false;
+        if (item.category === 'face' || item.category === 'hair') {
+          return item.defaultVisible !== false;
+        }
+        return Boolean((item as any).isStarterOutfit);
+      })
+      .map((item) => item.assetId);
+    setSelectedWardrobeAssetIds(defaultVisibleIds);
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setStep('NAME');
@@ -342,11 +350,19 @@ export function CharacterCreateScene() {
     setAppearanceTab(heroHasModel ? 'WARDROBE' : 'BASE');
     setassetProfileId(hero.assetProfileId);
     setVisualData(hero.visualData || '[]');
-    setSelectedWardrobeAssetIds(
-      parseModelWardrobeItems(hero.visualData)
-        .filter((item) => item.defaultVisible !== false)
-        .map((item) => item.assetId)
-    );
+    const rolledWardrobe = parseModelWardrobeItems(hero.visualData);
+    const hasRolledCreationTagged = rolledWardrobe.some((item) => item.availableInCharacterCreation);
+    const rolledVisibleIds = rolledWardrobe
+      .filter((item) => {
+        const isOffered = hasRolledCreationTagged ? item.availableInCharacterCreation : true;
+        if (!isOffered) return false;
+        if (item.category === 'face' || item.category === 'hair') {
+          return item.defaultVisible !== false;
+        }
+        return Boolean((item as any).isStarterOutfit);
+      })
+      .map((item) => item.assetId);
+    setSelectedWardrobeAssetIds(rolledVisibleIds);
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setName(`${pick}${num}`);

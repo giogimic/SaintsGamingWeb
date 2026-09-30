@@ -100,7 +100,7 @@ import { AssetManager } from './assets/AssetManager';
 import { applyAnimationProfileFallback } from '../shared/game/animationProfiles';
 import { getDefaultModelWardrobeSocket } from '../shared/game/modelWardrobe';
 import { attachModularComponent, findBabylonBone } from './helpers/babylonAttachmentHelpers';
-import { resolveModelAssetUrl, CANONICAL_BUILTIN_MODELS } from '../shared/game/worldModelPresentation';
+import { resolveModelAssetUrl, CANONICAL_BUILTIN_MODELS, getModelModularComponents } from '../shared/game/worldModelPresentation';
 import type { ModularAttachmentDef } from '../shared/game/canonicalAsset';
 
 export interface RenderedChunk {
@@ -4275,6 +4275,52 @@ export class BabylonEngine {
                 m.refreshBoundingInfo({ applySkeleton: true });
               }
             });
+
+            // Configure modular submesh visibility for models with built-in modular pieces (e.g. Adventurer, Stylized Girl)
+            const canonicalParts = getModelModularComponents(baseModelUrl);
+            if (canonicalParts.length > 0) {
+              const norm = (s: string) => s.toLowerCase().replace(/[-_\s]/g, '');
+              const partByMesh = new Map<string, any>();
+              for (const p of canonicalParts) {
+                partByMesh.set(norm(p.meshName), p);
+                if (p.meshName.toLowerCase().includes('outwear')) {
+                  partByMesh.set(norm(p.meshName.replace(/outwear/i, 'outerwear')), p);
+                }
+              }
+
+              for (const childMesh of allMeshes) {
+                const cName = norm(childMesh.name);
+                const part = partByMesh.get(cName);
+                if (part) {
+                  const matchingAttachment = modularAttachments.find((att: any) => {
+                    const rawId = norm(String(att.assetId || att.id || ''));
+                    const meshName = norm(String(att.meshName || ''));
+                    const modelUrl = norm(String(att.modelUrl || att.source || ''));
+                    return (
+                      (rawId && (rawId === norm(part.id) || rawId.endsWith(norm(part.id)))) ||
+                      (meshName && meshName === cName) ||
+                      (modelUrl && modelUrl.includes(cName))
+                    );
+                  });
+
+                  if (matchingAttachment) {
+                    childMesh.setEnabled((matchingAttachment as any).defaultVisible !== false);
+                  } else {
+                    if (part.isFaceVariant) {
+                      const activeFace = modularAttachments.some((att: any) => {
+                        const rawId = norm(String(att.assetId || att.id || ''));
+                        const mName = norm(String(att.meshName || ''));
+                        const p = partByMesh.get(mName) || canonicalParts.find(cp => norm(cp.id) === rawId);
+                        return p?.isFaceVariant && (att as any).defaultVisible !== false;
+                      });
+                      childMesh.setEnabled(!activeFace && part.defaultVisible);
+                    } else {
+                      childMesh.setEnabled(part.defaultVisible);
+                    }
+                  }
+                }
+              }
+            }
 
             let modelVisualHeight = 1.6; // Default human height
 

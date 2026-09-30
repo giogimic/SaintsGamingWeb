@@ -405,7 +405,7 @@ export function AppearanceCustomizer({
                   <p className="text-xs text-muted-foreground">Choose the clothing and gear to wear.</p>
                   <button
                     type="button"
-                    onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => item.defaultVisible !== false).map((item) => item.assetId))}
+                    onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => (item.category === 'face' || item.category === 'hair' || (item as any).isStarterOutfit) && item.defaultVisible !== false).map((item) => item.assetId))}
                     className="shrink-0 rounded-lg border border-border/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary"
                   >
                     Reset to default

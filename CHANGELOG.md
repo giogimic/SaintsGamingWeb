@@ -1,3 +1,15 @@
+## [2.2.069] - 2026-09-30
+- **Unified In-Game Character Creator & In-Engine Modular Submesh Visibility**:
+  - **In-Game Canvas Character Creator Alignment (`CharacterCreateScene.tsx`, `AppearanceCustomizer.tsx`)**:
+    - Unified the canvas-based scene character creator with the web dialog: heroes now initialize in their clean naked base mesh on selection or roll, offering default face options while keeping clothing unselected until equipped.
+    - Updated "Reset to default" in `AppearanceCustomizer.tsx` to preserve the naked base body state with face/hair active.
+  - **In-Engine Babylon.js Modular Submesh Visibility (`BabylonEngine.ts`)**:
+    - Connected `getModelModularComponents` to the Babylon.js live entity mesh importer.
+    - Submeshes belonging to built-in modular models (e.g. Adventurer, Stylized Girl) now toggle dynamically according to equipped modular attachments.
+    - Mutually exclusive face variants prevent multi-head stacking and clipping in the live 3D world.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.069` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, and `src/web/components/shared/navbar.tsx`.
+
 ## [2.2.068] - 2026-09-30
 - **Model Reorganization, Character Profiles, Naked Base Mesh Workflow & Animation Mapping**:
   - **Asset Directory Sorting & Architecture (`quick assets/modes`)**:
