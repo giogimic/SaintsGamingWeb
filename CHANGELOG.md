@@ -1,3 +1,13 @@
+## [2.2.063] - 2026-09-30
+- **Modular Character Asset Audit & Workflow Implementation**:
+  - Implemented UI in `ModelWardrobeEditor.tsx` with "Select All" and "Clear All" bulk actions to streamline character asset loading and validation.
+  - Audited external and canonical modular assets, separating "Brute/Adventurer" monolithic dependencies into individual separated mesh guidelines.
+- **Fixed Character Animation Detachment & Movement Rotations**:
+  - Filtered position tracks for non-root bones during animation retargeting in `animationRetarget.ts` to prevent character limb detachment.
+  - Bound the rotational movement vectors securely during character movement interpolation in `Renderer.ts`.
+- **Global Version Synchronization**:
+  - Bumped version to `2.2.063`.
+
 ## [2.2.062] - 2026-09-29
 - **Bundled Canonical Character Animations & Production Docker Volume Hardening**:
   - **Bundled Core Playable Character Animations in Repository (`public/animations/Paragon/`)**:
