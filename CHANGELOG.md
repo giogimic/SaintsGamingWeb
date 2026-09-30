@@ -1,3 +1,18 @@
+## [2.2.070] - 2026-09-30
+- **Fix Adventurer Model Doubling, Submesh Isolation, Complete Brute Monster Modular Pieces, and Female Model Removal**:
+  - **Adventurer Model Doubling & Artifact Resolution (`ArchetypeModelPreview3D.tsx`, `BabylonEngine.ts`, `EntityRenderer.ts`, `ArchetypeEditorWorkspace.tsx`)**:
+    - Resolved critical issue where base adventurer model was duplicated up to 10 times simultaneously in the same coordinates: previously, auto-bundling assigned `modelUrl` to all internal submeshes, prompting Three.js / Babylon loaders to import multiple complete copies of the GLB and causing extreme z-fighting.
+    - Added strict submesh boundary filtering: attachments marked with `isSubmesh: true`, starting with `builtin-piece-`, or resolving to the base model URL are filtered out of external mesh loaders and handled solely through submesh visibility toggles (`child.visible = boolean` / `childMesh.setEnabled(boolean)`).
+    - Corrected Adventurer character profile submeshes to strictly reflect the 7 genuine meshes present in `adventurer.glb` (`Man_Head_Mesh`, `Man_Eyes_Mesh`, `Man_Arms_Mesh`, `Man_Pullover_Mesh`, `Man_Pants_Mesh`, `Man_Shoes_Mesh`, `Man_Bag_Mesh`). Purged obsolete phantom piece records (`Man_Balaclava_Mesh`, `Man_Cloth_Face_Mesh`, `Man_Jacket_Mesh`).
+    - Linked eyes (`Man_Eyes_Mesh`) visibility to head mesh (`Man_Head_Mesh`) visibility, preventing floating eyes.
+  - **Complete Brute Monster Modular Parts (`characterProfiles.ts`, `canonicalAssetsSync.ts`)**:
+    - Catalogued and integrated all 11 submeshes and texture sets from the Brute monster asset directory (`quick assets/modes/monsters/brute_monster/`): added `Shoulder_Belt1` (`brute_harness`, Leather Shoulder Harness), updated `Helmet1` (`brute_helmet`) as a proper hat accessory rather than an exclusive face variant, and linked `Head1_Eyes` and `Head1_teeth` visibility to `Head1` (`brute_head`).
+  - **Female Model (`stylized_girl`) Removal**:
+    - Completely removed the non-working `stylized_girl` model, directory (`public/game-assets/models/humanoids/stylized_girl/`), profile definitions, and wardrobe associations across frontend, engine, and database sync.
+    - Automated purge of `stylized_girl` and obsolete piece records from Prisma database during canonical asset sync.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.070` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, and `src/web/components/shared/navbar.tsx`.
+
 ## [2.2.069] - 2026-09-30
 - **Unified In-Game Character Creator & In-Engine Modular Submesh Visibility**:
   - **In-Game Canvas Character Creator Alignment (`CharacterCreateScene.tsx`, `AppearanceCustomizer.tsx`)**:

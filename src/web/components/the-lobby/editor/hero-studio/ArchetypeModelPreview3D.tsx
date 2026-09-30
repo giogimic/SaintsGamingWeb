@@ -130,7 +130,14 @@ function CompositeCharacter({
 
     const resolveAndLoad = async () => {
       const assetManager = AssetManager.getInstance();
+      const normUrl = (u?: string | null) => (u ? u.trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.(glb|gltf)$/i, '') : '');
+      const cleanBase = normUrl(baseUrl);
+
       const promises = modularAttachments.map(async (att) => {
+        // If this attachment is an internal submesh or canonical built-in piece, NEVER load a duplicate GLB instance
+        if (att.isSubmesh) return null;
+        if (typeof att.assetId === 'string' && att.assetId.startsWith('builtin-piece-')) return null;
+
         let url = att.modelUrl || ('source' in att ? (att as any).source : undefined);
         if (!url && att.assetId) {
           url = resolveModelAssetUrl(att.assetId);
@@ -145,6 +152,12 @@ function CompositeCharacter({
           url = resolveEntitySpriteUrl(att.assetId);
         }
         if (!url) return null;
+
+        const cleanUrl = normUrl(url);
+        // If the attachment URL points to the same model file as the base model, skip loading duplicate instance
+        if (cleanBase && cleanUrl === cleanBase) {
+          return null;
+        }
 
         return new Promise<LoadedSubModel | null>((resolve) => {
           loader.load(
@@ -270,6 +283,27 @@ function CompositeCharacter({
         }
       }
     });
+
+    // Ensure facial sub-elements (eyes, teeth) follow head mesh visibility
+    let headVisible: boolean | null = null;
+    baseScene.traverse((child) => {
+      if ((child as THREE.Mesh).isMesh) {
+        const cName = norm(child.name);
+        if (cName === 'head1' || cName === 'manheadmesh') {
+          headVisible = child.visible;
+        }
+      }
+    });
+    if (headVisible !== null) {
+      baseScene.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          const cName = norm(child.name);
+          if (cName === 'head1eyes' || cName === 'head1teeth' || cName === 'maneyesmesh') {
+            child.visible = headVisible!;
+          }
+        }
+      });
+    }
 
     // Check all component hiding rules
     const hiddenKeywords = new Set<string>();

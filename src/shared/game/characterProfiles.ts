@@ -45,55 +45,20 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
     skeleton: 'manny',
     modelUrl: '/game-assets/models/humanoids/adventurer/adventurer.glb',
     baseNakedMeshes: [
-      'Man_Body_Mesh',
       'Man_Head_Mesh',
       'Man_Eyes_Mesh',
-      'Man_Jaw_Mesh',
       'Man_Arms_Mesh',
-      'Man_Legs_Mesh',
-      'Man_Feet_Mesh',
     ],
     defaultFaceId: 'adventurer_head',
-    facePartIds: ['adventurer_head', 'adventurer_balaclava', 'adventurer_cloth_face'],
+    facePartIds: ['adventurer_head'],
     defaultAnimationProfileId: 'GreystoneManny',
     compatibleWardrobePack: 'adventurer-gear',
     modularParts: [
-      { id: 'adventurer_head', label: 'Open Head', category: 'face', meshName: 'Man_Head_Mesh', defaultVisible: true, isFaceVariant: true },
-      { id: 'adventurer_balaclava', label: 'Balaclava Mask', category: 'face', meshName: 'Man_Balaclava_Mesh', defaultVisible: false, isFaceVariant: true },
-      { id: 'adventurer_cloth_face', label: 'Cloth Face Mask', category: 'face', meshName: 'Man_Cloth_Face_Mesh', defaultVisible: false, isFaceVariant: true },
-      { id: 'adventurer_pullover', label: 'Pullover Shirt', category: 'shirt', meshName: 'Man_Pullover_Mesh', defaultVisible: false },
-      { id: 'adventurer_jacket', label: 'Field Jacket', category: 'jacket', meshName: 'Man_Jacket_Mesh', defaultVisible: false },
-      { id: 'adventurer_pants', label: 'Cargo Pants', category: 'pants', meshName: 'Man_Pants_Mesh', defaultVisible: false },
-      { id: 'adventurer_shoes', label: 'Combat Boots', category: 'shoes', meshName: 'Man_Shoes_Mesh', defaultVisible: false },
+      { id: 'adventurer_head', label: 'Adventurer Head', category: 'face', meshName: 'Man_Head_Mesh', defaultVisible: true, isFaceVariant: true },
+      { id: 'adventurer_pullover', label: 'Pullover Shirt', category: 'shirt', meshName: 'Man_Pullover_Mesh', defaultVisible: true },
+      { id: 'adventurer_pants', label: 'Cargo Pants', category: 'pants', meshName: 'Man_Pants_Mesh', defaultVisible: true },
+      { id: 'adventurer_shoes', label: 'Combat Boots', category: 'shoes', meshName: 'Man_Shoes_Mesh', defaultVisible: true },
       { id: 'adventurer_bag', label: 'Expedition Pack', category: 'back', meshName: 'Man_Bag_Mesh', defaultVisible: false },
-      { id: 'adventurer_arms', label: 'Arm Wraps', category: 'gloves', meshName: 'Man_Arms_Mesh', defaultVisible: true },
-    ],
-  },
-
-  stylized_girl: {
-    id: 'stylized_girl',
-    name: 'Stylized Girl',
-    category: 'character',
-    skeleton: 'manny',
-    modelUrl: '/game-assets/models/humanoids/stylized_girl/stylized_girl.glb',
-    baseNakedMeshes: [
-      'CC_Base_Body',
-      'CC_Base_Head',
-      'Custom_Eye',
-      'Custom_Teeth',
-      'CC_Base_Tongue',
-      'HeatherHairG8_126348_Shape',
-    ],
-    defaultFaceId: 'stylized_girl_face',
-    facePartIds: ['stylized_girl_face'],
-    defaultAnimationProfileId: 'GreystoneManny',
-    compatibleWardrobePack: 'stylized-girl-outfit',
-    modularParts: [
-      { id: 'stylized_girl_face', label: 'Natural Face', category: 'face', meshName: 'CC_Base_Head', defaultVisible: true, isFaceVariant: true },
-      { id: 'stylized_girl_hair', label: 'Flowing Hair', category: 'hair', meshName: 'HeatherHairG8_126348_Shape', defaultVisible: true },
-      { id: 'stylized_girl_top', label: 'Dancer Top', category: 'shirt', meshName: 'emandjoFireDancerOutfit_150196_Shape', defaultVisible: false },
-      { id: 'stylized_girl_skirt', label: 'Dancer Skirt', category: 'pants', meshName: 'emandjoFireDancerOutfit_134324_Shape', defaultVisible: false },
-      { id: 'stylized_girl_armband', label: 'Tribal Armbands', category: 'gloves', meshName: 'emandjotribalfusionArm_35152_Shape', defaultVisible: false },
     ],
   },
 
@@ -112,16 +77,17 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
       'Head1_teeth',
     ],
     defaultFaceId: 'brute_head',
-    facePartIds: ['brute_head', 'brute_helmet'],
+    facePartIds: ['brute_head'],
     defaultAnimationProfileId: 'GreystoneManny',
     compatibleWardrobePack: 'brute-armor',
     modularParts: [
       { id: 'brute_head', label: 'Beast Head', category: 'face', meshName: 'Head1', defaultVisible: true, isFaceVariant: true },
-      { id: 'brute_helmet', label: 'War Helm', category: 'hat', meshName: 'Helmet1', defaultVisible: false, isFaceVariant: true },
+      { id: 'brute_helmet', label: 'War Helm', category: 'hat', meshName: 'Helmet1', defaultVisible: false },
       { id: 'brute_torso', label: 'Heavy Torso', category: 'shirt', meshName: 'Torso1', defaultVisible: true },
       { id: 'brute_pants', label: 'Armor Greaves', category: 'pants', meshName: 'Pants1', defaultVisible: true },
       { id: 'brute_boots', label: 'War Boots', category: 'shoes', meshName: 'Boots1', defaultVisible: true },
-      { id: 'brute_shoulder', label: 'Spiked Pauldron', category: 'jacket', meshName: 'ShoulderPad1', defaultVisible: false },
+      { id: 'brute_harness', label: 'Leather Shoulder Harness', category: 'accessory', meshName: 'Shoulder_Belt1', defaultVisible: false },
+      { id: 'brute_shoulder', label: 'Spiked Pauldron', category: 'accessory', meshName: 'ShoulderPad1', defaultVisible: false },
       { id: 'brute_cape', label: 'Tattered Cape', category: 'back', meshName: 'Cape1', defaultVisible: false },
       { id: 'brute_belt', label: 'Chain Warbelt', category: 'belt', meshName: 'BeltChains1', defaultVisible: false },
     ],
@@ -262,9 +228,6 @@ export function getCharacterModelProfile(modelIdOrUrl?: string | null): Characte
   }
   if (baseKey === 'shadow_golem_attacks' || baseKey === 'golem_attacks_textured') {
     return CHARACTER_MODEL_PROFILES.shadow_golem;
-  }
-  if (baseKey.includes('girl')) {
-    return CHARACTER_MODEL_PROFILES.stylized_girl;
   }
   return undefined;
 }

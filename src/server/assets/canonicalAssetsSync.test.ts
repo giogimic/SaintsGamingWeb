@@ -5,15 +5,15 @@ import {
 } from './canonicalAssetsSync';
 
 describe('canonicalAssetsSync', () => {
-  it('builds canonical GameAsset records for all 6 base models and 52 modular parts', () => {
+  it('builds canonical GameAsset records for all 5 base models and 44 modular parts', () => {
     const records = buildCanonicalGameAssetRecords();
-    expect(records.length).toBe(58);
+    expect(records.length).toBe(49);
 
     const fullModels = records.filter((r) => r.id.startsWith('builtin-model-'));
-    expect(fullModels.length).toBe(6);
+    expect(fullModels.length).toBe(5);
 
     const modularPieces = records.filter((r) => r.id.startsWith('builtin-piece-'));
-    expect(modularPieces.length).toBe(52);
+    expect(modularPieces.length).toBe(44);
 
     const citizen = records.find((r) => r.id === 'builtin-model-citizen');
     expect(citizen).toBeDefined();
@@ -27,10 +27,10 @@ describe('canonicalAssetsSync', () => {
     expect(brute?.source).toBe('/game-assets/models/humanoids/brute/brute.glb');
     expect(JSON.parse(brute?.tags || '[]')).toContain('manny');
 
-    const girl = records.find((r) => r.id === 'builtin-model-stylized_girl');
-    expect(girl).toBeDefined();
-    expect(girl?.source).toBe('/game-assets/models/humanoids/stylized_girl/stylized_girl.glb');
-    expect(JSON.parse(girl?.tags || '[]')).toContain('manny');
+    const adventurer = records.find((r) => r.id === 'builtin-model-adventurer');
+    expect(adventurer).toBeDefined();
+    expect(adventurer?.source).toBe('/game-assets/models/humanoids/adventurer/adventurer.glb');
+    expect(JSON.parse(adventurer?.tags || '[]')).toContain('manny');
 
     const golem = records.find((r) => r.id === 'builtin-model-golem');
     expect(golem).toBeDefined();
@@ -48,7 +48,7 @@ describe('canonicalAssetsSync', () => {
     expect(capMeta.componentCategory).toBe('hat');
     expect(capMeta.modularSetName).toBe('citizen');
 
-    // Test Brute modular piece
+    // Test Brute modular pieces
     const bruteHelmet = records.find((r) => r.id === 'builtin-piece-brute_helmet');
     expect(bruteHelmet).toBeDefined();
     expect(bruteHelmet?.source).toBe('/game-assets/models/humanoids/brute/brute.glb');
@@ -56,6 +56,14 @@ describe('canonicalAssetsSync', () => {
     expect(bruteMeta.componentCategory).toBe('hat');
     expect(bruteMeta.modularSetName).toBe('brute');
     expect(bruteMeta.meshName).toBe('Helmet1');
+
+    const bruteHarness = records.find((r) => r.id === 'builtin-piece-brute_harness');
+    expect(bruteHarness).toBeDefined();
+    expect(bruteHarness?.source).toBe('/game-assets/models/humanoids/brute/brute.glb');
+    const harnessMeta = JSON.parse(bruteHarness?.metadata || '{}');
+    expect(harnessMeta.componentCategory).toBe('accessory');
+    expect(harnessMeta.modularSetName).toBe('brute');
+    expect(harnessMeta.meshName).toBe('Shoulder_Belt1');
 
     // Test Adventurer modular piece
     const adventurerTop = records.find((r) => r.id === 'builtin-piece-adventurer_pullover');
@@ -65,26 +73,21 @@ describe('canonicalAssetsSync', () => {
     expect(advMeta.componentCategory).toBe('shirt');
     expect(advMeta.modularSetName).toBe('adventurer');
     expect(advMeta.meshName).toBe('Man_Pullover_Mesh');
-
-    // Test Stylized Girl modular piece
-    const girlTop = records.find((r) => r.id === 'builtin-piece-stylized_girl_top');
-    expect(girlTop).toBeDefined();
-    expect(girlTop?.source).toBe('/game-assets/models/humanoids/stylized_girl/stylized_girl.glb');
-    const girlMeta = JSON.parse(girlTop?.metadata || '{}');
-    expect(girlMeta.componentCategory).toBe('shirt');
-    expect(girlMeta.modularSetName).toBe('stylized_girl');
   });
 
   it('syncs records to prisma with upsert', async () => {
     const upsertMock = vi.fn().mockResolvedValue({});
+    const deleteManyMock = vi.fn().mockResolvedValue({});
     const fakePrisma = {
       gameAsset: {
         upsert: upsertMock,
+        deleteMany: deleteManyMock,
       },
     };
 
     const count = await syncCanonicalGameAssets(fakePrisma);
-    expect(count).toBe(58);
-    expect(upsertMock).toHaveBeenCalledTimes(58);
+    expect(count).toBe(49);
+    expect(upsertMock).toHaveBeenCalledTimes(49);
+    expect(deleteManyMock).toHaveBeenCalled();
   });
 });

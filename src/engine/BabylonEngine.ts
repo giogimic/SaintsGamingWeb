@@ -4196,8 +4196,14 @@ export class BabylonEngine {
               : (entity.presentation?.modularModelUrls ? entity.presentation.modularModelUrls.map((url: string) => ({ modelUrl: url, isModular: true, attachmentMode: 'SKINNED' })) : []);
 
             if (modularAttachments.length > 0) {
+              const normBase = (baseModelUrl || '').trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.(glb|gltf)$/i, '');
+
               for (let attIdx = 0; attIdx < modularAttachments.length; attIdx++) {
                 const att = modularAttachments[attIdx];
+                // Never import a duplicate GLB if this is an internal submesh or canonical built-in piece
+                if (att.isSubmesh) continue;
+                if (typeof att.assetId === 'string' && att.assetId.startsWith('builtin-piece-')) continue;
+
                 let attUrl = att.modelUrl || att.cdnUrl;
                 if (!attUrl && att.assetId) {
                   attUrl = resolveModelAssetUrl(att.assetId);
@@ -4207,6 +4213,9 @@ export class BabylonEngine {
                   }
                 }
                 if (!attUrl) continue;
+
+                const normAtt = attUrl.trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.(glb|gltf)$/i, '');
+                if (normBase && normAtt === normBase) continue;
 
                 if (
                   this.entityMeshes.get(entity.id) !== currentMesh
@@ -4317,6 +4326,24 @@ export class BabylonEngine {
                     } else {
                       childMesh.setEnabled(part.defaultVisible);
                     }
+                  }
+                }
+              }
+
+              // Ensure facial sub-elements (eyes, teeth) follow head mesh visibility
+              let headEnabled: boolean | null = null;
+              for (const childMesh of allMeshes) {
+                const cName = norm(childMesh.name);
+                if (cName === 'head1' || cName === 'manheadmesh') {
+                  headEnabled = childMesh.isEnabled();
+                  break;
+                }
+              }
+              if (headEnabled !== null) {
+                for (const childMesh of allMeshes) {
+                  const cName = norm(childMesh.name);
+                  if (cName === 'head1eyes' || cName === 'head1teeth' || cName === 'maneyesmesh') {
+                    childMesh.setEnabled(headEnabled);
                   }
                 }
               }

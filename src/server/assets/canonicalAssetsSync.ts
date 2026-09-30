@@ -50,12 +50,6 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
       fileSize: 15192864,
     },
     {
-      def: CANONICAL_BUILTIN_MODELS.stylized_girl,
-      tags: ["model", "3d", "character", "manny", "humanoid", "canonical", "stylized_girl", "dancer", "playable"],
-      categories: ["model", "character"],
-      fileSize: 3934616,
-    },
-    {
       def: CANONICAL_BUILTIN_MODELS.golem,
       tags: ["model", "3d", "creature", "monster", "beast", "canonical", "golem", "boss"],
       categories: ["model", "creature", "monster"],
@@ -128,12 +122,6 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
       fileSize: 15192864,
       getSource: () => `/game-assets/models/humanoids/adventurer/adventurer.glb`,
     },
-    {
-      model: CANONICAL_BUILTIN_MODELS.stylized_girl,
-      pack: 'stylized-girl-outfit',
-      fileSize: 3934616,
-      getSource: () => `/game-assets/models/humanoids/stylized_girl/stylized_girl.glb`,
-    },
   ];
 
   for (const set of modularSets) {
@@ -192,6 +180,22 @@ export async function syncCanonicalGameAssets(prismaClient: any): Promise<number
   if (hasSyncedCanonicalAssets) return 0;
 
   try {
+    if (typeof prismaClient?.gameAsset?.deleteMany === 'function') {
+      await prismaClient.gameAsset.deleteMany({
+        where: {
+          OR: [
+            { id: 'builtin-model-stylized_girl' },
+            { id: { startsWith: 'stylized_girl_' } },
+            { id: { startsWith: 'builtin-piece-stylized_girl' } },
+            { id: 'builtin-piece-adventurer_balaclava' },
+            { id: 'builtin-piece-adventurer_cloth_face' },
+            { id: 'builtin-piece-adventurer_jacket' },
+            { id: 'builtin-piece-adventurer_arms' },
+          ]
+        }
+      });
+    }
+
     const records = buildCanonicalGameAssetRecords();
     let syncedCount = 0;
 

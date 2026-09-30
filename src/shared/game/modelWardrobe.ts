@@ -15,6 +15,8 @@ export interface ModelWardrobeItem {
   isModular?: boolean;
   attachmentMode?: 'RIGID_SOCKET' | 'SKINNED';
   socket?: string;
+  meshName?: string;
+  isSubmesh?: boolean;
   defaultVisible?: boolean;
   availableInCharacterCreation?: boolean;
   hidesComponents?: string[];

@@ -65,6 +65,9 @@ export interface ModularAttachmentDef {
   attachmentMode?: 'RIGID_SOCKET' | 'SKINNED';
   hidesComponents?: string[];
   scale?: number;
+  isSubmesh?: boolean;
+  meshName?: string;
+  defaultVisible?: boolean;
 }
 
 export interface PresentationDefinition {

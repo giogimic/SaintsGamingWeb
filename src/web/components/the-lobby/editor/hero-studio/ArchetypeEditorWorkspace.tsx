@@ -192,10 +192,9 @@ export function ArchetypeEditorWorkspace() {
         label: part.label,
         category: part.category,
         meshName: part.meshName,
-        modelUrl: profile.modelUrl,
-        source: profile.modelUrl,
         attachmentMode: 'SKINNED',
         isModular: true,
+        isSubmesh: true,
         availableInCharacterCreation: true,
         defaultVisible: Boolean(part.defaultVisible),
       }));

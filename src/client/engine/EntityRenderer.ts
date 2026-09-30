@@ -16,7 +16,7 @@ import { useMultiplayerStore } from '../state/useMultiplayerStore';
 import { usePlayerStore } from '../state/usePlayerStore';
 import { useSessionStore } from '../state/useSessionStore';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
-import { getWorldModelPresentation, resolveModelAssetUrl } from '@/shared/game/worldModelPresentation';
+import { getWorldModelPresentation, resolveModelAssetUrl, getModelModularComponents } from '@/shared/game/worldModelPresentation';
 import { mapMesher } from './MapMesher';
 import { WrappedCharacterMesher } from './rendering/WrappedCharacterMesher';
 import { AssetManager } from '@/engine/assets/AssetManager';
@@ -460,8 +460,14 @@ export class EntityRenderer {
             current.attachmentAnimationGroups = current.attachmentAnimationGroups || [];
             current.attachmentSkeletons = current.attachmentSkeletons || [];
 
+            const normBase = (data.modelUrl || '').trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.(glb|gltf)$/i, '');
+
             for (let attIdx = 0; attIdx < data.modularAttachments.length; attIdx++) {
               const att = data.modularAttachments[attIdx];
+              // Never import a duplicate GLB if this is an internal submesh or canonical built-in piece
+              if (att.isSubmesh) continue;
+              if (typeof att.assetId === 'string' && att.assetId.startsWith('builtin-piece-')) continue;
+
               let attUrl: string | undefined = att.modelUrl || att.cdnUrl;
               if (!attUrl && att.assetId) {
                 attUrl = resolveModelAssetUrl(att.assetId);
@@ -471,6 +477,9 @@ export class EntityRenderer {
                 }
               }
               if (!attUrl) continue;
+
+              const normAtt = attUrl.trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.(glb|gltf)$/i, '');
+              if (normBase && normAtt === normBase) continue;
 
               const activeSprite = this.sprites.get(id);
               if (!activeSprite || activeSprite.mesh !== mesh || !this.scene) break;
@@ -524,6 +533,71 @@ export class EntityRenderer {
               (m as any).refreshBoundingInfo({ applySkeleton: true });
             }
           });
+
+          // Configure modular submesh visibility for models with built-in modular pieces (e.g. Adventurer, Brute)
+          const canonicalParts = getModelModularComponents(data.modelUrl);
+          if (canonicalParts.length > 0) {
+            const norm = (s: string) => s.toLowerCase().replace(/[-_\s]/g, '');
+            const partByMesh = new Map<string, any>();
+            for (const p of canonicalParts) {
+              partByMesh.set(norm(p.meshName), p);
+              if (p.meshName.toLowerCase().includes('outwear')) {
+                partByMesh.set(norm(p.meshName.replace(/outwear/i, 'outerwear')), p);
+              }
+            }
+
+            const modularAtts = data.modularAttachments || [];
+            for (const childMesh of allMeshes) {
+              const cName = norm(childMesh.name);
+              const part = partByMesh.get(cName);
+              if (part) {
+                const matchingAttachment = modularAtts.find((att: any) => {
+                  const rawId = norm(String(att.assetId || att.id || ''));
+                  const meshName = norm(String(att.meshName || ''));
+                  const modelUrl = norm(String(att.modelUrl || att.source || ''));
+                  return (
+                    (rawId && (rawId === norm(part.id) || rawId.endsWith(norm(part.id)))) ||
+                    (meshName && meshName === cName) ||
+                    (modelUrl && modelUrl.includes(cName))
+                  );
+                });
+
+                if (matchingAttachment) {
+                  childMesh.setEnabled((matchingAttachment as any).defaultVisible !== false);
+                } else {
+                  if (part.isFaceVariant) {
+                    const activeFace = modularAtts.some((att: any) => {
+                      const rawId = norm(String(att.assetId || att.id || ''));
+                      const mName = norm(String(att.meshName || ''));
+                      const p = partByMesh.get(mName) || canonicalParts.find(cp => norm(cp.id) === rawId);
+                      return p?.isFaceVariant && (att as any).defaultVisible !== false;
+                    });
+                    childMesh.setEnabled(!activeFace && part.defaultVisible);
+                  } else {
+                    childMesh.setEnabled(part.defaultVisible);
+                  }
+                }
+              }
+            }
+
+            // Ensure facial sub-elements (eyes, teeth) follow head mesh visibility
+            let headEnabled: boolean | null = null;
+            for (const childMesh of allMeshes) {
+              const cName = norm(childMesh.name);
+              if (cName === 'head1' || cName === 'manheadmesh') {
+                headEnabled = childMesh.isEnabled();
+                break;
+              }
+            }
+            if (headEnabled !== null) {
+              for (const childMesh of allMeshes) {
+                const cName = norm(childMesh.name);
+                if (cName === 'head1eyes' || cName === 'head1teeth' || cName === 'maneyesmesh') {
+                  childMesh.setEnabled(headEnabled);
+                }
+              }
+            }
+          }
 
           let modelVisualHeight = 1.6;
           let headBoneHeight: number | null = null;

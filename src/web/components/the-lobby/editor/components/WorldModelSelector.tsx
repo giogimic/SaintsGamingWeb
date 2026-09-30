@@ -32,6 +32,8 @@ export interface WorldModelValue {
   bodyType?: string;
   label?: string;
   category?: string;
+  meshName?: string;
+  isSubmesh?: boolean;
   defaultVisible?: boolean;
   availableInCharacterCreation?: boolean;
 }

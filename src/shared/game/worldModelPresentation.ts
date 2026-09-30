@@ -57,15 +57,6 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
     defaultAnimationProfileId: 'GreystoneManny',
     modularParts: CHARACTER_MODEL_PROFILES.adventurer.modularParts,
   },
-  stylized_girl: {
-    id: 'stylized_girl',
-    name: 'Stylized Girl',
-    modelUrl: '/game-assets/models/humanoids/stylized_girl/stylized_girl.glb',
-    category: 'character',
-    skeleton: 'manny',
-    defaultAnimationProfileId: 'GreystoneManny',
-    modularParts: CHARACTER_MODEL_PROFILES.stylized_girl.modularParts,
-  },
   citizen: {
     id: 'citizen',
     name: 'Citizen',
@@ -117,9 +108,6 @@ export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalMod
   }
   if (key === 'golem_base' || key.includes('golem')) {
     return CANONICAL_BUILTIN_MODELS.golem;
-  }
-  if (key.includes('girl')) {
-    return CANONICAL_BUILTIN_MODELS.stylized_girl;
   }
   return undefined;
 }
