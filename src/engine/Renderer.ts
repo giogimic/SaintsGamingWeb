@@ -637,8 +637,8 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
           }
           
           if (isEntityWalking && moveDir && moveDir.lengthSquared() > 0) {
-            // atan2(-x, z) because the modelWrapper scales X by -1 (inverts X axis)
-            mesh.rotation.y = Math.atan2(-moveDir.x, moveDir.z);
+            // atan2(-x, -z) aligns the movement vector with the explicit angle switch (up=0, down=PI)
+            mesh.rotation.y = Math.atan2(-moveDir.x, -moveDir.z);
             // Save the exact angle for when the entity stops moving
             mesh.metadata.lastRotationY = mesh.rotation.y;
           } else if (state.direction) {
