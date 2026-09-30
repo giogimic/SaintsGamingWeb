@@ -3,7 +3,7 @@ import { clampCameraFocus } from './helpers/babylonViewHelpers';
 
 import { HemisphericLight, DirectionalLight, ImageProcessingPostProcess, Light, ShadowGenerator, Camera, TargetCamera, Vector3, Matrix, Color3, Color4, Texture, StandardMaterial, Ray } from '@babylonjs/core';
 
-import { DynamicTexture, Scene, ParticleSystem, FreeCamera } from '@babylonjs/core';
+import { DynamicTexture, Scene, ParticleSystem, FreeCamera, Scalar } from '@babylonjs/core';
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 
 
@@ -636,23 +636,24 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
             mesh.rotationQuaternion = null;
           }
           
+          let targetAngle = mesh.rotation.y;
+          
           if (isEntityWalking && moveDir && moveDir.lengthSquared() > 0) {
-            // atan2(-x, -z) aligns the movement vector with the explicit angle switch (up=0, down=PI)
-            mesh.rotation.y = Math.atan2(-moveDir.x, -moveDir.z);
-            // Save the exact angle for when the entity stops moving
-            mesh.metadata.lastRotationY = mesh.rotation.y;
+            targetAngle = Math.atan2(-moveDir.x, -moveDir.z);
+            mesh.metadata.lastRotationY = targetAngle;
           } else if (state.direction) {
-            // Apply explicit direction when standing still or if network sends a pivot
-            let angle = mesh.metadata.lastRotationY || 0;
+            targetAngle = mesh.metadata.lastRotationY || 0;
             switch(state.direction) {
-              case 'down': angle = Math.PI; break;
-              case 'up': angle = 0; break;
-              case 'left': angle = Math.PI / 2; break; // Inverted X: left is Math.PI/2 (90 deg)
-              case 'right': angle = -Math.PI / 2; break;
+              case 'down': targetAngle = Math.PI; break;
+              case 'up': targetAngle = 0; break;
+              case 'left': targetAngle = Math.PI / 2; break;
+              case 'right': targetAngle = -Math.PI / 2; break;
             }
-            // Smoothly rotate towards the angle if we want, or just snap
-            mesh.rotation.y = angle;
           }
+
+          // Smooth interpolation for natural turning
+          // Adjust 0.15 factor for faster/slower turn speed
+          mesh.rotation.y = Scalar.LerpAngle(mesh.rotation.y, targetAngle, 0.2);
         }
       });
 
@@ -1123,8 +1124,9 @@ public updateFreeCamPosition() {
 public rotateCamera(dxPx: number, dyPx: number) {
     const invX = this.cameraSettings.invertOrbitX ? -1 : 1;
     const invY = this.cameraSettings.invertOrbitY ? -1 : 1;
-    const yawDelta = dxPx * 0.004 * (this.cameraSettings.orbitSensitivity || 1.0) * invX;
-    const pitchDelta = -dyPx * 0.004 * (this.cameraSettings.orbitSensitivity || 1.0) * invY;
+    // Changed from 0.004 to 0.0015 to lower default camera sensitivity
+    const yawDelta = dxPx * 0.0015 * (this.cameraSettings.orbitSensitivity || 1.0) * invX;
+    const pitchDelta = -dyPx * 0.0015 * (this.cameraSettings.orbitSensitivity || 1.0) * invY;
     this.cameraYaw += yawDelta;
     
     if (this.isFreeCam) {
