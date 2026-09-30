@@ -508,6 +508,7 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
 
         // 1. Movement Interpolation
         const dist = Vector3.Distance(mesh.position, state.targetPos);
+        let moveDir: Vector3 | null = null;
         if (state.isEditor && !state.isPlayer && !state.isCreature) {
           mesh.position = state.targetPos;
         } else {
@@ -516,11 +517,12 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
             // If network lag or warp creates a gap (> 1.25 tiles), smoothly accelerate to catch up.
             const speed = dist > 1.25 ? Math.min(14.0, dist * 5.5) : 4.0;
             const moveStep = speed * deltaTime;
+            moveDir = state.targetPos.subtract(mesh.position).normalize();
+            
             if (moveStep >= dist) {
               mesh.position = state.targetPos;
-            } else {
-              const dir = state.targetPos.subtract(mesh.position).normalize();
-              mesh.position.addInPlace(dir.scale(moveStep));
+            } else if (moveDir) {
+              mesh.position.addInPlace(moveDir.scale(moveStep));
             }
           } else {
             mesh.position = state.targetPos;
@@ -579,6 +581,16 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
             let runAnims = groups.filter((ag: any) => isRunClip(ag.name || ''));
             let idleAnims = groups.filter((ag: any) => isIdleClip(ag.name || ''));
 
+            // Prevent bone morphing by ensuring we only play exactly ONE animation for each state
+            if (runAnims.length > 1) {
+              const fwdAnim = runAnims.find((ag: any) => /fwd|forward/i.test(ag.name || ''));
+              runAnims = [fwdAnim || runAnims[0]];
+            }
+
+            if (idleAnims.length > 1) {
+              idleAnims = [idleAnims[0]];
+            }
+
             // If neither matched, look for non-action clips before falling back to arbitrary indices
             const nonActionGroups = groups.filter((ag: any) => !isActionClip(ag.name || ''));
             const pool = nonActionGroups.length > 0 ? nonActionGroups : groups;
@@ -600,22 +612,30 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
 
           const { runAnims, idleAnims } = mesh.metadata._resolvedAnims;
           const targetAnims = isEntityWalking ? runAnims : idleAnims;
-          const stopAnims = isEntityWalking ? idleAnims : runAnims;
 
           targetAnims.forEach((anim: any) => {
             if (!anim.isPlaying) anim.play(true);
+            
+            // Adjust speed ratio for run animation based on actual movement speed
+            if (isEntityWalking && dist > 0.01) {
+               const speed = dist > 1.25 ? Math.min(14.0, dist * 5.5) : 4.0;
+               anim.speedRatio = speed / 4.0; 
+            } else {
+               anim.speedRatio = 1.0;
+            }
           });
-          stopAnims.forEach((anim: any) => {
+          
+          // Stop all other animations to prevent bone morphing conflicts
+          mesh.metadata.animationGroups.forEach((anim: any) => {
             if (!targetAnims.includes(anim) && anim.isPlaying) {
               anim.stop();
             }
           });
           
           // Rotate 3D mesh to face target position or explicit direction
-          if (isEntityWalking && dist > 0.01) {
-            const dir = state.targetPos.subtract(mesh.position).normalize();
+          if (isEntityWalking && moveDir && moveDir.lengthSquared() > 0) {
             // atan2(-x, z) because the modelWrapper scales X by -1 (inverts X axis)
-            mesh.rotation.y = Math.atan2(-dir.x, dir.z);
+            mesh.rotation.y = Math.atan2(-moveDir.x, moveDir.z);
             // Save the exact angle for when the entity stops moving
             mesh.metadata.lastRotationY = mesh.rotation.y;
           } else if (state.direction) {

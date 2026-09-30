@@ -392,13 +392,20 @@ export function ModelWardrobeEditor({
             <button
               type="button"
               onClick={addAllMatching}
-              className="rounded bg-cyan-500/15 px-2.5 py-1 text-[9px] font-bold text-cyan-200 hover:bg-cyan-500/25"
+              className="rounded bg-cyan-500/15 border border-cyan-500/30 px-2.5 py-1 text-[9px] font-bold text-cyan-200 hover:bg-cyan-500/25 transition-colors"
             >
-              Add all {relatedIds.length > 0 ? 'matching' : 'filtered'} clothing ({bulkAssets.length})
+              Select All {relatedIds.length > 0 ? 'matching' : 'filtered'} ({bulkAssets.length})
             </button>
           )}
           {value.length > 0 && (
             <>
+              <button
+                type="button"
+                onClick={() => onChange([])}
+                className="rounded bg-red-500/15 border border-red-500/30 px-2.5 py-1 text-[9px] font-bold text-red-300 hover:bg-red-500/25 transition-colors"
+              >
+                Clear all selected
+              </button>
               <button
                 type="button"
                 onClick={() => setDefaultVisibilityForAll(true)}

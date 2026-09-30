@@ -185,6 +185,8 @@ export function retargetAnimationGroup(
   let matchedBones = 0;
   const totalBones = sourceAg.targetedAnimations.length;
 
+  const ROOT_BONE_NAMES = ['root', 'armature', 'origin', 'bip01', 'pelvis', 'hips', 'hip', 'bip01pelvis'];
+
   for (const ta of sourceAg.targetedAnimations) {
     const sourceTarget = ta.target;
     const targetName = sourceTarget?.name;
@@ -192,6 +194,14 @@ export function retargetAnimationGroup(
 
     const destNodes = findAllMatchingTargetNodes(targetName, targetNodes);
     for (const destNode of destNodes) {
+      // Prevent limb detachment by stripping translation keys from non-root bones
+      const isPositionTrack = ta.animation.targetProperty === 'position';
+      const isRootBone = ROOT_BONE_NAMES.includes(normalizeBoneName(destNode.name));
+      
+      if (isPositionTrack && !isRootBone) {
+        continue;
+      }
+      
       newAg.addTargetedAnimation(ta.animation.clone(), destNode);
       matchedBones++;
     }
