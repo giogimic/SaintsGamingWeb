@@ -591,9 +591,8 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
               idleAnims = [idleAnims[0]];
             }
 
-            // If neither matched, look for non-action clips before falling back to arbitrary indices
-            const nonActionGroups = groups.filter((ag: any) => !isActionClip(ag.name || ''));
-            const pool = nonActionGroups.length > 0 ? nonActionGroups : groups;
+            // If neither matched, look for non-action clips. Do NOT fallback to action clips.
+            const pool = groups.filter((ag: any) => !isActionClip(ag.name || ''));
 
             if (idleAnims.length === 0 && pool.length > 0) {
               idleAnims.push(pool[0]);
@@ -637,28 +636,22 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
             mesh.rotationQuaternion = null;
           }
           
-          if (state.isPlayer && this.camera && this.camera.mode === 0) {
-            // Player always faces the direction the camera is pointing in 3D mode
-            mesh.rotation.y = -(this.cameraYaw || 0);
+          if (isEntityWalking && moveDir && moveDir.lengthSquared() > 0) {
+            // atan2(-x, z) because the modelWrapper scales X by -1 (inverts X axis)
+            mesh.rotation.y = Math.atan2(-moveDir.x, moveDir.z);
+            // Save the exact angle for when the entity stops moving
             mesh.metadata.lastRotationY = mesh.rotation.y;
-          } else {
-            if (isEntityWalking && moveDir && moveDir.lengthSquared() > 0) {
-              // atan2(-x, z) because the modelWrapper scales X by -1 (inverts X axis)
-              mesh.rotation.y = Math.atan2(-moveDir.x, moveDir.z);
-              // Save the exact angle for when the entity stops moving
-              mesh.metadata.lastRotationY = mesh.rotation.y;
-            } else if (state.direction) {
-              // Apply explicit direction when standing still or if network sends a pivot
-              let angle = mesh.metadata.lastRotationY || 0;
-              switch(state.direction) {
-                case 'down': angle = Math.PI; break;
-                case 'up': angle = 0; break;
-                case 'left': angle = Math.PI / 2; break; // Inverted X: left is Math.PI/2 (90 deg)
-                case 'right': angle = -Math.PI / 2; break;
-              }
-              // Smoothly rotate towards the angle if we want, or just snap
-              mesh.rotation.y = angle;
+          } else if (state.direction) {
+            // Apply explicit direction when standing still or if network sends a pivot
+            let angle = mesh.metadata.lastRotationY || 0;
+            switch(state.direction) {
+              case 'down': angle = Math.PI; break;
+              case 'up': angle = 0; break;
+              case 'left': angle = Math.PI / 2; break; // Inverted X: left is Math.PI/2 (90 deg)
+              case 'right': angle = -Math.PI / 2; break;
             }
+            // Smoothly rotate towards the angle if we want, or just snap
+            mesh.rotation.y = angle;
           }
         }
       });
