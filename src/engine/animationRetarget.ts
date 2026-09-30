@@ -194,11 +194,12 @@ export function retargetAnimationGroup(
 
     const destNodes = findAllMatchingTargetNodes(targetName, targetNodes);
     for (const destNode of destNodes) {
-      // Prevent limb detachment by stripping translation keys from non-root bones
+      // Prevent limb detachment by stripping translation and scale keys from non-root bones
       const isPositionTrack = ta.animation.targetProperty === 'position';
+      const isScaleTrack = ta.animation.targetProperty === 'scaling';
       const isRootBone = ROOT_BONE_NAMES.includes(normalizeBoneName(destNode.name));
       
-      if (isPositionTrack && !isRootBone) {
+      if ((isPositionTrack || isScaleTrack) && !isRootBone) {
         continue;
       }
       

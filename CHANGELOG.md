@@ -1,5 +1,10 @@
+## [2.2.064] - 2026-09-30
+- **RPG Camera-Relative Movement & Asset Cleanup**:
+  - Refactored `Renderer.ts` to sync the player character's rotation exclusively to the 3D Perspective Camera Yaw (`cameraYaw`), fixing movement visual alignment and delivering standard RPG "face forward relative to camera" behavior.
+  - Stripped `scaling` tracks from non-root bones during runtime retargeting in `animationRetarget.ts` to prevent scale bone-morphing and limb detachment on the Adventurer modular mesh.
+  - Deleted the legacy `citizen` model and its references as it lacked base locomotion sequences.
+
 ## [2.2.063] - 2026-09-30
-- **Modular Character Asset Audit & Workflow Implementation**:
   - Implemented UI in `ModelWardrobeEditor.tsx` with "Select All" and "Clear All" bulk actions to streamline character asset loading and validation.
   - Audited external and canonical modular assets, separating "Brute/Adventurer" monolithic dependencies into individual separated mesh guidelines.
 - **Fixed Character Animation Detachment & Movement Rotations**:
