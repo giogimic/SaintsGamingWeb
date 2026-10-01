@@ -7427,3 +7427,8 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 
 
 
+
+### 2.2.084
+- Fix: UI bug where Asian Heroine selection visually highlighted the Stylized Girl preset.
+- Fix: Asian Girl (daz_g8f) invisibility bug fixed. Engine scale adjustments replaced the GLB scale patch, properly preserving skin weights to avoid camera clipping.
+- Refactor: Added baseScale to CharacterModelProfile, propagated via WorldModelSelector presets.

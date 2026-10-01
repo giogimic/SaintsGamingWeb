@@ -33,6 +33,7 @@ export interface CharacterModelProfile {
   defaultFaceId?: string;
   facePartIds?: string[];
   defaultAnimationProfileId?: string;
+  baseScale?: number;
   embeddedAnimations?: string[];
   animationActionMap?: Record<string, string>;
   compatibleWardrobePack: string;
@@ -96,6 +97,7 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
     category: 'character',
     skeleton: 'daz_g8f',
     modelUrl: '/game-assets/models/humanoids/asian_girl/asian_girl.glb',
+    baseScale: 0.01,
     baseNakedMeshes: ['4_full_body001', '4_Legs', '4_Arms', '4_face001', '4_Eyes_01_0_0', '6_Hair2_01_0_0001'],
     defaultAnimationProfileId: 'GreystoneManny',
     compatibleWardrobePack: 'asian_girl_outfits',

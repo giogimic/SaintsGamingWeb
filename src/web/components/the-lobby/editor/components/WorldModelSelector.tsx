@@ -178,7 +178,7 @@ export function WorldModelSelector({
               {/* Quick Profile Presets */}
               <div className="flex flex-wrap gap-1 mb-1">
                 {Object.values(CHARACTER_MODEL_PROFILES).map((p) => {
-                  const isCur = value.assetId === p.id || value.modelUrl === p.modelUrl || (value.assetId && value.assetId.includes(p.id));
+                  const isCur = value.assetId === p.id || value.modelUrl === p.modelUrl || (value.assetId && value.assetId === `builtin-model-${p.id}`);
                   return (
                     <button
                       key={p.id}
@@ -189,6 +189,7 @@ export function WorldModelSelector({
                           assetId: p.id,
                           modelUrl: p.modelUrl,
                           source: p.modelUrl,
+                          scale: p.baseScale ?? 1,
                         });
                       }}
                       className={cn(
