@@ -88,33 +88,11 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
     defaultAnimationProfileId: 'GreystoneManny',
     modularParts: CHARACTER_MODEL_PROFILES.asian_girl.modularParts,
   },
-  leoverse: {
-    id: 'leoverse',
-    name: 'Red Runner 66',
-    modelUrl: '/game-assets/models/humanoids/props/leoverse_statue.glb',
-    category: 'character',
-    skeleton: 'static',
-    isPlayable: true,
-    modularParts: [],
-  },
 };
 
 export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalModelDef | undefined {
   if (!modelIdOrUrl) return undefined;
   const raw = modelIdOrUrl.trim().toLowerCase();
-  const citizenPath = raw.match(/\/citizens\/glb\/([^/?]+)\.glb(?:\?.*)?$/);
-  const citizenId = raw.match(/^(?:builtin-)?citizen-(.+)$/);
-  const citizenName = citizenPath?.[1] || citizenId?.[1];
-  if (citizenName && /^[a-z0-9_-]+$/.test(citizenName)) {
-    return {
-      id: `citizen-${citizenName}`,
-      name: `Town Citizen (${citizenName})`,
-      modelUrl: `/game-assets/models/humanoids/citizens/glb/${citizenName}.glb`,
-      category: 'character',
-      skeleton: 'static',
-      modularParts: [],
-    };
-  }
   const key = raw.replace(/^.*[\\/]/, '').replace(/\.(glb|gltf|fbx|obj)$/i, '');
   if (CANONICAL_BUILTIN_MODELS[key]) {
     return CANONICAL_BUILTIN_MODELS[key];
@@ -134,7 +112,6 @@ export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalMod
   if (key.includes('asian')) {
     return CANONICAL_BUILTIN_MODELS.asian_girl;
   }
-  if (key.includes('leoverse')) return CANONICAL_BUILTIN_MODELS.leoverse;
   return undefined;
 }
 

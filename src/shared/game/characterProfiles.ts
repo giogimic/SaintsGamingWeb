@@ -207,24 +207,13 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
     compatibleWardrobePack: 'none',
     modularParts: [],
   },
-  citizens: {
-    id: 'citizens',
-    name: 'Town Citizen',
-    category: 'character',
-    skeleton: 'static',
-    modelUrl: '/game-assets/models/humanoids/citizens/glb/man_1.glb',
-    compatibleWardrobePack: 'citizens_pack',
-    modularParts: [],
-  },
-};
+  };
 
 /** Normalize string key to find matching profile. */
 export function getCharacterModelProfile(modelIdOrUrl?: string | null): CharacterModelProfile | undefined {
   if (!modelIdOrUrl) return undefined;
   const raw = modelIdOrUrl.trim().toLowerCase();
-  if (raw.includes('/citizens/glb/') || /^builtin-citizen-/.test(raw) || /^citizen-/.test(raw)) {
-    return CHARACTER_MODEL_PROFILES.citizens;
-  }
+  
   const baseKey = raw.replace(/^.*[\\/]/, '').replace(/\.(glb|gltf|fbx|obj)$/i, '');
 
   if (CHARACTER_MODEL_PROFILES[baseKey]) {
@@ -244,10 +233,6 @@ export function getCharacterModelProfile(modelIdOrUrl?: string | null): Characte
   }
   if (baseKey.includes('golem')) {
     return CHARACTER_MODEL_PROFILES.shadow_golem;
-  }
-  if (baseKey.includes('leoverse')) return undefined;
-  if (baseKey.includes('citizen') || baseKey.includes('people')) {
-    return CHARACTER_MODEL_PROFILES.citizens;
   }
   return undefined;
 }

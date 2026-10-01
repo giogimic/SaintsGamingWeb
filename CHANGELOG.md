@@ -7452,3 +7452,6 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 
 ### v2.2.087
 - Registered the Shadow Golem model into the canonical built-in character models list.
+
+### v2.2.088
+- Removed incomplete canonical models (Citizens and Leoverse/Red Runner) from the engine as they lack skeletons and textures.
