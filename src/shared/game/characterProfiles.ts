@@ -19,13 +19,15 @@ export interface ProfileModularPartDef {
   meshName: string;
   defaultVisible: boolean;
   isFaceVariant?: boolean;
+  suppressesSubmeshes?: string[];
+  replacesSubmesh?: string;
 }
 
 export interface CharacterModelProfile {
   id: string;
   name: string;
   category: 'character' | 'creature' | 'monster';
-  skeleton: 'manny' | 'creature_custom' | 'mixamo';
+  skeleton: 'manny' | 'creature_custom' | 'mixamo' | 'daz_g8f' | 'static';
   modelUrl: string;
   baseNakedMeshes?: string[];
   defaultFaceId?: string;
@@ -68,12 +70,123 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
       { id: 'brute_belt', label: 'Chain Warbelt', category: 'belt', meshName: 'BeltChains1', defaultVisible: false },
     ],
   },
+  boy: {
+    id: 'boy',
+    name: 'Stylized Boy',
+    category: 'character',
+    skeleton: 'mixamo',
+    modelUrl: '/game-assets/models/humanoids/boy/boy.glb',
+    defaultAnimationProfileId: 'boy_native',
+    compatibleWardrobePack: 'boy_default',
+    modularParts: [],
+  },
+  girl: {
+    id: 'girl',
+    name: 'Stylized Adventurer Girl',
+    category: 'character',
+    skeleton: 'mixamo',
+    modelUrl: '/game-assets/models/humanoids/girl/girl.glb',
+    defaultAnimationProfileId: 'girl_native',
+    compatibleWardrobePack: 'girl_default',
+    modularParts: [],
+  },
+  asian_girl: {
+    id: 'asian_girl',
+    name: 'Asian Heroine (Modular)',
+    category: 'character',
+    skeleton: 'daz_g8f',
+    modelUrl: '/game-assets/models/humanoids/asian_girl/asian_girl.glb',
+    baseNakedMeshes: [
+      '4_full_body001',
+      '4_Legs',
+      '4_Arms',
+      '4_face001',
+      '4_Eyes_01_0_0',
+      '6_Hair2_01_0_0001',
+    ],
+    compatibleWardrobePack: 'asian_girl_outfits',
+    modularParts: [
+      {
+        id: 'ag_shirt',
+        label: 'Uniform Blouse',
+        category: 'shirt',
+        meshName: '4_+Shirt1_01_0_0',
+        defaultVisible: true,
+        suppressesSubmeshes: ['4_-Top1_01_0_0', '4_full_body001'],
+      },
+      {
+        id: 'ag_skirt',
+        label: 'Pleated Skirt',
+        category: 'pants',
+        meshName: '4_+Skirt1_01_0_0',
+        defaultVisible: true,
+        suppressesSubmeshes: ['6_+Panty_01_0_0'],
+      },
+      {
+        id: 'ag_shoes',
+        label: 'Sneakers',
+        category: 'shoes',
+        meshName: '4_+Shoes_01_0_0002',
+        defaultVisible: true,
+      },
+      {
+        id: 'ag_scabbard',
+        label: 'Hip Scabbard',
+        category: 'accessory',
+        meshName: '6_+HolsterScabbard_01_0_0001',
+        defaultVisible: true,
+      },
+      {
+        id: 'ag_katana_hand',
+        label: 'Drawn Katana',
+        category: 'weapon_main',
+        meshName: '4_-Katana|Hand_01_0_0001',
+        defaultVisible: false,
+      },
+      {
+        id: 'ag_shuriken',
+        label: 'Shuriken Pouch',
+        category: 'accessory',
+        meshName: '24_-shuriken|2_bladeoutfit_b2_03_0_0002',
+        defaultVisible: false,
+      },
+      {
+        id: 'ag_gloves',
+        label: 'Leather Gloves',
+        category: 'gloves',
+        meshName: '4_+Gloves_01_0_0001',
+        defaultVisible: false,
+        suppressesSubmeshes: ['4_Arms'],
+      },
+    ],
+  },
+  leoverse: {
+    id: 'leoverse',
+    name: 'Heroic Armored Statue',
+    category: 'character',
+    skeleton: 'static',
+    modelUrl: '/game-assets/models/humanoids/props/leoverse_statue.glb',
+    compatibleWardrobePack: 'static_prop',
+    modularParts: [],
+  },
+  citizens: {
+    id: 'citizens',
+    name: 'Town Citizen',
+    category: 'character',
+    skeleton: 'static',
+    modelUrl: '/game-assets/models/humanoids/citizens/glb/man_1.glb',
+    compatibleWardrobePack: 'citizens_pack',
+    modularParts: [],
+  },
 };
 
 /** Normalize string key to find matching profile. */
 export function getCharacterModelProfile(modelIdOrUrl?: string | null): CharacterModelProfile | undefined {
   if (!modelIdOrUrl) return undefined;
   const raw = modelIdOrUrl.trim().toLowerCase();
+  if (raw.includes('/citizens/glb/') || /^builtin-citizen-/.test(raw) || /^citizen-/.test(raw)) {
+    return CHARACTER_MODEL_PROFILES.citizens;
+  }
   const baseKey = raw.replace(/^.*[\\/]/, '').replace(/\.(glb|gltf|fbx|obj)$/i, '');
 
   if (CHARACTER_MODEL_PROFILES[baseKey]) {
@@ -81,6 +194,21 @@ export function getCharacterModelProfile(modelIdOrUrl?: string | null): Characte
   }
   if (baseKey.includes('brute')) {
     return CHARACTER_MODEL_PROFILES.brute;
+  }
+  if (baseKey.includes('boy')) {
+    return CHARACTER_MODEL_PROFILES.boy;
+  }
+  if (baseKey.includes('girl') && !baseKey.includes('asian')) {
+    return CHARACTER_MODEL_PROFILES.girl;
+  }
+  if (baseKey.includes('asian')) {
+    return CHARACTER_MODEL_PROFILES.asian_girl;
+  }
+  if (baseKey.includes('leoverse')) {
+    return CHARACTER_MODEL_PROFILES.leoverse;
+  }
+  if (baseKey.includes('citizen') || baseKey.includes('people')) {
+    return CHARACTER_MODEL_PROFILES.citizens;
   }
   return undefined;
 }

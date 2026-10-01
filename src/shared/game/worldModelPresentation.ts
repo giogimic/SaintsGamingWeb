@@ -13,6 +13,8 @@ export interface CanonicalModelPartDef {
   category: CharacterComponentCategory;
   meshName: string;
   defaultVisible: boolean;
+  suppressesSubmeshes?: string[];
+  isFaceVariant?: boolean;
 }
 
 export interface CanonicalModelDef {
@@ -20,7 +22,7 @@ export interface CanonicalModelDef {
   name: string;
   modelUrl: string;
   category: 'character' | 'creature' | 'monster';
-  skeleton: 'manny' | 'creature_custom' | 'mixamo';
+  skeleton: 'manny' | 'creature_custom' | 'mixamo' | 'daz_g8f' | 'static';
   defaultAnimationProfileId?: string;
   modularParts?: CanonicalModelPartDef[];
   embeddedAnimations?: string[];
@@ -48,16 +50,87 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
     defaultAnimationProfileId: 'GreystoneManny',
     modularParts: CHARACTER_MODEL_PROFILES.brute.modularParts,
   },
+  boy: {
+    id: 'boy',
+    name: 'Stylized Boy',
+    modelUrl: '/game-assets/models/humanoids/boy/boy.glb',
+    category: 'character',
+    skeleton: 'mixamo',
+    defaultAnimationProfileId: 'boy_native',
+    modularParts: [],
+  },
+  girl: {
+    id: 'girl',
+    name: 'Stylized Adventurer Girl',
+    modelUrl: '/game-assets/models/humanoids/girl/girl.glb',
+    category: 'character',
+    skeleton: 'mixamo',
+    defaultAnimationProfileId: 'girl_native',
+    modularParts: [],
+  },
+  asian_girl: {
+    id: 'asian_girl',
+    name: 'Asian Heroine (Modular)',
+    modelUrl: '/game-assets/models/humanoids/asian_girl/asian_girl.glb',
+    category: 'character',
+    skeleton: 'daz_g8f',
+    modularParts: CHARACTER_MODEL_PROFILES.asian_girl.modularParts,
+  },
+  leoverse: {
+    id: 'leoverse',
+    name: 'Heroic Armored Statue',
+    modelUrl: '/game-assets/models/humanoids/props/leoverse_statue.glb',
+    category: 'character',
+    skeleton: 'static',
+    modularParts: [],
+  },
+  citizens: {
+    id: 'citizens',
+    name: 'Town Citizen',
+    modelUrl: '/game-assets/models/humanoids/citizens/glb/man_1.glb',
+    category: 'character',
+    skeleton: 'static',
+    modularParts: [],
+  },
 };
 
 export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalModelDef | undefined {
   if (!modelIdOrUrl) return undefined;
-  const key = modelIdOrUrl.trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.(glb|gltf|fbx|obj)$/i, '');
+  const raw = modelIdOrUrl.trim().toLowerCase();
+  const citizenPath = raw.match(/\/citizens\/glb\/([^/?]+)\.glb(?:\?.*)?$/);
+  const citizenId = raw.match(/^(?:builtin-)?citizen-(.+)$/);
+  const citizenName = citizenPath?.[1] || citizenId?.[1];
+  if (citizenName && /^[a-z0-9_-]+$/.test(citizenName)) {
+    return {
+      id: `citizen-${citizenName}`,
+      name: `Town Citizen (${citizenName})`,
+      modelUrl: `/game-assets/models/humanoids/citizens/glb/${citizenName}.glb`,
+      category: 'character',
+      skeleton: 'static',
+      modularParts: [],
+    };
+  }
+  const key = raw.replace(/^.*[\\/]/, '').replace(/\.(glb|gltf|fbx|obj)$/i, '');
   if (CANONICAL_BUILTIN_MODELS[key]) {
     return CANONICAL_BUILTIN_MODELS[key];
   }
   if (key.includes('brute')) {
     return CANONICAL_BUILTIN_MODELS.brute;
+  }
+  if (key === 'citizens' || key.includes('citizen') || key.includes('people')) {
+    return CANONICAL_BUILTIN_MODELS.citizens;
+  }
+  if (key.includes('boy')) {
+    return CANONICAL_BUILTIN_MODELS.boy;
+  }
+  if (key.includes('girl') && !key.includes('asian')) {
+    return CANONICAL_BUILTIN_MODELS.girl;
+  }
+  if (key.includes('asian')) {
+    return CANONICAL_BUILTIN_MODELS.asian_girl;
+  }
+  if (key.includes('leoverse')) {
+    return CANONICAL_BUILTIN_MODELS.leoverse;
   }
   return undefined;
 }
@@ -184,6 +257,9 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
           attachmentMode,
           hidesComponents: Array.isArray(att?.hidesComponents) ? att.hidesComponents : [],
           scale: Number(att?.scale) || undefined,
+          isSubmesh: Boolean(att?.isSubmesh || att?.meshName || att?.assetDefinition?.meshName || att?.metadata?.meshName),
+          meshName: att?.meshName || att?.assetDefinition?.meshName || att?.metadata?.meshName,
+          defaultVisible: att?.defaultVisible ?? att?.metadata?.defaultVisible,
         };
       })
       .filter((a: ModularAttachmentDef | undefined): a is ModularAttachmentDef => !!a);
@@ -217,7 +293,7 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
   return {
     mode: '3D',
     assetId: model.assetId || canonicalDef?.id || 'builtin-model-brute',
-    animationProfileId: model.animationProfileId ?? data.animationProfileId ?? data.assetDefinition?.animationProfileId ?? canonicalDef?.defaultAnimationProfileId ?? profile?.defaultAnimationProfileId ?? 'GreystoneManny',
+    animationProfileId: model.animationProfileId ?? data.animationProfileId ?? data.assetDefinition?.animationProfileId ?? canonicalDef?.defaultAnimationProfileId ?? profile?.defaultAnimationProfileId ?? (canonicalDef?.skeleton === 'manny' ? 'GreystoneManny' : undefined),
     modelUrl,
     modularModelUrls,
     modularAttachments,

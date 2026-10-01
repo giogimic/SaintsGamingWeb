@@ -39,6 +39,7 @@ import {
   FileUp,
   X,
   Copy,
+  ArrowUpDown,
 } from 'lucide-react';
 import { useGameStore } from '../store';
 import { useEditorStore } from './editor-store';
@@ -83,6 +84,59 @@ function getAssetName(asset: GameAssetItem): string {
     asset.source?.split('/').pop()?.replace(/\.[^/.]+$/, '') ||
     asset.id
   );
+}
+
+function formatFileSize(bytes?: number): string {
+  if (!bytes || bytes <= 0) return '—';
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+  return `${Math.round(bytes / 1024)} KB`;
+}
+
+function getAssetFormat(source?: string): string {
+  if (!source) return 'GLB';
+  const ext = source.split('.').pop()?.toUpperCase();
+  return ext && ext.length <= 5 ? ext : 'GLB';
+}
+
+function getModelRoleInfo(asset: GameAssetItem) {
+  const is3D = asset.type === 'MODEL' || asset.source?.endsWith('.glb') || asset.source?.endsWith('.fbx');
+  const rigFamily = asset.metadata?.rigAnalysis?.family || asset.metadata?.rigFamily;
+  const isModular = Boolean(
+    asset.isModularComponent ||
+    asset.metadata?.isModularComponent ||
+    (asset.tags || []).includes('character-component') ||
+    (asset.tags || []).includes('modular')
+  );
+  const isCreature = (asset.tags || []).some((t) => /creature|companion|pet|capture/i.test(t)) ||
+    (asset.categories || []).some((c) => /creature/i.test(c));
+  const isMonster = !isCreature && (
+    (asset.tags || []).some((t) => /monster|boss|beast|dragon|golem|enemy|hostile/i.test(t)) ||
+    (asset.categories || []).some((c) => /monster/i.test(c))
+  );
+  const isWeapon = !isModular && (
+    (asset.tags || []).some((t) => /weapon|sword|axe|bow|staff|dagger|gun|shield/i.test(t)) ||
+    (asset.categories || []).some((c) => /weapon/i.test(c))
+  );
+  const isPlayableBase = !isModular && !isCreature && !isMonster && !isWeapon && (
+    (asset.tags || []).some((t) => /playable|hero|character|humanoid|actor|archetype/i.test(t)) ||
+    (asset.categories || []).some((c) => /character|npc|archetype/i.test(c))
+  );
+  const slotName = asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat;
+  const setName = asset.metadata?.modularSetName || asset.metadata?.assetDefinition?.modularSetName || (asset.tags || []).find((t) => ['citizen', 'brute', 'adventurer', 'golem', 'samurai', 'school girl'].includes(t.toLowerCase()));
+
+  return {
+    is3D,
+    rigFamily,
+    isModular,
+    isCreature,
+    isMonster,
+    isWeapon,
+    isPlayableBase,
+    slotName,
+    setName,
+  };
 }
 
 export function AssetUploadView({
@@ -149,7 +203,31 @@ export function AssetUploadView({
   );
   const [totalLibraryCount, setTotalLibraryCount] = useState(0);
   const [previewingAsset, setPreviewingAsset] = useState<GameAssetItem | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'details'>('grid');
+  const [sortBy, setSortBy] = useState<'name' | 'type' | 'size' | 'recent'>('name');
+  const [sortAsc, setSortAsc] = useState<boolean>(true);
   const libraryRequestId = useRef(0);
+
+  useEffect(() => {
+    try {
+      const savedMode = window.localStorage.getItem('saints_models_view_mode');
+      if (savedMode === 'grid' || savedMode === 'details') setViewMode(savedMode);
+    } catch {
+      // Ignore unavailable localStorage.
+    }
+  }, []);
+
+  const handleSetViewMode = (mode: 'grid' | 'details') => {
+    soundSynth?.playUiClick?.();
+    setViewMode(mode);
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem('saints_models_view_mode', mode);
+      } catch {
+        // Ignore localStorage quota or private-mode errors
+      }
+    }
+  };
 
   // Fetch Library Assets
   const fetchLibrary = useCallback(async () => {
@@ -548,8 +626,27 @@ export function AssetUploadView({
           (a.categories || []).some((c) => /prop|scenery/i.test(c))
       );
     }
-    return list;
-  }, [libraryAssets, searchQuery, libraryCategoryFilter, librarySlotFilter]);
+
+    const sorted = [...list].sort((a, b) => {
+      let cmp = 0;
+      if (sortBy === 'name') {
+        cmp = getAssetName(a).localeCompare(getAssetName(b));
+      } else if (sortBy === 'type') {
+        const typeA = a.type || '';
+        const typeB = b.type || '';
+        cmp = typeA.localeCompare(typeB);
+      } else if (sortBy === 'size') {
+        cmp = (a.fileSize || 0) - (b.fileSize || 0);
+      } else if (sortBy === 'recent') {
+        const timeA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const timeB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        cmp = timeB - timeA;
+      }
+      return sortAsc ? cmp : -cmp;
+    });
+
+    return sorted;
+  }, [libraryAssets, searchQuery, libraryCategoryFilter, librarySlotFilter, sortBy, sortAsc]);
 
   // If a 3D model is loaded, immediately show AssetDefinitionStudio!
   if (selectedFile?.name.match(/\.(fbx|glb|gltf|obj|vox|dae|stl|ply)$/i) && previewUrl) {
@@ -665,7 +762,7 @@ export function AssetUploadView({
           <div className="text-[10px] text-slate-500 flex items-center gap-2">
             <span>Saints 3D Asset Pipeline</span>
             <span className="text-slate-600">·</span>
-            <span className="text-[#cbb26a]">v2.2.077</span>
+            <span className="text-[#cbb26a]">v2.2.081</span>
           </div>
         )}
       </div>
@@ -1081,6 +1178,36 @@ export function AssetUploadView({
               </div>
 
               <div className="flex items-center gap-2">
+                {/* View Mode Toggle: Grid vs Details List */}
+                <div className="flex items-center border border-slate-700/80 rounded-lg bg-black/60 overflow-hidden shadow-inner p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => handleSetViewMode('grid')}
+                    className={`px-2 py-1 rounded text-xs flex items-center gap-1.5 cursor-pointer transition ${
+                      viewMode === 'grid'
+                        ? 'bg-amber-600 text-white font-bold shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="Grid View (Cards)"
+                  >
+                    <Grid className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline text-[10px]">Grid</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSetViewMode('details')}
+                    className={`px-2 py-1 rounded text-xs flex items-center gap-1.5 cursor-pointer transition ${
+                      viewMode === 'details'
+                        ? 'bg-amber-600 text-white font-bold shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title="Details List View"
+                  >
+                    <List className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline text-[10px]">Details</span>
+                  </button>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => void fetchLibrary()}
@@ -1168,183 +1295,553 @@ export function AssetUploadView({
               </div>
             ) : (
               <div>
-                <div className="flex items-center justify-between text-[10px] text-slate-400 mb-2 font-mono">
-                  <span>Showing <strong className="text-amber-400">{filteredLibraryAssets.length}</strong> assets</span>
-                  <span>Click "Select" to assign directly to entity</span>
+                {/* Sub-Header: Count, View Mode Indicator, and Sort Controls */}
+                <div className="flex flex-wrap items-center justify-between text-[10px] text-slate-400 mb-2.5 font-mono gap-2 bg-[#07111c]/60 border border-slate-800/60 rounded-xl px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <span>
+                      Showing <strong className="text-amber-400">{filteredLibraryAssets.length}</strong> assets
+                    </span>
+                    <span className="text-slate-600">•</span>
+                    <span className="text-slate-300 font-semibold flex items-center gap-1">
+                      {viewMode === 'grid' ? (
+                        <>
+                          <Grid className="w-3 h-3 text-amber-400" />
+                          <span>Grid Cards</span>
+                        </>
+                      ) : (
+                        <>
+                          <List className="w-3 h-3 text-amber-400" />
+                          <span>Details List</span>
+                        </>
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    {/* Sort Controls */}
+                    <div className="flex items-center gap-1.5 text-[9.5px]">
+                      <span className="text-slate-500 font-bold uppercase tracking-wider">Sort:</span>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as any)}
+                        className="bg-[#050b14] border border-slate-700/80 rounded px-2 py-0.5 text-slate-200 text-[9.5px] focus:outline-none focus:border-amber-400 font-mono cursor-pointer"
+                      >
+                        <option value="name">Name (A-Z)</option>
+                        <option value="type">Type / Role</option>
+                        <option value="size">File Size</option>
+                        <option value="recent">Recently Added</option>
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setSortAsc(!sortAsc)}
+                        className="p-1 hover:bg-slate-800 text-slate-400 hover:text-white rounded border border-slate-700/70 cursor-pointer transition flex items-center gap-1"
+                        title={sortAsc ? 'Ascending (click to toggle Descending)' : 'Descending (click to toggle Ascending)'}
+                      >
+                        <ArrowUpDown className="w-3 h-3 text-amber-400" />
+                        <span className="text-[8.5px]">{sortAsc ? 'ASC' : 'DESC'}</span>
+                      </button>
+                    </div>
+
+                    <span className="hidden sm:inline text-slate-500">Click "Select" to assign to entity</span>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {filteredLibraryAssets.map((asset) => {
-                    const is3D = asset.type === 'MODEL' || asset.source?.endsWith('.glb') || asset.source?.endsWith('.fbx');
-                    const rigFamily = asset.metadata?.rigAnalysis?.family || asset.metadata?.rigFamily;
-                    const isModular = Boolean(
-                      asset.isModularComponent ||
-                      asset.metadata?.isModularComponent ||
-                      (asset.tags || []).includes('character-component') ||
-                      (asset.tags || []).includes('modular')
-                    );
-                    const isCreature = (asset.tags || []).some((t) => /creature|companion|pet|capture/i.test(t)) ||
-                      (asset.categories || []).some((c) => /creature/i.test(c));
-                    const isMonster = !isCreature && (
-                      (asset.tags || []).some((t) => /monster|boss|beast|dragon|golem|enemy|hostile/i.test(t)) ||
-                      (asset.categories || []).some((c) => /monster/i.test(c))
-                    );
-                    const isWeapon = !isModular && (
-                      (asset.tags || []).some((t) => /weapon|sword|axe|bow|staff|dagger|gun|shield/i.test(t)) ||
-                      (asset.categories || []).some((c) => /weapon/i.test(c))
-                    );
-                    const isPlayableBase = !isModular && !isCreature && !isMonster && !isWeapon && (
-                      (asset.tags || []).some((t) => /playable|hero|character|humanoid|actor|archetype/i.test(t)) ||
-                      (asset.categories || []).some((c) => /character|npc|archetype/i.test(c))
-                    );
-                    const slotName = asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat;
-                    const setName = asset.metadata?.modularSetName || asset.metadata?.assetDefinition?.modularSetName || (asset.tags || []).find((t) => ['citizen', 'brute', 'adventurer', 'golem'].includes(t.toLowerCase()));
+                {/* DETAILS LIST VIEW */}
+                {viewMode === 'details' ? (
+                  <div className="flex flex-col gap-1.5">
+                    {/* Table Header */}
+                    <div className="grid grid-cols-12 gap-2 px-3 py-2 text-[9px] font-bold uppercase tracking-wider text-slate-400 bg-[#07111c]/90 border border-slate-800 rounded-lg select-none items-center">
+                      <div className="col-span-5 sm:col-span-4 flex items-center gap-2">
+                        <span>Asset & Model</span>
+                      </div>
+                      <div className="col-span-3 sm:col-span-2">Role / Category</div>
+                      <div className="hidden sm:block sm:col-span-2">Format / Rig</div>
+                      <div className="hidden lg:block lg:col-span-2">Modular / Tags</div>
+                      <div className="col-span-4 sm:col-span-4 lg:col-span-2 text-right">Actions</div>
+                    </div>
 
-                    return (
-                      <div
-                        key={asset.id}
-                        className={`bg-[#07111c] border rounded-xl p-3 flex flex-col justify-between transition-all group hover:bg-[#0c1828] ${
-                          isPlayableBase
-                            ? 'border-amber-500/40 hover:border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.06)]'
-                            : isMonster
-                              ? 'border-red-500/30 hover:border-red-400'
-                              : isCreature
-                                ? 'border-purple-500/30 hover:border-purple-400'
-                                : 'border-slate-800 hover:border-cyan-500/40'
-                        }`}
-                      >
-                        <div>
-                          {/* Card Header & Visual Thumbnail */}
-                          <div className="flex items-start gap-3 mb-2">
-                            <div className="w-12 h-12 rounded-lg bg-black/50 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden group-hover:border-amber-500/50 transition-colors">
+                    {/* Table Rows */}
+                    {filteredLibraryAssets.map((asset) => {
+                      const {
+                        is3D,
+                        rigFamily,
+                        isModular,
+                        isCreature,
+                        isMonster,
+                        isWeapon,
+                        isPlayableBase,
+                        slotName,
+                        setName,
+                      } = getModelRoleInfo(asset);
+
+                      const fileName = asset.source?.split('/').pop() || asset.id;
+                      const format = getAssetFormat(asset.source);
+                      const fileSizeStr = formatFileSize(asset.fileSize);
+                      const assetName = getAssetName(asset);
+
+                      return (
+                        <div
+                          key={asset.id}
+                          className={`grid grid-cols-12 gap-2 px-3 py-2 rounded-xl border items-center transition-all group ${
+                            isPlayableBase
+                              ? 'bg-[#07111c] border-amber-500/40 hover:border-amber-400 hover:bg-[#0c1828] shadow-[0_0_12px_rgba(245,158,11,0.04)]'
+                              : isMonster
+                                ? 'bg-[#07111c] border-red-500/30 hover:border-red-400 hover:bg-[#1a0a0f]'
+                                : isCreature
+                                  ? 'bg-[#07111c] border-purple-500/30 hover:border-purple-400 hover:bg-[#150a1f]'
+                                  : isModular
+                                    ? 'bg-[#07111c] border-cyan-800/60 hover:border-cyan-500/50 hover:bg-[#081a24]'
+                                    : 'bg-[#07111c] border-slate-800 hover:border-slate-700 hover:bg-[#0c1828]'
+                          }`}
+                        >
+                          {/* Column 1: Asset & Model (Thumbnail, Name, Filename) */}
+                          <div className="col-span-5 sm:col-span-4 flex items-center gap-2.5 min-w-0">
+                            <div className="w-9 h-9 rounded-lg bg-black/60 border border-slate-700/80 flex items-center justify-center shrink-0 overflow-hidden group-hover:border-amber-500/50 transition-colors">
                               {is3D ? (
                                 isPlayableBase ? (
-                                  <User className="w-6 h-6 text-amber-400 group-hover:scale-110 transition-transform" />
+                                  <User className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
                                 ) : isModular ? (
-                                  <Shirt className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+                                  <Shirt className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
                                 ) : isCreature ? (
-                                  <span className="text-xl group-hover:scale-110 transition-transform">🐉</span>
+                                  <span className="text-sm group-hover:scale-110 transition-transform">🐉</span>
                                 ) : isMonster ? (
-                                  <span className="text-xl group-hover:scale-110 transition-transform">👾</span>
+                                  <span className="text-sm group-hover:scale-110 transition-transform">👾</span>
                                 ) : isWeapon ? (
-                                  <span className="text-xl group-hover:scale-110 transition-transform">⚔️</span>
+                                  <span className="text-sm group-hover:scale-110 transition-transform">⚔️</span>
                                 ) : (
-                                  <Cuboid className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+                                  <Cuboid className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
                                 )
                               ) : (
-                                <ImageIcon className="w-6 h-6 text-amber-400" />
+                                <ImageIcon className="w-4 h-4 text-amber-400" />
                               )}
                             </div>
 
                             <div className="flex-1 min-w-0">
                               <div className="font-bold text-xs text-white truncate group-hover:text-amber-300 transition-colors">
-                                {getAssetName(asset)}
+                                {assetName}
                               </div>
-                              <div className="text-[10px] text-slate-400 font-mono truncate mt-0.5">
-                                {asset.source?.split('/').pop() || asset.id}
-                              </div>
-
-                              {/* Badges */}
-                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                {isPlayableBase ? (
-                                  <span className="px-1.5 py-0.5 rounded text-[8.5px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
-                                    👑 PLAYABLE ARCHETYPE
-                                  </span>
-                                ) : isModular ? (
-                                  <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-cyan-950/70 text-cyan-300 border border-cyan-800 flex items-center gap-1">
-                                    👕 MODULAR{slotName ? ` • ${String(slotName).toUpperCase()}` : ''}
-                                  </span>
-                                ) : isCreature ? (
-                                  <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-purple-950/70 text-purple-300 border border-purple-800 flex items-center gap-1">
-                                    🐉 CREATURE
-                                  </span>
-                                ) : isMonster ? (
-                                  <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-red-950/70 text-red-300 border border-red-800 flex items-center gap-1">
-                                    👾 MONSTER
-                                  </span>
-                                ) : isWeapon ? (
-                                  <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-amber-950/70 text-amber-300 border border-amber-800 flex items-center gap-1">
-                                    ⚔️ WEAPON
-                                  </span>
-                                ) : (
-                                  <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60">
-                                    {is3D ? '3D MODEL' : '2D SPRITE'}
-                                  </span>
-                                )}
-
-                                {setName && (
-                                  <span className="px-1.5 py-0.5 rounded text-[8px] font-mono bg-slate-800 text-slate-300 border border-slate-700 capitalize">
-                                    Set: {setName}
-                                  </span>
-                                )}
-
-                                {rigFamily && (
-                                  <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-950/60 text-purple-300 border border-purple-800/60">
-                                    {rigFamily.replace('_', ' ')}
-                                  </span>
-                                )}
+                              <div className="text-[10px] text-slate-400 font-mono truncate flex items-center gap-1">
+                                <span className="truncate">{fileName}</span>
                               </div>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Card Action Buttons */}
-                        <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 mt-2">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              navigator.clipboard.writeText(asset.source || asset.id);
-                              showToast?.('Copied model asset path to clipboard!');
-                            }}
-                            title="Copy asset path"
-                            className="p-1 text-slate-500 hover:text-slate-300 rounded hover:bg-slate-800 transition cursor-pointer"
-                          >
-                            <Copy className="w-3.5 h-3.5" />
-                          </button>
-
-                          {/* Primary Select Action */}
-                          {(activeAssetPicker || onSelectModel) ? (
-                            <button
-                              type="button"
-                              onClick={() => handleSelectAsset(asset)}
-                              className={`flex-1 px-3 py-1.5 rounded-lg text-white font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md ${
-                                isPlayableBase
-                                  ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-950/40'
-                                  : isModular
-                                    ? 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-950/40'
-                                    : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950/40'
-                              }`}
-                            >
-                              <Check className="w-3.5 h-3.5" />
-                              <span>
-                                {activeAssetPicker?.categoryFilter === 'CHARACTERS' || isPlayableBase
-                                  ? 'Select Archetype Base'
-                                  : isModular
-                                    ? 'Equip Wardrobe Piece'
-                                    : 'Select Model'}
+                          {/* Column 2: Role / Category */}
+                          <div className="col-span-3 sm:col-span-2 flex items-center">
+                            {isPlayableBase ? (
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                                👑 ARCHETYPE
                               </span>
-                            </button>
-                          ) : (
+                            ) : isModular ? (
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-cyan-950/70 text-cyan-300 border border-cyan-800 truncate">
+                                👕 {slotName ? String(slotName).toUpperCase() : 'MODULAR'}
+                              </span>
+                            ) : isCreature ? (
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-950/70 text-purple-300 border border-purple-800">
+                                🐉 CREATURE
+                              </span>
+                            ) : isMonster ? (
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-red-950/70 text-red-300 border border-red-800">
+                                👾 MONSTER
+                              </span>
+                            ) : isWeapon ? (
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-amber-950/70 text-amber-300 border border-amber-800">
+                                ⚔️ WEAPON
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-slate-800 text-slate-300 border border-slate-700">
+                                {is3D ? '3D MODEL' : '2D SPRITE'}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Column 3: Format / Rig */}
+                          <div className="hidden sm:flex sm:col-span-2 flex-col gap-0.5 min-w-0">
+                            <div className="flex items-center gap-1">
+                              <span className="px-1.5 py-0.2 rounded text-[8px] font-mono bg-black/40 text-amber-300 border border-slate-800 font-bold">
+                                {format}
+                              </span>
+                              <span className="text-[9px] text-slate-400 font-mono">{fileSizeStr}</span>
+                            </div>
+                            {rigFamily ? (
+                              <span className="text-[8.5px] text-purple-300 truncate font-mono">
+                                {rigFamily.replace('_', ' ')}
+                              </span>
+                            ) : (
+                              <span className="text-[8.5px] text-slate-500 font-mono">Static Mesh</span>
+                            )}
+                          </div>
+
+                          {/* Column 4: Modular Set / Tags */}
+                          <div className="hidden lg:flex lg:col-span-2 flex-col gap-0.5 min-w-0">
+                            {setName ? (
+                              <span className="text-[9px] text-cyan-300 truncate font-mono">
+                                Set: {setName}
+                              </span>
+                            ) : (
+                              <span className="text-[9px] text-slate-500 font-mono">No Set</span>
+                            )}
+                            <div className="flex items-center gap-1 overflow-hidden">
+                              {(asset.tags || []).slice(0, 2).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="px-1 py-0.2 rounded text-[7.5px] font-mono bg-slate-800 text-slate-400 border border-slate-700/60 truncate"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Column 5: Actions */}
+                          <div className="col-span-4 sm:col-span-4 lg:col-span-2 flex items-center justify-end gap-1.5">
                             <button
                               type="button"
                               onClick={() => {
-                                handleSelectAsset(asset);
+                                navigator.clipboard.writeText(asset.source || asset.id);
+                                showToast?.('Copied model path to clipboard!');
                               }}
-                              className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold transition cursor-pointer"
+                              title="Copy asset path"
+                              className="p-1 text-slate-500 hover:text-slate-200 rounded hover:bg-slate-800 transition cursor-pointer"
                             >
-                              Use Asset
+                              <Copy className="w-3.5 h-3.5" />
                             </button>
-                          )}
+
+                            <button
+                              type="button"
+                              onClick={() => setPreviewingAsset(asset)}
+                              title="View model details & technical specs"
+                              className="p-1 text-slate-500 hover:text-cyan-300 rounded hover:bg-slate-800 transition cursor-pointer"
+                            >
+                              <Info className="w-3.5 h-3.5" />
+                            </button>
+
+                            {(activeAssetPicker || onSelectModel) ? (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectAsset(asset)}
+                                className={`px-2.5 py-1 rounded-lg text-white font-bold text-[10.5px] transition flex items-center gap-1 cursor-pointer shadow-sm ${
+                                  isPlayableBase
+                                    ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-950/40'
+                                    : isModular
+                                      ? 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-950/40'
+                                      : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950/40'
+                                }`}
+                              >
+                                <Check className="w-3 h-3" />
+                                <span>
+                                  {activeAssetPicker?.categoryFilter === 'CHARACTERS' || isPlayableBase
+                                    ? 'Select Base'
+                                    : isModular
+                                      ? 'Equip'
+                                      : 'Select'}
+                                </span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectAsset(asset)}
+                                className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold transition cursor-pointer"
+                              >
+                                Use Asset
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  /* GRID VIEW */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {filteredLibraryAssets.map((asset) => {
+                      const {
+                        is3D,
+                        rigFamily,
+                        isModular,
+                        isCreature,
+                        isMonster,
+                        isWeapon,
+                        isPlayableBase,
+                        slotName,
+                        setName,
+                      } = getModelRoleInfo(asset);
+
+                      const format = getAssetFormat(asset.source);
+                      const fileSizeStr = formatFileSize(asset.fileSize);
+                      const assetName = getAssetName(asset);
+
+                      return (
+                        <div
+                          key={asset.id}
+                          className={`bg-[#07111c] border rounded-xl p-3 flex flex-col justify-between transition-all group hover:bg-[#0c1828] ${
+                            isPlayableBase
+                              ? 'border-amber-500/40 hover:border-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.06)]'
+                              : isMonster
+                                ? 'border-red-500/30 hover:border-red-400'
+                                : isCreature
+                                  ? 'border-purple-500/30 hover:border-purple-400'
+                                  : 'border-slate-800 hover:border-cyan-500/40'
+                          }`}
+                        >
+                          <div>
+                            {/* Card Header & Visual Thumbnail */}
+                            <div className="flex items-start gap-3 mb-2">
+                              <div className="w-12 h-12 rounded-lg bg-black/50 border border-slate-700 flex items-center justify-center shrink-0 overflow-hidden group-hover:border-amber-500/50 transition-colors">
+                                {is3D ? (
+                                  isPlayableBase ? (
+                                    <User className="w-6 h-6 text-amber-400 group-hover:scale-110 transition-transform" />
+                                  ) : isModular ? (
+                                    <Shirt className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+                                  ) : isCreature ? (
+                                    <span className="text-xl group-hover:scale-110 transition-transform">🐉</span>
+                                  ) : isMonster ? (
+                                    <span className="text-xl group-hover:scale-110 transition-transform">👾</span>
+                                  ) : isWeapon ? (
+                                    <span className="text-xl group-hover:scale-110 transition-transform">⚔️</span>
+                                  ) : (
+                                    <Cuboid className="w-6 h-6 text-cyan-400 group-hover:scale-110 transition-transform" />
+                                  )
+                                ) : (
+                                  <ImageIcon className="w-6 h-6 text-amber-400" />
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="font-bold text-xs text-white truncate group-hover:text-amber-300 transition-colors">
+                                  {assetName}
+                                </div>
+                                <div className="text-[10px] text-slate-400 font-mono truncate mt-0.5">
+                                  {asset.source?.split('/').pop() || asset.id}
+                                </div>
+
+                                {/* Badges */}
+                                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                  {isPlayableBase ? (
+                                    <span className="px-1.5 py-0.5 rounded text-[8.5px] font-black bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center gap-1">
+                                      👑 PLAYABLE ARCHETYPE
+                                    </span>
+                                  ) : isModular ? (
+                                    <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-cyan-950/70 text-cyan-300 border border-cyan-800 flex items-center gap-1">
+                                      👕 MODULAR{slotName ? ` • ${String(slotName).toUpperCase()}` : ''}
+                                    </span>
+                                  ) : isCreature ? (
+                                    <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-purple-950/70 text-purple-300 border border-purple-800 flex items-center gap-1">
+                                      🐉 CREATURE
+                                    </span>
+                                  ) : isMonster ? (
+                                    <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-red-950/70 text-red-300 border border-red-800 flex items-center gap-1">
+                                      👾 MONSTER
+                                    </span>
+                                  ) : isWeapon ? (
+                                    <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-amber-950/70 text-amber-300 border border-amber-800 flex items-center gap-1">
+                                      ⚔️ WEAPON
+                                    </span>
+                                  ) : (
+                                    <span className="px-1.5 py-0.5 rounded text-[8.5px] font-bold bg-cyan-950/60 text-cyan-300 border border-cyan-800/60">
+                                      {is3D ? '3D MODEL' : '2D SPRITE'}
+                                    </span>
+                                  )}
+
+                                  <span className="px-1.5 py-0.5 rounded text-[8px] font-mono bg-black/50 text-amber-300 border border-slate-700/80">
+                                    {format} • {fileSizeStr}
+                                  </span>
+
+                                  {setName && (
+                                    <span className="px-1.5 py-0.5 rounded text-[8px] font-mono bg-slate-800 text-slate-300 border border-slate-700 capitalize">
+                                      Set: {setName}
+                                    </span>
+                                  )}
+
+                                  {rigFamily && (
+                                    <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-950/60 text-purple-300 border border-purple-800/60">
+                                      {rigFamily.replace('_', ' ')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Card Action Buttons */}
+                          <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 mt-2">
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(asset.source || asset.id);
+                                  showToast?.('Copied model asset path to clipboard!');
+                                }}
+                                title="Copy asset path"
+                                className="p-1 text-slate-500 hover:text-slate-300 rounded hover:bg-slate-800 transition cursor-pointer"
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => setPreviewingAsset(asset)}
+                                title="View model details & technical specs"
+                                className="p-1 text-slate-500 hover:text-cyan-300 rounded hover:bg-slate-800 transition cursor-pointer"
+                              >
+                                <Info className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Primary Select Action */}
+                            {(activeAssetPicker || onSelectModel) ? (
+                              <button
+                                type="button"
+                                onClick={() => handleSelectAsset(asset)}
+                                className={`flex-1 px-3 py-1.5 rounded-lg text-white font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md ${
+                                  isPlayableBase
+                                    ? 'bg-amber-600 hover:bg-amber-500 shadow-amber-950/40'
+                                    : isModular
+                                      ? 'bg-cyan-600 hover:bg-cyan-500 shadow-cyan-950/40'
+                                      : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950/40'
+                                }`}
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                                <span>
+                                  {activeAssetPicker?.categoryFilter === 'CHARACTERS' || isPlayableBase
+                                    ? 'Select Archetype Base'
+                                    : isModular
+                                      ? 'Equip Wardrobe Piece'
+                                      : 'Select Model'}
+                                </span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleSelectAsset(asset);
+                                }}
+                                className="px-3 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-bold transition cursor-pointer"
+                              >
+                                Use Asset
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             )}
           </div>
         )}
       </div>
+
+      {/* MODEL DETAILS POPUP / INSPECTOR MODAL */}
+      {previewingAsset && (
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-lg bg-[#07111c] border border-amber-500/40 rounded-2xl shadow-2xl overflow-hidden flex flex-col font-mono text-slate-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-[#0b1320] border-b border-amber-500/20">
+              <div className="flex items-center gap-2">
+                <Box className="w-4 h-4 text-amber-400" />
+                <span className="font-bold text-sm text-white truncate max-w-sm">
+                  {getAssetName(previewingAsset)}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewingAsset(null)}
+                className="text-slate-400 hover:text-white p-1 rounded hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 space-y-3.5 max-h-[75vh] overflow-y-auto">
+              {/* Model ID & Source Path */}
+              <div className="bg-[#050b14] border border-slate-800 rounded-xl p-3 space-y-1.5">
+                <div className="text-[10px] uppercase font-bold text-slate-400">Source Path & ID</div>
+                <div className="flex items-center justify-between gap-2 bg-black/40 border border-slate-800/80 rounded-lg px-2.5 py-1.5 text-xs text-amber-300 font-mono break-all">
+                  <span>{previewingAsset.source || previewingAsset.id}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(previewingAsset.source || previewingAsset.id);
+                      showToast?.('Copied path to clipboard!');
+                    }}
+                    className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white shrink-0 cursor-pointer"
+                    title="Copy path"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Specifications Grid */}
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="bg-[#050b14] border border-slate-800 rounded-xl p-2.5">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Asset Type</span>
+                  <span className="text-white font-bold">{previewingAsset.type}</span>
+                </div>
+                <div className="bg-[#050b14] border border-slate-800 rounded-xl p-2.5">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Format & File Size</span>
+                  <span className="text-white font-bold">
+                    {getAssetFormat(previewingAsset.source)} • {formatFileSize(previewingAsset.fileSize)}
+                  </span>
+                </div>
+                <div className="bg-[#050b14] border border-slate-800 rounded-xl p-2.5">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Rig Family</span>
+                  <span className="text-purple-300 font-bold">
+                    {previewingAsset.metadata?.rigAnalysis?.family || previewingAsset.metadata?.rigFamily || 'Static Mesh'}
+                  </span>
+                </div>
+                <div className="bg-[#050b14] border border-slate-800 rounded-xl p-2.5">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Modular Set / Slot</span>
+                  <span className="text-cyan-300 font-bold">
+                    {previewingAsset.metadata?.modularSetName || previewingAsset.componentCategory || 'None'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Tags */}
+              {previewingAsset.tags && previewingAsset.tags.length > 0 && (
+                <div className="bg-[#050b14] border border-slate-800 rounded-xl p-3 space-y-1.5">
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Tags</span>
+                  <div className="flex flex-wrap gap-1">
+                    {previewingAsset.tags.map((tag) => (
+                      <span key={tag} className="px-2 py-0.5 bg-black/40 border border-slate-800 rounded text-[9px] text-amber-300 font-mono">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="flex items-center justify-between px-4 py-3 bg-[#0b1320] border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setPreviewingAsset(null)}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
+              >
+                Close
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const assetToSelect = previewingAsset;
+                  setPreviewingAsset(null);
+                  handleSelectAsset(assetToSelect);
+                }}
+                className="px-4 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition cursor-pointer shadow flex items-center gap-1.5"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Select Model</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

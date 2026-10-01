@@ -100,19 +100,21 @@ const BONE_ALIAS_PATTERNS: Record<string, RegExp[]> = {
   Spine: [
     /(^|_|:)spine(_|$)/i,
     /(^|_|:)spine[0-9]?(_|$)/i,
+    /(^|_|:)abdomen(lower|upper)?(_|$)/i,
     /bip0[0-9].*spine/i,
     /j_bip_c_spine/i,
     /def[-_]spine001/i,
   ],
   Chest: [
     /(^|_|:)chest(_|$)/i,
+    /(^|_|:)chest(lower|upper)?(_|$)/i,
     /(^|_|:)spine2(_|$)/i,
     /(^|_|:)spine3(_|$)/i,
     /j_bip_c_chest/i,
     /bip0[0-9].*spine2/i,
   ],
   Neck: [
-    /(^|_|:)neck(_|$)/i,
+    /(^|_|:)neck(lower|upper)?(_|$)/i,
     /bip0[0-9].*neck/i,
     /j_bip_c_neck/i,
     /def[-_]neck/i,
@@ -125,6 +127,7 @@ const BONE_ALIAS_PATTERNS: Record<string, RegExp[]> = {
   ],
   LeftArm: [
     /(^|_|:)(left|l)_?(arm|upperarm|shoulder|up_?arm)(_|$)/i,
+    /(^|_|:)l_?shldr(bend|twist)?(_|$)/i,
     /upperarm_l/i,
     /arm_l/i,
     /bip0[0-9].*l.*upperarm/i,
@@ -133,6 +136,7 @@ const BONE_ALIAS_PATTERNS: Record<string, RegExp[]> = {
   ],
   RightArm: [
     /(^|_|:)(right|r)_?(arm|upperarm|shoulder|up_?arm)(_|$)/i,
+    /(^|_|:)r_?shldr(bend|twist)?(_|$)/i,
     /upperarm_r/i,
     /arm_r/i,
     /bip0[0-9].*r.*upperarm/i,
@@ -155,6 +159,7 @@ const BONE_ALIAS_PATTERNS: Record<string, RegExp[]> = {
   ],
   LeftLeg: [
     /(^|_|:)(left|l)_?(leg|upleg|thigh|up_?leg)(_|$)/i,
+    /(^|_|:)l_?thigh(bend|twist)?(_|$)/i,
     /thigh_l/i,
     /upleg_l/i,
     /bip0[0-9].*l.*thigh/i,
@@ -163,6 +168,7 @@ const BONE_ALIAS_PATTERNS: Record<string, RegExp[]> = {
   ],
   RightLeg: [
     /(^|_|:)(right|r)_?(leg|upleg|thigh|up_?leg)(_|$)/i,
+    /(^|_|:)r_?thigh(bend|twist)?(_|$)/i,
     /thigh_r/i,
     /upleg_r/i,
     /bip0[0-9].*r.*thigh/i,

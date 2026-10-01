@@ -5,14 +5,14 @@ import { getDefaultModelWardrobeSocket } from '@/shared/game/modelWardrobe';
 
 /** Standard socket pattern matching table mapping canonical sockets to common skeleton bone names. */
 const SOCKET_MATCHERS: Record<string, string[]> = {
-  righthandmount: ['righthand', 'hand_r', 'hand.r', 'r_hand', 'r-hand', 'wrist_r', 'bip01 r hand', 'mixamorigrighthand'],
-  lefthandmount: ['lefthand', 'hand_l', 'hand.l', 'l_hand', 'l-hand', 'wrist_l', 'bip01 l hand', 'mixamoriglefthand'],
-  twohandedgrip: ['righthand', 'hand_r', 'hand.r', 'r_hand', 'wrist_r', 'mixamorigrighthand'],
+  righthandmount: ['righthand', 'hand_r', 'hand.r', 'r_hand', 'r-hand', 'wrist_r', 'bip01 r hand', 'mixamorigrighthand', 'rhand', 'bip01rhand'],
+  lefthandmount: ['lefthand', 'hand_l', 'hand.l', 'l_hand', 'l-hand', 'wrist_l', 'bip01 l hand', 'mixamoriglefthand', 'lhand', 'bip01lhand'],
+  twohandedgrip: ['righthand', 'hand_r', 'hand.r', 'r_hand', 'wrist_r', 'mixamorigrighthand', 'rhand', 'bip01rhand'],
   headmount: ['head', 'bip01 head', 'mixamorighead', 'neck', 'bip01 neck', 'mixamorigneck'],
   chestmount: ['spine2', 'upperchest', 'mixamorigupperchest', 'spine1', 'chest', 'spine', 'mixamorigspine2', 'mixamorigchest', 'pelvis'],
   sheathedback: ['spine2', 'upperchest', 'chest', 'spine1', 'spine', 'mixamorigspine2'],
-  sheathedhip_l: ['leftupleg', 'thigh_l', 'pelvis', 'hips', 'mixamorigleftupleg'],
-  sheathedhip_r: ['rightupleg', 'thigh_r', 'pelvis', 'hips', 'mixamorigrightupleg'],
+  sheathedhip_l: ['leftupleg', 'thigh_l', 'pelvis', 'hips', 'mixamorigleftupleg', 'lthighbend', 'lthigh', 'l_thigh'],
+  sheathedhip_r: ['rightupleg', 'thigh_r', 'pelvis', 'hips', 'mixamorigrightupleg', 'rthighbend', 'rthigh', 'r_thigh'],
 };
 
 /**
@@ -74,6 +74,17 @@ export function attachModularComponent({
   importedResult.meshes.forEach((m) => {
     m.isPickable = false;
   });
+
+  if (attachment.isSubmesh && attachment.meshName) {
+    const normalize = (name: string) => name.toLowerCase().replace(/[-_\s]/g, '');
+    const selectedMeshName = normalize(attachment.meshName);
+    const selectedMeshes = new Set(
+      importedResult.meshes.filter((mesh) => normalize(mesh.name) === selectedMeshName)
+    );
+    if (selectedMeshes.size > 0) {
+      importedResult.meshes.forEach((mesh) => mesh.setEnabled(selectedMeshes.has(mesh)));
+    }
+  }
 
   const rootMeshes = importedResult.meshes.filter((m) => !m.parent);
   const targetRoots = rootMeshes.length > 0 ? rootMeshes : importedResult.meshes;

@@ -30,45 +30,45 @@ const BONE_EQUIVALENCE_GROUPS: string[][] = [
   ['root', 'armature', 'origin', 'bip01'],
 
   // Spine / Chest / Torso
-  ['spine', 'spine01', 'spine1', 'lowerspine', 'spine0'],
-  ['spine1', 'spine02', 'spine2', 'chest', 'midspine'],
-  ['spine2', 'spine03', 'spine3', 'upperchest', 'chest'],
+  ['spine', 'spine01', 'spine1', 'lowerspine', 'spine0', 'abdomenlower'],
+  ['spine1', 'spine02', 'spine2', 'chest', 'midspine', 'abdomenupper', 'chestlower'],
+  ['spine2', 'spine03', 'spine3', 'upperchest', 'chest', 'chestupper'],
 
   // Neck & Head
-  ['neck', 'neck01', 'neck1'],
+  ['neck', 'neck01', 'neck1', 'necklower', 'neckupper'],
   ['head', 'head01', 'headtop_end'],
 
   // Left Shoulder / Clavicle
-  ['leftshoulder', 'claviclel', 'lclavicle', 'shoulderl', 'lshoulder'],
+  ['leftshoulder', 'claviclel', 'lclavicle', 'shoulderl', 'lshoulder', 'lcollar'],
   // Left Upper Arm
-  ['leftarm', 'upperarml', 'lupperarm', 'arml', 'larm'],
+  ['leftarm', 'upperarml', 'lupperarm', 'arml', 'larm', 'lshldr', 'lshldrbend', 'lshldrtwist'],
   // Left Forearm / Lower Arm
-  ['leftforearm', 'lowerarml', 'llowerarm', 'forearml', 'lforearm', 'leftarmroll'],
+  ['leftforearm', 'lowerarml', 'llowerarm', 'forearml', 'lforearm', 'leftarmroll', 'lforearmbend', 'lforearmtwist'],
   // Left Hand
   ['lefthand', 'handl', 'lhand', 'wristl'],
 
   // Right Shoulder / Clavicle
-  ['rightshoulder', 'clavicler', 'rclavicle', 'shoulderr', 'rshoulder'],
+  ['rightshoulder', 'clavicler', 'rclavicle', 'shoulderr', 'rshoulder', 'rcollar'],
   // Right Upper Arm
-  ['rightarm', 'upperarmr', 'rupperarm', 'armr', 'rarm'],
+  ['rightarm', 'upperarmr', 'rupperarm', 'armr', 'rarm', 'rshldr', 'rshldrbend', 'rshldrtwist'],
   // Right Forearm / Lower Arm
-  ['rightforearm', 'lowerarmr', 'rlowerarm', 'forearmr', 'rforearm', 'rightarmroll'],
+  ['rightforearm', 'lowerarmr', 'rlowerarm', 'forearmr', 'rforearm', 'rightarmroll', 'rforearmbend', 'rforearmtwist'],
   // Right Hand
   ['righthand', 'handr', 'rhand', 'wristr'],
 
   // Left Thigh / Upper Leg
-  ['leftupleg', 'thighl', 'lthigh', 'legl', 'lupleg', 'upperlegl'],
+  ['leftupleg', 'thighl', 'lthigh', 'legl', 'lupleg', 'upperlegl', 'lthighbend', 'lthightwist'],
   // Left Calf / Lower Leg
-  ['leftleg', 'calfl', 'lcalf', 'shinl', 'lowerlegl', 'lleg'],
+  ['leftleg', 'calfl', 'lcalf', 'shinl', 'lowerlegl', 'lleg', 'lshinbend'],
   // Left Foot
   ['leftfoot', 'footl', 'lfoot', 'anklel'],
   // Left Toe
   ['lefttoebase', 'balll', 'ltoe', 'toel', 'lefttoe'],
 
   // Right Thigh / Upper Leg
-  ['rightupleg', 'thighr', 'rthigh', 'legr', 'rupleg', 'upperlegr'],
+  ['rightupleg', 'thighr', 'rthigh', 'legr', 'rupleg', 'upperlegr', 'rthighbend', 'rthightwist'],
   // Right Calf / Lower Leg
-  ['rightleg', 'calfr', 'rcalf', 'shinr', 'lowerlegr', 'rleg'],
+  ['rightleg', 'calfr', 'rcalf', 'shinr', 'lowerlegr', 'rleg', 'rshinbend'],
   // Right Foot
   ['rightfoot', 'footr', 'rfoot', 'ankler'],
   // Right Toe
@@ -157,12 +157,54 @@ export function findAllMatchingTargetNodes(
 export interface RetargetOptions {
   loop?: boolean;
   speed?: number;
+  lockRootHorizontalTranslation?: boolean;
 }
 
 export interface RetargetResult {
   group: BABYLON.AnimationGroup;
   matchedBones: number;
   totalBones: number;
+}
+
+/**
+ * Removes cumulative horizontal forward drift from root bone position tracks,
+ * locking the cycle in-place while keeping cyclic vertical bobbing and stepping intact.
+ */
+function lockHorizontalTranslationKeys(anim: BABYLON.Animation): void {
+  const keys = anim.getKeys();
+  if (!keys || keys.length < 2) return;
+  const first = keys[0];
+  const last = keys[keys.length - 1];
+  if (!first || !last || !first.value || !last.value) return;
+
+  const totalFrames = last.frame - first.frame;
+  if (totalFrames <= 0) return;
+
+  const vFirst = first.value as BABYLON.Vector3;
+  const vLast = last.value as BABYLON.Vector3;
+  if (typeof vFirst.x !== 'number' || typeof vLast.x !== 'number') return;
+
+  const dx = vLast.x - vFirst.x;
+  const dy = vLast.y - vFirst.y;
+  const dz = vLast.z - vFirst.z;
+
+  // Check if there is meaningful drift (> 0.05 units)
+  if (Math.abs(dx) < 0.05 && Math.abs(dy) < 0.05 && Math.abs(dz) < 0.05) return;
+
+  const newKeys = keys.map((k) => {
+    const t = (k.frame - first.frame) / totalFrames;
+    const val = (k.value as BABYLON.Vector3).clone();
+    val.x -= t * dx;
+    val.y -= t * dy;
+    val.z -= t * dz;
+    return {
+      frame: k.frame,
+      value: val,
+      inTangent: k.inTangent ? (k.inTangent as BABYLON.Vector3).clone() : undefined,
+      outTangent: k.outTangent ? (k.outTangent as BABYLON.Vector3).clone() : undefined,
+    };
+  });
+  anim.setKeys(newKeys);
 }
 
 /**
@@ -203,7 +245,12 @@ export function retargetAnimationGroup(
         continue;
       }
       
-      newAg.addTargetedAnimation(ta.animation.clone(), destNode);
+      const animToTarget = ta.animation.clone();
+      if (isPositionTrack && isRootBone && options?.lockRootHorizontalTranslation) {
+        lockHorizontalTranslationKeys(animToTarget);
+      }
+
+      newAg.addTargetedAnimation(animToTarget, destNode);
       matchedBones++;
     }
   }

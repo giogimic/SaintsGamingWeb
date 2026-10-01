@@ -766,12 +766,17 @@ export class EntityRenderer {
                   if (mapping.speed) embeddedAg.speedRatio = mapping.speed;
                 }
               } else if (mapping.sourcePath) {
+                const isLocomotionSlot = slot === 'walk' || slot === 'walk_fwd' || slot === 'run' || slot === 'run_fwd' || slot.includes('walk') || slot.includes('run') || slot.includes('jog');
                 loadAndRetargetAnimation(
                   mapping.sourcePath,
                   slot,
                   result.transformNodes,
                   this.scene!,
-                  { loop: mapping.loop !== false, speed: mapping.speed }
+                  {
+                    loop: mapping.loop !== false,
+                    speed: mapping.speed,
+                    lockRootHorizontalTranslation: mapping.lockRootHorizontalTranslation ?? isLocomotionSlot,
+                  }
                 ).then((ag) => {
                   if (!ag) return;
                   const latest = this.sprites.get(id);

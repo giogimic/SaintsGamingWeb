@@ -96,4 +96,33 @@ describe("attachModularComponent", () => {
     expect(disabledNames).toContain("Character_Hair");
     expect(disabledNames).not.toContain("Character_Head");
   });
+
+  it("keeps only the selected mesh when attaching an internal submesh asset", () => {
+    const engine = new NullEngine();
+    const scene = new BABYLON.Scene(engine);
+    const modelWrapper = new BABYLON.TransformNode("modelWrapper", scene);
+    const selectedMesh = new BABYLON.Mesh("4_+Shirt1_01_0_0", scene);
+    const otherMesh = new BABYLON.Mesh("4_+Skirt1_01_0_0", scene);
+
+    attachModularComponent({
+      scene,
+      id: "player_test",
+      attIndex: 0,
+      attachment: {
+        modelUrl: "/game-assets/models/humanoids/asian_girl/asian_girl.glb",
+        assetId: "builtin-piece-ag_shirt",
+        isSubmesh: true,
+        meshName: "4_+Shirt1_01_0_0",
+        attachmentMode: "RIGID_SOCKET",
+      },
+      importedResult: { meshes: [selectedMesh, otherMesh], skeletons: [], animationGroups: [] } as any,
+      modelWrapper,
+      baseSkeleton: null,
+    });
+
+    expect(selectedMesh.isEnabled()).toBe(true);
+    expect(otherMesh.isEnabled()).toBe(false);
+    scene.dispose();
+    engine.dispose();
+  });
 });

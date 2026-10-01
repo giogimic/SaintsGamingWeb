@@ -1,3 +1,71 @@
+## [2.2.081] - 2026-09-30
+- Asset audit fixes: citizen IDs now retain their unique GLB paths; canonical synchronization is repeatable and removes stale modular records.
+- Align Asian heroine modular mesh selectors with exported node names; prevent submesh assets from importing the entire source model.
+- Make the ingestion source configurable; embed the Girl base color, normal, and packed metallic/roughness maps; bind the three Asian Girl FBX-referenced textures; embed Katana and Holster diffuse/normal maps; and load the saved Asset Library view after hydration.
+- Synchronize release labels and defaults to 2.2.081.
+- Texture audit: asian_girl.glb now embeds and binds the three textures referenced by the source FBX (o-b_base.png, o-b_nrm.png, and pin accs.png). Other package textures remain sidecars; no additional material assignments are claimed without source mapping evidence.
+
+## [2.2.080] - 2026-09-30
+- Packaged 42 citizen GLBs with embedded diffuse textures and registered 65 canonical assets (six models, 17 modular pieces/props, and 42 citizens).
+- At this release, katana.glb lacked Katana_D and Holster_D images, and asian_girl.glb had no embedded images; the 2.2.081 importer now binds verified source texture references.
+- Earlier 2.2.080 tests and TypeScript checks passed.
+
+## [2.2.079] - 2026-09-30
+- **3D Asset Management & Ingestion — Royalty-Free Humanoid Packages**:
+  - **Asset Normalization & Ingestion Pipeline (`scripts/ingest-quick-assets.js`)**:
+    - Created headless, cross-platform (Debian/Linux and Windows compatible) asset conversion and packaging pipeline using Three.js / standard glTF loaders and exporters without external DCC/Blender dependencies.
+    - **Boy Package (`public/game-assets/models/humanoids/boy/`)**:
+      - Bound untextured `T-Pose.glb` with embedded `Texture.png` (8.30 MB GLB).
+      - Added root grounding offset (+0.957m) to plant feet at `Y = 0.000m`.
+      - Extracted and bundled native locomotion clips into `boy/anims/` (`Breathing Idle`, `Walking`, `Running`, `Sitting`).
+    - **Girl Package (`public/game-assets/models/humanoids/girl/`)**:
+      - Scaled `Girl+38.glb` by 1.65x (7.15 MB GLB) and embedded PBR normal texture maps.
+      - Converted all 6 FBX native locomotion clips into standalone GLB files in `girl/anims/` (`Idle`, `Walking`, `Running`, `Jumping`, `Talking`, `Sitting Idle`).
+    - **Asian Girl Package (`public/game-assets/models/humanoids/asian_girl/`)**:
+      - Converted `Asian+School+Girl.fbx` with 36 modular submeshes, Daz Genesis 8 Female (G8F) skeleton, and skinning to standalone GLB (`asian_girl.glb`, 90.07 MB).
+      - Copied all 47 diffuse, normal, and alpha textures to `asian_girl/textures/`.
+      - Converted `Katana.obj` into calibrated 109cm weapon prop (`katana.glb`, 1.00 MB) with pivot point `(0,0,0)` located precisely at the tsuba (guard).
+    - **Leoverse Statue (`public/game-assets/models/humanoids/props/`)**:
+      - Extracted and bundled heroic statue prop (`leoverse_statue.glb`, 9.77 MB) with embedded 0.000122x scale transform.
+    - **Civilian Pack (`public/game-assets/models/humanoids/citizens/`)**:
+      - Extracted, centered, and scaled all 42 complete individual characters from `People.obj` into standalone GLB files (`citizens/glb/`) with feet grounded at Y=0.
+      - - Copied all 42 individual character textures; no consolidated group atlases were present in the inspected source texture directory.
+ **Engine & Rig Taxonomy Updates**:
+    - **Bone Taxonomy (`modelRigTaxonomy.ts`)**: Added Daz G8F patterns for Spine (`abdomenlower`, `abdomenupper`), Chest (`chestlower`, `chestupper`), Neck (`necklower`, `neckupper`), Arms (`lshldrbend`, `lshldrtwist`, `rshldrbend`, `rshldrtwist`), and Legs (`lthighbend`, `lthightwist`, `rthighbend`, `rthightwist`).
+    - **Animation Retargeting (`animationRetarget.ts`)**:
+      - Added Daz G8F bone aliases across all major equivalence groups (spine, chest, neck, arms, legs).
+      - Implemented `lockRootHorizontalTranslation` and `lockHorizontalTranslationKeys`: removes cumulative forward drift (+155.7cm on walk, +316.3cm on run) to lock cycles in-place while keeping cyclic vertical bobbing and stepping dynamics intact.
+    - **Socket Matchers (`babylonAttachmentHelpers.ts`)**: Added `'rhand'` and `'bip01rhand'` to `righthandmount`, and `'lthighbend'`, `'lthigh'`, `'rthighbend'` to hip sockets for instant weapon and scabbard calibration.
+    - **Native Animation Priority (`BabylonEngine.ts`, `EntityRenderer.ts`)**: Prioritized model-native animation profiles (`boy_native`, `girl_native`) over Manny fallbacks, and automatically applied horizontal drift locking to locomotion slots.
+    - **Character Profiles & Studio Detection (`characterProfiles.ts`, `worldModelPresentation.ts`, `AssetDefinitionStudio.tsx`)**:
+      - Expanded skeleton types to include `'daz_g8f'` and `'static'`.
+      - Added `suppressesSubmeshes` and `replacesSubmesh` to `ProfileModularPartDef`.
+      - Added base model definitions and profiles for `boy`, `girl`, `asian_girl`, `leoverse`, and `citizens`.
+      - Updated Studio skeleton classifier to detect Daz G8F bones and static props.
+  - **Database Seeding (`canonicalAssetsSync.ts`, `scripts/sync-canonical-assets.ts`)**:
+    - Synced 65 canonical assets into the `GameAsset` database table (6 full humanoid hero models, 17 modular items/props, and 42 individual low-poly citizens).
+    - Registered 6 authoritative `CharacterModelProfile` records in the database.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.079` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, `src/web/components/shared/navbar.tsx`, and `CHANGELOG.md`.
+
+## [2.2.078] - 2026-09-30
+- **Asset Upload Window — Grid & Details List View for Models**:
+  - **Asset Upload & Library View (`AssetUploadView.tsx`)**:
+    - Added dedicated view mode toggle: allows creators and developers to switch seamlessly between **Grid View** (visual cards) and **Details List View** (dense table layout).
+    - Preserved user view mode preference in `localStorage` (`saints_models_view_mode`) across sessions and panel re-opens.
+    - Designed comprehensive **Details List View** displaying:
+      - Asset thumbnail/icon, primary display name, and full filename/path with quick-copy.
+      - Category & Role badges (Playable Archetype, Modular Wardrobe Piece, Creature, Monster, Weapon, Prop, 2D).
+      - Technical format (GLB, FBX, OBJ, VOX) and human-readable file size (KB/MB).
+      - Rig analysis family (Mixamo Humanoid, Paragon Manny, Static Mesh) and bone/mesh metrics.
+      - Modular set designation and taxonomy tags.
+      - Interactive action buttons: one-click copy asset path, inspect technical specifications modal, and context-aware select/equip button.
+    - Enhanced **Grid View** cards with format pills, formatted file sizes, quick-copy, and technical inspect buttons.
+    - Implemented **Sort Controls** (Name A-Z, Type/Role, File Size, Recently Added) with Ascending/Descending direction toggle.
+    - Added high-fidelity **Asset Details Modal**: deep technical inspector displaying model path/ID, asset type, file format & size, rig family, modular set/slot, tags, and direct selection action.
+  - **Global Version Synchronization**:
+    - Synchronized `SITE_VERSION` defaults to `2.2.078` across `package.json`, `app/actions/settings.ts`, `app/(main)/admin/settings/page.tsx`, `app/(main)/layout.tsx`, `app/(ucp)/layout.tsx`, `src/web/components/shared/navbar.tsx`, and `AssetUploadView.tsx`.
+
 ## [2.2.077] - 2026-09-30
 - **3D Character Model Turning & Heading Interpolation**:
   - **Entity Heading & Rotation System (`EntityRenderer.ts`)**:

@@ -4311,20 +4311,44 @@ export class BabylonEngine {
                 }
               }
 
+              const activeParts = canonicalParts.filter((part: any) => {
+                if (part.isFaceVariant) {
+                  return modularAttachments.some((att: any) => {
+                    const attachedName = norm(String(att.meshName || att.assetDefinition?.meshName || ''));
+                    const attachedId = norm(String(att.assetId || att.id || ''));
+                    const attachedPart = canonicalParts.find((candidate: any) =>
+                      norm(candidate.meshName) === attachedName || norm(candidate.id) === attachedId || attachedId.endsWith(norm(candidate.id))
+                    );
+                    return attachedPart?.isFaceVariant && att.defaultVisible !== false;
+                  });
+                }
+                return part.defaultVisible;
+              });
+              const suppressedMeshNames = new Set(
+                activeParts.flatMap((part: any) => (part.suppressesSubmeshes || []).map((name: string) => norm(name)))
+              );
+              const attachmentByPart = new Map<string, any>();
+              for (const attachment of modularAttachments) {
+                const attachedName = norm(String(attachment.meshName || ''));
+                const attachedId = norm(String(attachment.assetId || ''));
+                const attachedPart = canonicalParts.find((candidate: any) =>
+                  (attachedName && norm(candidate.meshName) === attachedName) ||
+                  (attachedId && (norm(candidate.id) === attachedId || attachedId.endsWith(norm(candidate.id))))
+                );
+                if (attachedPart && attachment.defaultVisible !== false) {
+                  attachmentByPart.set(norm(attachedPart.id), attachment);
+                  for (const hiddenMesh of attachedPart.suppressesSubmeshes || []) {
+                    suppressedMeshNames.add(norm(hiddenMesh));
+                  }
+                }
+              }
+
               for (const childMesh of allMeshes) {
                 const cName = norm(childMesh.name);
+                if (suppressedMeshNames.has(cName)) childMesh.setEnabled(false);
                 const part = partByMesh.get(cName);
                 if (part) {
-                  const matchingAttachment = modularAttachments.find((att: any) => {
-                    const rawId = norm(String(att.assetId || att.id || ''));
-                    const meshName = norm(String(att.meshName || ''));
-                    const modelUrl = norm(String(att.modelUrl || att.source || ''));
-                    return (
-                      (rawId && (rawId === norm(part.id) || rawId.endsWith(norm(part.id)))) ||
-                      (meshName && meshName === cName) ||
-                      (modelUrl && modelUrl.includes(cName))
-                    );
-                  });
+                  const matchingAttachment = attachmentByPart.get(norm(part.id));
 
                   if (matchingAttachment) {
                     childMesh.setEnabled((matchingAttachment as any).defaultVisible !== false);
@@ -4470,7 +4494,7 @@ export class BabylonEngine {
               || sourceAsset?.metadata?.animationProfileId
               || sourceAsset?.metadata?.assetDefinition?.animationProfileId
               || canonicalDef?.defaultAnimationProfileId
-              || 'GreystoneManny';
+              || (canonicalDef?.skeleton === 'manny' ? 'GreystoneManny' : undefined);
             const mergedAnimationConfig = {
               ...(sourceAssetAnimations || {}),
               ...(actorAnimations || {}),
@@ -4514,12 +4538,17 @@ export class BabylonEngine {
                     if (mapping.speed) embeddedAg.speedRatio = mapping.speed;
                   }
                 } else if (mapping.sourcePath) {
+                  const isLocomotionSlot = slot === 'walk' || slot === 'walk_fwd' || slot === 'run' || slot === 'run_fwd' || slot.includes('walk') || slot.includes('run') || slot.includes('jog');
                   loadAndRetargetAnimation(
                     mapping.sourcePath,
                     slot,
                     allTransformNodes,
                     this.scene,
-                    { loop: mapping.loop !== false, speed: mapping.speed }
+                    {
+                      loop: mapping.loop !== false,
+                      speed: mapping.speed,
+                      lockRootHorizontalTranslation: mapping.lockRootHorizontalTranslation ?? isLocomotionSlot,
+                    }
                   ).then((retargetedAg) => {
                     if (!retargetedAg) return;
                     if (!this.entityMeshes.has(entity.id)) {

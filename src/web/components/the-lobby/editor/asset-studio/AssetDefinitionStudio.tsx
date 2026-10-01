@@ -1143,13 +1143,15 @@ export function AssetDefinitionStudio({
           const isMonsterRole = finalRoles.includes('Monster') || finalRoles.includes('Enemy');
           const profileCategory = isCreatureRole ? 'creature' : (isMonsterRole ? 'monster' : 'character');
 
-          const isManny = (
+          const bonesList = parsedGLB?.bones || [];
+          const hasBones = bonesList.length > 0;
+          const isG8F = bonesList.some((b) => /abdomenlower|chestlower|lshldrbend|lthighbend/i.test(b.name));
+          const isManny = !isG8F && hasBones && (
             (parsedGLB?.rigAnalysis?.label || '').toLowerCase().includes('manny') ||
-            Boolean(parsedGLB?.rigAnalysis?.detectedStandardBones?.pelvis) ||
-            (parsedGLB?.bones || []).some((b) => /^(pelvis|spine_0[1-5]|upperarm_l|thigh_l)$/i.test(b.name)) ||
-            !(parsedGLB?.bones || []).some((b) => /mixamorig/i.test(b.name))
+            bonesList.some((b) => /^(spine_0[1-5]|upperarm_l)$/i.test(b.name)) ||
+            (!bonesList.some((b) => /mixamorig/i.test(b.name)) && bonesList.some((b) => /pelvis/i.test(b.name)))
           );
-          const skeletonType = isManny ? 'manny' : 'mixamo';
+          const skeletonType = !hasBones ? 'static' : (isG8F ? 'daz_g8f' : (isManny ? 'manny' : 'mixamo'));
 
           await fetch('/api/profiles/character', {
             method: 'POST',

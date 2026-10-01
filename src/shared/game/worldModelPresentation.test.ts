@@ -5,6 +5,7 @@ import {
   getModelModularComponents,
   getCanonicalModelDef,
 } from './worldModelPresentation';
+import { getCharacterModelProfile } from './characterProfiles';
 
 describe('worldModelPresentation', () => {
   describe('resolveModelAssetUrl', () => {
@@ -56,6 +57,8 @@ describe('worldModelPresentation', () => {
               modelUrl: '/uploads/iron_chestplate.glb',
               slot: 'chest',
               defaultVisible: true,
+              isSubmesh: true,
+              meshName: 'ChestMesh',
             },
             {
               assetId: 'hidden_cape',
@@ -83,6 +86,8 @@ describe('worldModelPresentation', () => {
       expect(attachments[0].assetId).toBe('iron_chestplate');
       expect(attachments[0].modelUrl).toBe('/uploads/iron_chestplate.glb');
       expect(attachments[0].attachmentMode).toBe('SKINNED');
+      expect(attachments[0].isSubmesh).toBe(true);
+      expect(attachments[0].meshName).toBe('ChestMesh');
       expect(result?.modularModelUrls).toEqual(['/uploads/iron_chestplate.glb']);
     });
 
@@ -114,6 +119,24 @@ describe('worldModelPresentation', () => {
       expect(bruteParts.some((p) => p.meshName === 'Cape1')).toBe(true);
 
       expect(getModelModularComponents('unknown_model')).toEqual([]);
+    });
+
+    it('preserves each individual citizen model and does not assign incompatible animation profiles', () => {
+      for (const name of ['girl_1', 'kid_1', 'man_1']) {
+        const id = `builtin-citizen-${name}`;
+        const expectedUrl = `/game-assets/models/humanoids/citizens/glb/${name}.glb`;
+        expect(resolveModelAssetUrl(id)).toBe(expectedUrl);
+        expect(getCanonicalModelDef(id)?.modelUrl).toBe(expectedUrl);
+        expect(getCharacterModelProfile(id)?.id).toBe('citizens');
+        expect(getWorldModelPresentation(id)).toMatchObject({
+          modelUrl: expectedUrl,
+          animationProfileId: undefined,
+        });
+      }
+    });
+
+    it('does not advertise an animation profile that is not registered for the Asian heroine', () => {
+      expect(getWorldModelPresentation('asian_girl')?.animationProfileId).toBeUndefined();
     });
   });
 });

@@ -44,7 +44,9 @@ export type AnimationSlot =
   | 'recall'
   | 'select_screen'
   | 'level_start'
-  | 'bound';
+  | 'bound'
+  | 'sit'
+  | 'talk';
 
 export interface AnimationClipMapping {
   /** The .glb filename (without extension) relative to the profile folder */
@@ -425,7 +427,43 @@ export const ANIMATION_PROFILES: AnimationProfile[] = [
     displayName: 'Wukong',
     basePath: '/animations/Paragon/wukongManny/',
     slotMap: { ...COMMON_SLOT_MAP },
-    availableClips: ["AO/Idle_AO_CC", "AO/Idle_AO_CC1", "AO/Idle_AO_CD", "AO/Idle_AO_CD1", "AO/Idle_AO_CU", "AO/Idle_AO_CU1", "AO/Idle_AO_LBC", "AO/Idle_AO_LBC1", "AO/Idle_AO_LBD", "AO/Idle_AO_LBD1", "AO/Idle_AO_LBU", "AO/Idle_AO_LBU1", "AO/Idle_AO_LC", "AO/Idle_AO_LC1", "AO/Idle_AO_LD", "AO/Idle_AO_LD1", "AO/Idle_AO_LU", "AO/Idle_AO_LU1", "AO/Idle_AO_RBC", "AO/Idle_AO_RBC1", "AO/Idle_AO_RBD", "AO/Idle_AO_RBD1", "AO/Idle_AO_RBU", "AO/Idle_AO_RBU1", "AO/Idle_AO_RC", "AO/Idle_AO_RC1", "AO/Idle_AO_RD", "AO/Idle_AO_RD1", "AO/Idle_AO_RU", "AO/Idle_AO_RU1", "AO/RMB_Evade_AO_Bwd", "AO/RMB_Evade_AO_CC", "AO/RMB_Evade_AO_CC_Base", "AO/RMB_Evade_AO_Fwd", "AO/RMB_Evade_AO_Left", "AO/RMB_Evade_AO_Right", "Attack/Primary_Melee_Air", "Attack/Primary_Melee_Air_MSA", "Attack/Primary_Melee_A_Slow", "Attack/Primary_Melee_A_Slow_MSA", "Attack/Primary_Melee_A_Slow_Recovery", "Attack/Primary_Melee_A_Slow_Recovery_MSA", "Attack/Primary_Melee_B_Slow", "Attack/Primary_Melee_B_Slow_MSA", "Attack/Primary_Melee_B_Slow_Recovery", "Attack/Primary_Melee_B_Slow_Recovery_MSA", "Attack/Primary_Melee_C_Slow", "Attack/Primary_Melee_C_Slow_MSA", "Attack/Primary_Melee_C_Slow_Recovery", "Attack/Primary_Melee_C_Slow_Recovery_MSA", "Attack/Primary_Melee_D_Slow", "Attack/Primary_Melee_D_Slow_MSA", "Attack/Primary_Melee_D_Slow_REcovery", "Attack/Primary_Melee_D_Slow_REcovery_MSA", "Attack/Primary_Melee_E_Slow", "Attack/Primary_Melee_E_Slow_MSA", "Attack/Primary_Melee_E_Slow_Recovery", "Attack/Primary_Melee_E_Slow_Recovery_MSA", "Bound", "Cast", "Cast_MSA", "Combat_Mode_Additive", "Death", "Emote_ComeHere", "Emote_MonkeyTaunt", "Emote_Sleepy", "Emote_StaffSpin", "Evade_Mode_Additive", "Evade_Mode_Additive_MSA", "Face_tests", "FrontEnd_FutureKing", "FrontEnd_Pose", "HitReact_Back", "HitReact_Front", "HitReact_Left", "HitReact_Right", "Idle", "Idle_Zero_Pose", "Jog/Jog_Bwd", "Jog/Jog_BwdToFwd_Spin_ccw", "Jog/Jog_BwdToFwd_Spin_cw", "Jog/Jog_Bwd_CircleLeft", "Jog/Jog_Bwd_CircleRight", "Jog/Jog_Bwd_Downhill", "Jog/Jog_Bwd_L_Combat", "Jog/Jog_Bwd_Pivot180", "Jog/Jog_Bwd_R_Combat", "Jog/Jog_Bwd_Start", "Jog/Jog_Bwd_Stop", "Jog/Jog_Bwd_Uphill", "Jog/Jog_Combat_Additive", "Jog/Jog_Fwd", "Jog/Jog_FwdToBwd_Spin_ccw", "Jog/Jog_FwdToBwd_Spin_cw", "Jog/Jog_Fwd_CircleLeft", "Jog/Jog_Fwd_CircleRight", "Jog/Jog_Fwd_Downhill", "Jog/Jog_Fwd_L_Combat", "Jog/Jog_Fwd_Pivot180", "Jog/Jog_Fwd_R_Combat", "Jog/Jog_Fwd_Start", "Jog/Jog_Fwd_Stop", "Jog/Jog_Fwd_Uphill", "Jog/Jog_Left", "Jog/Jog_Left_CircleLeft", "Jog/Jog_Left_CircleRight", "Jog/Jog_Left_Combat", "Jog/Jog_Left_Pivot180", "Jog/Jog_Left_Start", "Jog/Jog_Left_Stop", "Jog/Jog_Right", "Jog/Jog_Right_CircleLeft", "Jog/Jog_Right_CircleRight", "Jog/Jog_Right_Combat", "Jog/Jog_Right_Pivot180", "Jog/Jog_Right_Start", "Jog/Jog_Right_Stop", "Jump_Apex", "Jump_Land", "Jump_Pad", "Jump_Recovery", "Jump_Recovery_Additive", "Jump_Start", "Knockback", "Knockfwd", "LevelStart", "Q_Fall_Loop", "Q_Flip_Bwd", "Q_Flip_Fwd", "Q_Slam", "Q_Slam_FallLoop", "Q_Slam_MSA", "Recall", "Recall_FutureKingSkin", "Recall_GreatSageSkin", "Respawn", "RMB_Evade_CC", "RMB_Evade_CD", "RMB_Evade_CU", "RMB_Evade_Pose_A", "RMB_Evade_Pose_B", "RMB_Evade_Pose_C", "RMB_Evade_Start_Loop_CC", "RMB_Evade_Start_Loop_CD", "RMB_Evade_Start_Loop_CU", "RMB_Hit", "RMB_Hit_Down", "RMB_Hit_Down_MSA", "RMB_Hit_MSA", "RMB_Hit_Up", "RMB_Hit_Up_MSA", "RMB_Push", "RMB_Push_Down", "RMB_Push_Down_MSA", "RMB_Push_MSA", "RMB_Push_Up", "RMB_Push_Up_MSA", "RMB_Targeting_Loop", "RMB_Targeting_Loop_MSA", "RMB_Targeting_Start", "RMB_Targeting_Start_MSA", "SelectScreen_IdleBreak", "SelectScreen_Loop", "SelectScreen_Start", "Stun_Loop", "Stun_Start", "TurninPlace/Idle_Turn_Left_180", "TurninPlace/Idle_Turn_Left_90", "TurninPlace/Idle_Turn_Right_180", "TurninPlace/Idle_Turn_Right_90"],
+    availableClips: [],
+  },
+  {
+    id: 'boy_native',
+    displayName: 'Boy Native Locomotion',
+    basePath: '/game-assets/models/humanoids/boy/anims/',
+    slotMap: {
+      ...COMMON_SLOT_MAP,
+      idle: { clip: 'Breathing Idle', loop: true },
+      idle_combat: { clip: 'Breathing Idle', loop: true },
+      walk_fwd: { clip: 'Walking', loop: true },
+      walk_bwd: { clip: 'Walking', loop: true },
+      run_fwd: { clip: 'Running', loop: true },
+      run_bwd: { clip: 'Running', loop: true },
+      sit: { clip: 'Sitting', loop: true },
+    },
+    availableClips: ['Breathing Idle', 'Walking', 'Running', 'Sitting'],
+  },
+  {
+    id: 'girl_native',
+    displayName: 'Girl Native Locomotion',
+    basePath: '/game-assets/models/humanoids/girl/anims/',
+    slotMap: {
+      ...COMMON_SLOT_MAP,
+      idle: { clip: 'Idle', loop: true },
+      idle_combat: { clip: 'Idle', loop: true },
+      walk_fwd: { clip: 'Walking', loop: true },
+      walk_bwd: { clip: 'Walking', loop: true },
+      run_fwd: { clip: 'Running', loop: true },
+      run_bwd: { clip: 'Running', loop: true },
+      jump_start: { clip: 'Jumping', loop: false },
+      jump_mid: { clip: 'Jumping', loop: false },
+      jump_end: { clip: 'Jumping', loop: false },
+      talk: { clip: 'Talking', loop: true },
+      sit: { clip: 'Sitting Idle', loop: true },
+    },
+    availableClips: ['Idle', 'Walking', 'Running', 'Jumping', 'Talking', 'Sitting Idle'],
   },
 ];
 
@@ -436,8 +474,9 @@ export function getAnimationProfile(profileId: string): AnimationProfile | undef
 
 /** Encode each folder/name segment while preserving clip folders in the URL. */
 export function resolveAnimationClipPath(basePath: string, clip: string): string {
+  const ext = /\.(glb|gltf|fbx)$/i.test(clip) ? '' : '.glb';
   const encodedClipPath = clip.split('/').map((segment) => encodeURIComponent(segment)).join('/');
-  return `${basePath}${encodedClipPath}.glb`;
+  return `${basePath}${encodedClipPath}${ext}`;
 }
 
 /** Build runtime-ready mappings for the default clips in a selected profile. */
