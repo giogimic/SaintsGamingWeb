@@ -1,3 +1,10 @@
+## [2.2.085] - 2026-10-01
+- **Asset Cleanup & Refactoring**:
+  - Removed all bundled citizen and static crowd models from the canonical asset registry and database sync script due to missing skeletons.
+  - Promoted the Leoverse (Red Runner 66 statue) model from a static prop to a playable character category so that it is properly hooked up and selectable in Studio.
+  - Merged multiple separated GLB animation files (`Walking`, `Running`, `Sitting`, `Breathing Idle`) into the core `boy.glb` asset so it now has a full suite of playable animations.
+- Bumped site version to 2.2.085.
+
 ## [2.2.084] - 2026-10-01
 - **Engine & Studio Enhancements**:
   - **Dynamic Base Scale Extraction**: Updated `EntityRenderer.ts` and `ArchetypeModelPreview3D.tsx` to read the `baseScale` modifier dynamically from `getCharacterModelProfile`.
@@ -7438,3 +7445,4 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 - Fix: UI bug where Asian Heroine selection visually highlighted the Stylized Girl preset.
 - Fix: Asian Girl (daz_g8f) invisibility bug fixed. Engine scale adjustments replaced the GLB scale patch, properly preserving skin weights to avoid camera clipping.
 - Refactor: Added baseScale to CharacterModelProfile, propagated via WorldModelSelector presets.
+

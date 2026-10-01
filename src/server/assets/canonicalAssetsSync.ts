@@ -68,15 +68,9 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
     },
     {
       def: CANONICAL_BUILTIN_MODELS.leoverse,
-      tags: ["model", "3d", "prop", "canonical", "bundled", "leoverse", "red_runner_66"],
-      categories: ["model", "prop"],
-      fileSize: 10244792,
-    },
-    {
-      def: CANONICAL_BUILTIN_MODELS.citizens,
-      tags: ["model", "3d", "character", "npc", "citizen", "canonical", "bundled", "townspeople"],
+      tags: ["model", "3d", "character", "canonical", "bundled", "leoverse", "red_runner_66", "playable"],
       categories: ["model", "character"],
-      fileSize: 386252,
+      fileSize: 10244792,
     },
   ];
 
@@ -217,49 +211,7 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
     cdnUrl: '/game-assets/models/humanoids/asian_girl/katana.glb',
   });
 
-  // 3. 42 Individual Low-Poly Citizens (Townspeople variation pool)
-  const citizenDir = path.resolve(process.cwd(), 'public/game-assets/models/humanoids/citizens/glb');
-  if (fs.existsSync(citizenDir)) {
-    const files = fs.readdirSync(citizenDir).filter((f) => f.endsWith('.glb'));
-    for (const f of files) {
-      const baseName = f.replace(/\.glb$/i, '');
-      const isKid = baseName.includes('kid');
-      const isWoman = baseName.includes('girl') || baseName.includes('wm') || baseName.includes('w_') || baseName.includes('d_') || baseName.includes('h_') || baseName === 'w1' || baseName.startsWith('wgirl');
-      const roleLabel = isKid ? 'Town Child' : (isWoman ? 'Townswoman' : 'Townsman');
-      const label = `${roleLabel} (${baseName})`;
-      const source = `/game-assets/models/humanoids/citizens/glb/${f}`;
 
-      records.push({
-        id: `builtin-citizen-${baseName}`,
-        gameId: null,
-        type: 'MODEL',
-        source,
-        atlasSource: null,
-        atlasFrame: null,
-        tags: JSON.stringify(['model', '3d', 'citizen', 'npc', 'townsperson', isKid ? 'child' : (isWoman ? 'female' : 'male'), 'canonical', 'bundled']),
-        categories: JSON.stringify(['model', 'character', 'npc']),
-        metadata: JSON.stringify({
-          name: label,
-          profile: 'character',
-          role: 'npc',
-          skeleton: 'static',
-          isModularComponent: false,
-          pack: 'citizens_pack',
-          isPlayable: false,
-          showInCharacterCreation: false,
-          presentation: {
-            mode: '3D',
-            modelUrl: source,
-          },
-        }),
-        customLabels: JSON.stringify({ en: label, name: label }),
-        isActive: true,
-        usageCount: 0,
-        fileSize: getBundledFileSize(source, 385000),
-        cdnUrl: source,
-      });
-    }
-  }
 
   return records;
 }
@@ -418,14 +370,14 @@ export function buildCanonicalCharacterModelProfiles(): any[] {
       isActive: true,
     },
     {
-      id: 'profile-citizens',
-      slug: 'citizens',
-      name: 'Town Citizen',
-      description: 'Low-poly town citizen character from civilian crowd variation pool.',
+      id: 'profile-leoverse',
+      slug: 'leoverse',
+      name: 'Red Runner 66',
+      description: 'Statue prop model hooked up as a playable character.',
       category: 'character',
       gameId: 'saints',
-      baseModelAssetId: 'builtin-model-citizens',
-      rigFamily: 'HUMANOID_BIPED',
+      baseModelAssetId: 'builtin-model-leoverse',
+      rigFamily: 'STATIC',
       skeletonType: 'static',
       transformData: JSON.stringify({ scale: 1.0, rotationY: 0, groundingOffsetY: 0, cameraHeightOffset: 0 }),
       skeletonData: JSON.stringify({ boneMap: {} }),
@@ -433,7 +385,7 @@ export function buildCanonicalCharacterModelProfiles(): any[] {
       socketsData: JSON.stringify([]),
       materialsData: JSON.stringify({}),
       modularData: JSON.stringify({ isCustomizable: false, components: [] }),
-      tags: JSON.stringify(['canonical', 'bundled', 'static', 'citizen', 'npc']),
+      tags: JSON.stringify(['canonical', 'bundled', 'static', 'leoverse', 'red_runner_66']),
       version: 1,
       isDefault: false,
       isActive: true,

@@ -83,18 +83,9 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
     id: 'leoverse',
     name: 'Red Runner 66',
     modelUrl: '/game-assets/models/humanoids/props/leoverse_statue.glb',
-    category: 'prop',
-    skeleton: 'static',
-    isPlayable: false,
-    modularParts: [],
-  },
-  citizens: {
-    id: 'citizens',
-    name: 'Town Citizen',
-    modelUrl: '/game-assets/models/humanoids/citizens/glb/man_1.glb',
     category: 'character',
     skeleton: 'static',
-    isPlayable: false,
+    isPlayable: true,
     modularParts: [],
   },
 };
@@ -121,9 +112,6 @@ export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalMod
   }
   if (key.includes('brute')) {
     return CANONICAL_BUILTIN_MODELS.brute;
-  }
-  if (key === 'citizens' || key.includes('citizen') || key.includes('people')) {
-    return CANONICAL_BUILTIN_MODELS.citizens;
   }
   if (key.includes('boy')) {
     return CANONICAL_BUILTIN_MODELS.boy;
