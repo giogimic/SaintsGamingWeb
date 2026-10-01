@@ -469,6 +469,12 @@ export class BabylonEngine {
     this.renderer.ambientLight.diffuse = new Color3(0.95, 0.95, 1.0);
     this.renderer.ambientLight.groundColor = new Color3(0.15, 0.2, 0.15);
 
+    // Create a default environment for PBR materials (prevents black/unlit citizens)
+    this.scene.createDefaultEnvironment({
+      createSkybox: false,
+      createGround: false
+    });
+
     // Directional sun light for 2.5D depth
     this.renderer.dirLight = new DirectionalLight('sunLight', new Vector3(-0.5, -1.0, 0.5), this.scene);
     this.renderer.dirLight.intensity = 0.55;
