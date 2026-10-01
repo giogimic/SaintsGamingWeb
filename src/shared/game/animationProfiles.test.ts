@@ -1,14 +1,31 @@
 import { describe, it, expect } from 'vitest';
+import fs from 'node:fs';
+import path from 'node:path';
 import {
   getAnimationProfile,
   applyAnimationProfileFallback,
   resolveAnimationUrl,
   getProfileSlotUrls,
+  resolveAnimationProfileId,
   ANIMATION_PROFILES,
 } from './animationProfiles';
 import { getWorldModelPresentation, CANONICAL_BUILTIN_MODELS } from './worldModelPresentation';
 
 describe('Animation Profiles & World Model Presentation', () => {
+  it('has every native companion clip registered in its bundled model directory', () => {
+    const publicRoot = path.resolve(process.cwd(), 'public');
+    for (const profileId of ['boy_native', 'girl_native']) {
+      const profile = getAnimationProfile(profileId)!;
+      for (const clip of profile.availableClips) {
+        const clipUrl = resolveAnimationUrl(profileId, profileId === 'boy_native'
+          ? clip === 'Breathing Idle' ? 'idle' : clip === 'Walking' ? 'walk_fwd' : clip === 'Running' ? 'run_fwd' : 'sit'
+          : clip === 'Idle' ? 'idle' : clip === 'Walking' ? 'walk_fwd' : clip === 'Running' ? 'run_fwd' : clip === 'Jumping' ? 'jump_start' : clip === 'Talking' ? 'talk' : 'sit');
+        const filePath = path.join(publicRoot, decodeURIComponent(clipUrl!.replace(/^\//, '')));
+        expect(fs.existsSync(filePath), `${profileId} ${clip}`).toBe(true);
+      }
+    }
+  });
+
   it('registers all canonical animation profiles', () => {
     const greystone = getAnimationProfile('GreystoneManny');
     expect(greystone).toBeDefined();
@@ -70,5 +87,27 @@ describe('Animation Profiles & World Model Presentation', () => {
     const aurora = getAnimationProfile('AuroraManny');
     expect(aurora?.slotMap?.run_fwd?.clip).toBe('Jog/Jog_Fwd');
     expect(aurora?.slotMap?.run_bwd?.clip).toBe('Jog/Jog_Bwd');
+  });
+
+  it('links native Boy and Girl animation profiles to their bundled companion clips', () => {
+    expect(getAnimationProfile('boy_native')?.availableClips).toEqual([
+      'Breathing Idle', 'Walking', 'Running', 'Sitting',
+    ]);
+    expect(resolveAnimationUrl('boy_native', 'walk_fwd')).toBe('/game-assets/models/humanoids/boy/anims/Walking.glb');
+    expect(resolveAnimationUrl('boy_native', 'run_fwd')).toBe('/game-assets/models/humanoids/boy/anims/Running.glb');
+    expect(getAnimationProfile('girl_native')?.availableClips).toEqual([
+      'Idle', 'Walking', 'Running', 'Jumping', 'Talking', 'Sitting Idle',
+    ]);
+    expect(resolveAnimationUrl('girl_native', 'talk')).toBe('/game-assets/models/humanoids/girl/anims/Talking.glb');
+    expect(resolveAnimationUrl('girl_native', 'sit')).toBe('/game-assets/models/humanoids/girl/anims/Sitting%20Idle.glb');
+    expect(CANONICAL_BUILTIN_MODELS.asian_girl.defaultAnimationProfileId).toBeUndefined();
+  });
+
+  it('only applies the generic Manny profile to Manny rigs', () => {
+    expect(resolveAnimationProfileId(undefined, 'manny', true)).toBe('GreystoneManny');
+    expect(resolveAnimationProfileId(undefined, 'mixamo', true)).toBeUndefined();
+    expect(resolveAnimationProfileId(undefined, 'daz_g8f', true)).toBeUndefined();
+    expect(resolveAnimationProfileId(undefined, 'static', false)).toBeUndefined();
+    expect(resolveAnimationProfileId('boy_native', 'mixamo', true)).toBe('boy_native');
   });
 });

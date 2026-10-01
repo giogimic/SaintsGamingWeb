@@ -7,13 +7,13 @@ import {
 describe('canonicalAssetsSync', () => {
   it('builds canonical GameAsset records for all canonical models, modular parts, and citizens', () => {
     const records = buildCanonicalGameAssetRecords();
-    expect(records.length).toBe(65);
+    expect(records.length).toBe(71);
 
     const fullModels = records.filter((r) => r.id.startsWith('builtin-model-'));
     expect(fullModels.length).toBe(6);
 
     const modularPieces = records.filter((r) => r.id.startsWith('builtin-piece-'));
-    expect(modularPieces.length).toBe(17);
+    expect(modularPieces.length).toBe(23);
 
     const citizenModels = records.filter((r) => r.id.startsWith('builtin-citizen-'));
     expect(citizenModels.length).toBe(42);
@@ -21,6 +21,7 @@ describe('canonicalAssetsSync', () => {
     expect(citizenModels.find((r) => r.id === 'builtin-citizen-girl_1')?.source)
       .toBe('/game-assets/models/humanoids/citizens/glb/girl_1.glb');
     expect(citizenModels.every((r) => r.fileSize > 0)).toBe(true);
+    expect(new Set(citizenModels.map((r) => r.source)).size).toBe(42);
 
     const brute = records.find((r) => r.id === 'builtin-model-brute');
     expect(brute).toBeDefined();
@@ -55,7 +56,23 @@ describe('canonicalAssetsSync', () => {
     expect(JSON.parse(agShirt?.metadata || '{}')).toMatchObject({
       isSubmesh: true,
       meshName: '4_+Shirt1_01_0_0',
+      suppressesSubmeshes: ['4_-Top1_01_0_0'],
     });
+
+    const asianMetadata = JSON.parse(records.find((r) => r.id === 'builtin-model-asian_girl')?.metadata || '{}');
+    expect(asianMetadata.isPlayable).toBe(true);
+    expect(records.find((r) => r.id === 'builtin-piece-ag_katana_hand')).toBeDefined();
+    expect(records.find((r) => r.id === 'builtin-piece-ag_pants')).toBeDefined();
+
+    const statue = records.find((r) => r.id === 'builtin-model-leoverse');
+    expect(JSON.parse(statue?.metadata || '{}')).toMatchObject({ isPlayable: false, showInCharacterCreation: false, role: 'prop' });
+    expect(JSON.parse(statue?.categories || '[]')).toContain('prop');
+
+    const registeredSources = records.filter((record) => record.id.startsWith('builtin-citizen-')).map((record) => record.source);
+    expect(new Set(registeredSources).size).toBe(registeredSources.length);
+
+    const citizen = records.find((r) => r.id === 'builtin-citizen-man_1');
+    expect(JSON.parse(citizen?.metadata || '{}')).toMatchObject({ isPlayable: false, showInCharacterCreation: false, skeleton: 'static' });
 
     // Test Katana prop
     const katana = records.find((r) => r.id === 'builtin-piece-katana');
@@ -66,6 +83,7 @@ describe('canonicalAssetsSync', () => {
   it('syncs records to prisma with upsert', async () => {
     const upsertMock = vi.fn().mockResolvedValue({});
     const deleteManyMock = vi.fn().mockResolvedValue({});
+    const profileDeleteManyMock = vi.fn().mockResolvedValue({});
     const fakePrisma = {
       gameAsset: {
         upsert: upsertMock,
@@ -73,20 +91,23 @@ describe('canonicalAssetsSync', () => {
       },
       characterModelProfile: {
         upsert: vi.fn().mockResolvedValue({}),
-        deleteMany: vi.fn().mockResolvedValue({}),
+        deleteMany: profileDeleteManyMock,
       },
     };
 
     const count = await syncCanonicalGameAssets(fakePrisma);
     const repeatedCount = await syncCanonicalGameAssets(fakePrisma);
-    expect(count).toBe(65);
-    expect(repeatedCount).toBe(65);
-    expect(upsertMock).toHaveBeenCalledTimes(130);
+    expect(count).toBe(71);
+    expect(repeatedCount).toBe(71);
+    expect(upsertMock).toHaveBeenCalledTimes(142);
     expect(deleteManyMock).toHaveBeenCalledTimes(2);
+    expect(profileDeleteManyMock).toHaveBeenCalledTimes(2);
 
     const cleanup = deleteManyMock.mock.calls[0][0] as any;
     const pieceFilter = cleanup.where.OR.find((filter: any) => filter.id.startsWith === 'builtin-piece-');
     expect(pieceFilter.id.notIn).toContain('builtin-piece-katana');
     expect(pieceFilter.id.notIn).not.toContain('builtin-piece-obsolete');
+    const profileCleanup = profileDeleteManyMock.mock.calls[0][0] as any;
+    expect(profileCleanup.where.slug.notIn).not.toContain('leoverse');
   });
 });

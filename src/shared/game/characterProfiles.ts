@@ -96,14 +96,7 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
     category: 'character',
     skeleton: 'daz_g8f',
     modelUrl: '/game-assets/models/humanoids/asian_girl/asian_girl.glb',
-    baseNakedMeshes: [
-      '4_full_body001',
-      '4_Legs',
-      '4_Arms',
-      '4_face001',
-      '4_Eyes_01_0_0',
-      '6_Hair2_01_0_0001',
-    ],
+    baseNakedMeshes: ['4_full_body001', '4_Legs', '4_Arms', '4_face001', '4_Eyes_01_0_0', '6_Hair2_01_0_0001'],
     compatibleWardrobePack: 'asian_girl_outfits',
     modularParts: [
       {
@@ -112,7 +105,7 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
         category: 'shirt',
         meshName: '4_+Shirt1_01_0_0',
         defaultVisible: true,
-        suppressesSubmeshes: ['4_-Top1_01_0_0', '4_full_body001'],
+        suppressesSubmeshes: ['4_-Top1_01_0_0'],
       },
       {
         id: 'ag_skirt',
@@ -146,7 +139,7 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
       {
         id: 'ag_shuriken',
         label: 'Shuriken Pouch',
-        category: 'accessory',
+        category: 'weapon_off',
         meshName: '24_-shuriken|2_bladeoutfit_b2_03_0_0002',
         defaultVisible: false,
       },
@@ -158,16 +151,49 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
         defaultVisible: false,
         suppressesSubmeshes: ['4_Arms'],
       },
+      {
+        id: 'ag_pants',
+        label: 'Default Trousers',
+        category: 'pants',
+        meshName: '4_+Pants|Default_01_0_0007',
+        defaultVisible: false,
+      },
+      {
+        id: 'ag_skirt_alt',
+        label: 'Layered Skirt',
+        category: 'pants',
+        meshName: '4_+Skirt2_01_0_0',
+        defaultVisible: false,
+      },
+      {
+        id: 'ag_holster',
+        label: 'Katana Hip Holster',
+        category: 'belt',
+        meshName: '4_+Katana|Holster_01_0_0001',
+        defaultVisible: false,
+      },
+      {
+        id: 'ag_top_alt',
+        label: 'Alternate Top',
+        category: 'shirt',
+        meshName: '4_+Shirt2_01_0_0',
+        defaultVisible: false,
+      },
+      {
+        id: 'ag_top_layer',
+        label: 'Outer Shirt Layer',
+        category: 'jacket',
+        meshName: '4_+Shirt3_01_0_0',
+        defaultVisible: false,
+      },
+      {
+        id: 'ag_base_katana',
+        label: 'Katana Scabbard Set',
+        category: 'belt',
+        meshName: '4_+Holster_01_0_0001',
+        defaultVisible: false,
+      },
     ],
-  },
-  leoverse: {
-    id: 'leoverse',
-    name: 'Heroic Armored Statue',
-    category: 'character',
-    skeleton: 'static',
-    modelUrl: '/game-assets/models/humanoids/props/leoverse_statue.glb',
-    compatibleWardrobePack: 'static_prop',
-    modularParts: [],
   },
   citizens: {
     id: 'citizens',
@@ -204,9 +230,7 @@ export function getCharacterModelProfile(modelIdOrUrl?: string | null): Characte
   if (baseKey.includes('asian')) {
     return CHARACTER_MODEL_PROFILES.asian_girl;
   }
-  if (baseKey.includes('leoverse')) {
-    return CHARACTER_MODEL_PROFILES.leoverse;
-  }
+  if (baseKey.includes('leoverse')) return undefined;
   if (baseKey.includes('citizen') || baseKey.includes('people')) {
     return CHARACTER_MODEL_PROFILES.citizens;
   }

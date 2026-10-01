@@ -193,7 +193,7 @@ export class AssetManager {
             anim: canonical.defaultAnimationProfileId,
             skeleton: canonical.skeleton,
             profile: canonical.category,
-            role: canonical.category === 'monster' ? 'monster' : 'humanoid',
+            role: canonical.category === 'monster' ? 'monster' : canonical.category === 'prop' ? 'prop' : 'humanoid',
             presentation: {
               mode: '3D',
               modelUrl: canonical.modelUrl,

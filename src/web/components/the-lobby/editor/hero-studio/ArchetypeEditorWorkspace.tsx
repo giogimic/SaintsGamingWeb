@@ -47,7 +47,7 @@ export function ArchetypeEditorWorkspace() {
   
   // Data State
   const [heroes, setHeroes] = useState<any[]>([]);
-  const [classList, setClassList] = useState<{slug: string, name: string, classId: string}[]>([]);
+  const [classList, setClassList] = useState<{slug: string, name: string, classId: string, abilities: string[]}[]>([]);
   const [mapList, setMapList] = useState<{id: string, name: string}[]>([]);
   
   // View State
@@ -372,6 +372,27 @@ export function ArchetypeEditorWorkspace() {
               ))}
             </div>
           )}
+                {(() => {
+                  const assignedClassIds = form.classId ? form.classId.split(',') : [];
+                  const inheritedAbilities = classList
+                    .filter((cls) => assignedClassIds.includes(cls.classId))
+                    .flatMap((cls) => cls.abilities || []);
+                  const uniqueAbilities = [...new Set(inheritedAbilities)];
+                  return (
+                    <div className="mt-2 rounded-lg border border-slate-800 bg-black/20 p-2">
+                      <p className={labelCls}>Inherited class abilities</p>
+                      {uniqueAbilities.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {uniqueAbilities.map((ability) => (
+                            <span key={ability} className="rounded bg-violet-500/10 px-1.5 py-0.5 text-[9px] text-violet-200">{ability}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-[10px] text-slate-500">Assign a class with starting abilities to grant its loadout to this archetype.</p>
+                      )}
+                    </div>
+                  );
+                })()}
         </div>
       </div>
     );

@@ -97,7 +97,7 @@ import { SpiritGateRenderer } from '../client/engine/rendering/SpiritGateRendere
 import { EntityController } from './EntityController';
 import { loadAndRetargetAnimation, normalizeBoneName } from './animationRetarget';
 import { AssetManager } from './assets/AssetManager';
-import { applyAnimationProfileFallback } from '../shared/game/animationProfiles';
+import { applyAnimationProfileFallback, resolveAnimationProfileId } from '../shared/game/animationProfiles';
 import { getDefaultModelWardrobeSocket } from '../shared/game/modelWardrobe';
 import { attachModularComponent, findBabylonBone } from './helpers/babylonAttachmentHelpers';
 import { resolveModelAssetUrl, CANONICAL_BUILTIN_MODELS, getModelModularComponents, getCanonicalModelDef } from '../shared/game/worldModelPresentation';
@@ -4069,9 +4069,13 @@ export class BabylonEngine {
         modelUrl: attachment.modelUrl,
         attachmentMode: attachment.attachmentMode,
         socket: attachment.socket,
+        meshName: attachment.meshName,
+        isSubmesh: attachment.isSubmesh,
+        defaultVisible: attachment.defaultVisible,
         attachOffset: attachment.attachOffset,
         scale: attachment.scale,
         hidesComponents: attachment.hidesComponents,
+        suppressesSubmeshes: (attachment as any).suppressesSubmeshes,
       })),
     });
     if (spriteMesh && spriteMesh.metadata?.presentationSignature !== presentationSignature) {
@@ -4217,6 +4221,7 @@ export class BabylonEngine {
                 // Never import a duplicate GLB if this is an internal submesh or canonical built-in piece
                 if (att.isSubmesh) continue;
                 if (typeof att.assetId === 'string' && att.assetId.startsWith('builtin-piece-')) continue;
+                if (att.defaultVisible === false) continue;
 
                 let attUrl = att.modelUrl || att.cdnUrl;
                 if (!attUrl && att.assetId) {
@@ -4322,7 +4327,14 @@ export class BabylonEngine {
                     return attachedPart?.isFaceVariant && att.defaultVisible !== false;
                   });
                 }
-                return part.defaultVisible;
+                const attachment = modularAttachments.find((att: any) => {
+                  const attachedName = norm(String(att.meshName || att.assetDefinition?.meshName || ''));
+                  const attachedId = norm(String(att.assetId || att.id || ''));
+                  return (attachedName && attachedName === norm(part.meshName))
+                    || attachedId === norm(part.id)
+                    || attachedId.endsWith(norm(part.id));
+                });
+                return attachment ? attachment.defaultVisible !== false : part.defaultVisible;
               });
               const suppressedMeshNames = new Set(
                 activeParts.flatMap((part: any) => (part.suppressesSubmeshes || []).map((name: string) => norm(name)))
@@ -4352,6 +4364,14 @@ export class BabylonEngine {
 
                   if (matchingAttachment) {
                     childMesh.setEnabled((matchingAttachment as any).defaultVisible !== false);
+                  } else if (modularAttachments.some((att: any) => {
+                    const attachedName = norm(String(att.meshName || att.assetDefinition?.meshName || ''));
+                    const attachedId = norm(String(att.assetId || att.id || ''));
+                    return (attachedName && attachedName === norm(part.meshName))
+                      || attachedId === norm(part.id)
+                      || attachedId.endsWith(norm(part.id));
+                  })) {
+                    childMesh.setEnabled(false);
                   } else {
                     if (part.isFaceVariant) {
                       const activeFace = modularAttachments.some((att: any) => {
@@ -4508,12 +4528,13 @@ export class BabylonEngine {
               || sourceAssetPresentation?.rigAnalysis
               || sourceAssetPresentation?.assetDefinition?.rigAnalysis
               || sourceAsset?.metadata?.rigAnalysis;
-            const isHumanoidRig = !rigAnalysis?.family
-              || rigAnalysis.family === 'HUMANOID_BIPED'
-              || rigAnalysis.isHumanoid === true;
+            const isHumanoidRig = rigAnalysis?.family
+              ? rigAnalysis.family === 'HUMANOID_BIPED' || rigAnalysis.isHumanoid === true
+              : canonicalDef?.skeleton !== 'static';
+            const resolvedAnimationProfileId = resolveAnimationProfileId(profileId, canonicalDef?.skeleton, isHumanoidRig);
             const animationConfig = applyAnimationProfileFallback(
               mergedAnimationConfig,
-              isHumanoidRig ? (profileId || 'GreystoneManny') : undefined,
+              isHumanoidRig ? resolvedAnimationProfileId : undefined,
             );
 
             // Persist the resolved animation configuration back to entity presentation and mesh metadata

@@ -23,6 +23,8 @@ import { SessionManager } from "./SessionManager";
 import { ShardManager } from "./ShardManager";
 import { StudioCollaborationService } from "./StudioCollaborationService";
 import { ChatService } from "./ChatService";
+import { prisma } from "@/web/lib/prisma";
+import { isForbiddenRtCaptureAbility } from "@/shared/game/combatAbilities";
 
 export interface ConnectedPlayer {
   socketId: string;
@@ -319,15 +321,22 @@ export class LobbySocketHandler {
       });
 
       // --- COMBAT ---
-      socket.on('combat_cast', (data: { abilityId: string, targetId?: string }) => {
+      socket.on('combat_cast', async (data: { abilityId: string, targetId?: string }) => {
         try {
           const player = this.shards.getPlayer(socket.id);
-          if (!player || !player.instanceId) return;
+          if (!player || !player.instanceId || !data?.abilityId || isForbiddenRtCaptureAbility(data.abilityId)) return;
 
-          // TODO: Look up ability from DB or memory cache to get base power and MP cost
-          const baseDamage = 25; // Placeholder
+          const ability = await prisma.abilityDictionary.findUnique({
+            where: { slug: data.abilityId },
+            select: { name: true, power: true, accuracy: true },
+          });
+          if (!ability) return;
+
+          const accuracy = Math.max(0, Math.min(1, ability.accuracy ?? 1));
+          const isMiss = Math.random() >= accuracy;
           const isCrit = Math.random() < 0.1;
-          const damage = isCrit ? Math.floor(baseDamage * 1.5) : baseDamage;
+          const baseDamage = Math.max(0, ability.power ?? 0);
+          const damage = isMiss ? 0 : isCrit ? Math.floor(baseDamage * 1.5) : baseDamage;
 
           // If targeting an enemy, deduct their HP in the state (if tracked by server)
           // For now, we just broadcast the visual result so all clients see it
@@ -337,9 +346,10 @@ export class LobbySocketHandler {
             attackerId: socket.id,
             targetId: data.targetId,
             abilityId: data.abilityId,
+            abilityName: ability.name,
             damage,
             isCrit,
-            isMiss: false
+            isMiss,
           });
         } catch (err) {
           console.error("[LobbySocket] combat_cast error:", err);

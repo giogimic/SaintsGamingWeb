@@ -4,7 +4,6 @@ import { useGameStore } from './store';
 import { useEffect, useState, useMemo } from 'react';
 import { isForbiddenRtCaptureAbility } from '@/shared/game/combatAbilities';
 import { soundSynth } from '@/engine/sound-synth';
-import { Flame, Wind, Shield, Zap, Sparkles, Heart, Crosshair } from 'lucide-react';
 import { getHudTheme } from './hud/hud-themes';
 
 type HotbarAbility = {
@@ -14,11 +13,21 @@ type HotbarAbility = {
   cooldownMs: number;
   type?: 'damage' | 'utility' | 'buff' | 'heal';
   mpCost?: number;
+  staminaCost?: number;
+};
+
+type HotbarSlot = {
+  key: string;
+  action: 'ability' | 'item' | 'none';
+  ability: HotbarAbility | null;
+  count?: number;
 };
 
 export default function Hotbar() {
   const combatStyle = useGameStore((s) => s.player.combatStyle);
   const inventory = useGameStore((s) => s.player.inventory);
+  const equippedAbilities = useGameStore((s) => s.player.equippedAbilities);
+  const registryAbilities = useGameStore((s) => s.gameRegistry?.abilities);
   const gameMode = useGameStore((s) => s.gameMode);
   const combatTarget = useGameStore((s) => s.combatTarget);
   const cooldowns = useGameStore((s) => s.cooldowns);
@@ -46,12 +55,12 @@ export default function Hotbar() {
 
   // RT MMO abilities only
   const abilities = useMemo((): HotbarAbility[] => {
-    const equipped = useGameStore.getState().player.equippedAbilities || [];
-    const registryAbilities = useGameStore.getState().gameRegistry?.abilities || [];
+    const equipped = equippedAbilities || [];
+    const abilityDefinitions = registryAbilities || [];
     
     // Map equipped ability IDs to full dictionary entries
     const list: HotbarAbility[] = equipped.map(slug => {
-      const def = registryAbilities.find(a => a.slug === slug);
+      const def = abilityDefinitions.find(a => a.slug === slug);
       if (!def) {
         return {
           id: slug,
@@ -59,7 +68,8 @@ export default function Hotbar() {
           icon: '/assets/icons/skills/default.svg',
           cooldownMs: 2000,
           type: 'damage',
-          mpCost: 10
+          mpCost: 0,
+          staminaCost: 0,
         };
       }
       return {
@@ -67,14 +77,15 @@ export default function Hotbar() {
         name: def.name,
         // Using dynamically generated SVG icons
         icon: `/assets/icons/skills/${def.slug}.svg`,
-        cooldownMs: def.cooldown || 2000,
+        cooldownMs: def.cooldown ?? 2000,
         type: def.type === 'HEAL' ? 'heal' : def.type === 'BUFF' ? 'buff' : def.type === 'UTILITY' ? 'utility' : 'damage',
-        mpCost: 10 // Replace with DB field if MP cost is added to dictionary
+        mpCost: def.manaCost ?? 0,
+        staminaCost: def.staminaCost ?? 0,
       };
     });
 
-    // Ensure we always have 4 slots, even if empty
-    while (list.length < 4) {
+    // Reserve up to nine ability slots around the consumable slot.
+    while (list.length < 9) {
       list.push({
         id: 'empty_' + list.length,
         name: 'Empty Slot',
@@ -83,8 +94,8 @@ export default function Hotbar() {
       });
     }
 
-    return list.slice(0, 4).filter((a) => !a.id.startsWith('empty_') ? !isForbiddenRtCaptureAbility(a.id) : true);
-  }, [useGameStore.getState().player.equippedAbilities, useGameStore.getState().gameRegistry?.abilities]);
+    return list.slice(0, 9).filter((a) => !a.id.startsWith('empty_') ? !isForbiddenRtCaptureAbility(a.id) : true);
+  }, [equippedAbilities, registryAbilities]);
 
   // Inventory consumable count
   const potionCount = useMemo(() => {
@@ -104,19 +115,35 @@ export default function Hotbar() {
     return total;
   }, [inventory]);
 
-  const slots = useMemo(
-    () => [
-      { key: '1', action: 'ability', ability: abilities[0] },
-      { key: '2', action: 'ability', ability: abilities[1] },
-      { key: '3', action: 'ability', ability: abilities[2] },
-      { key: '4', action: 'ability', ability: abilities[3] },
-      {
-        key: '5',
-        action: 'item',
-        count: potionCount,
-        ability: { id: 'potion', name: 'Healing Potion', icon: '/assets/icons/items/health_potion.svg', type: 'heal', cooldownMs: 1000 } as HotbarAbility,
-      },
-    ],
+  const slots = useMemo<HotbarSlot[]>(
+    () => {
+      const populatedSlots: HotbarSlot[] = [
+        { key: '1', action: 'ability', ability: abilities[0] || null },
+        { key: '2', action: 'ability', ability: abilities[1] || null },
+        { key: '3', action: 'ability', ability: abilities[2] || null },
+        { key: '4', action: 'ability', ability: abilities[3] || null },
+        {
+          key: '5',
+          action: 'item',
+          count: potionCount,
+          ability: { id: 'potion', name: 'Healing Potion', icon: '/assets/icons/items/health_potion.svg', type: 'heal', cooldownMs: 1000 },
+        },
+        ...abilities.slice(4, 9).map((ability, index): HotbarSlot => ({
+          key: index === 4 ? '0' : String(index + 6),
+          action: 'ability',
+          ability,
+        })),
+      ];
+      while (populatedSlots.length < 10) {
+        const index = populatedSlots.length;
+        populatedSlots.push({
+          key: index === 9 ? '0' : String(index + 1),
+          action: 'none',
+          ability: null,
+        });
+      }
+      return populatedSlots;
+    },
     [abilities, potionCount]
   );
 
@@ -135,6 +162,15 @@ export default function Hotbar() {
     if (slot.action === 'ability') {
       if (isForbiddenRtCaptureAbility(slot.ability.id)) {
         useGameStore.getState().showToast('Capture tools only work in creature battles.');
+        return;
+      }
+      const player = useGameStore.getState().player;
+      if ((player.mp ?? 0) < (slot.ability.mpCost ?? 0)) {
+        useGameStore.getState().showToast('Not enough mana to cast this ability.');
+        return;
+      }
+      if ((player.stamina ?? 0) < (slot.ability.staminaCost ?? 0)) {
+        useGameStore.getState().showToast('Not enough stamina to cast this ability.');
         return;
       }
       if (!combatTarget && slot.ability.type === 'damage') {
@@ -192,8 +228,9 @@ export default function Hotbar() {
       if (!isCurrentlyPlayable) return;
 
       const key = e.key;
-      const slotIndex = parseInt(key) - 1;
-      if (slotIndex >= 0 && slotIndex < slots.length) {
+      const slotIndex = key === '0' ? 9 : parseInt(key) - 1;
+      const visibleSlotCount = useGameStore.getState().hudConfig?.hotbarLayout === '1x5' ? 5 : 10;
+      if (slotIndex >= 0 && slotIndex < visibleSlotCount) {
         handleCast(slots[slotIndex]);
       }
     };
@@ -204,6 +241,8 @@ export default function Hotbar() {
   const hudThemeId = useGameStore((s) => s.hudThemeId);
   const hudConfig = useGameStore((s) => s.hudConfig);
   const theme = getHudTheme(hudThemeId || hudConfig?.themeId);
+  const visibleSlotCount = hudConfig?.hotbarLayout === '1x5' ? 5 : 10;
+  const hotbarSlotCount = hudConfig?.hotbarLayout === '1x10' ? 10 : 5;
 
   const radiusClass =
     hudConfig?.borderRadius === 'compact'
@@ -230,12 +269,12 @@ export default function Hotbar() {
       }}
     >
       <div
-        className={`p-1 bg-black/40 border border-white/10 ${radiusClass} backdrop-blur-xl relative overflow-hidden flex items-center gap-1.5 transition-all hover:border-amber-400/30`}
+        className={`p-1 bg-black/40 border border-white/10 ${radiusClass} backdrop-blur-xl relative overflow-hidden flex ${hudConfig?.hotbarLayout === '2x5' ? 'flex-wrap max-w-[17rem]' : 'items-center'} gap-1.5 transition-all hover:border-amber-400/30`}
         style={{
           boxShadow: hudConfig?.borderGlow ? theme.palette.accentGlow : undefined,
         }}
       >
-        {slots.map((slot, i) => {
+        {slots.slice(0, hotbarSlotCount).map((slot, i) => {
           const ability = slot.ability;
           const abilityCdEnd = ability ? cooldowns[ability.id] || 0 : 0;
           const abilityCdRemaining = Math.max(0, abilityCdEnd - now);

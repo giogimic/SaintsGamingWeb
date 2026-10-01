@@ -114,6 +114,8 @@ hydratePlayer: (data) =>
           if (data.inventory) state.player.inventory = data.inventory;
           if (data.skills) state.player.skills = data.skills;
           if (data.equipment) state.player.equipment = data.equipment;
+          if (data.unlockedAbilities) state.player.unlockedAbilities = data.unlockedAbilities;
+          if (data.equippedAbilities) state.player.equippedAbilities = data.equippedAbilities;
           if (data.customization) state.player.customization = data.customization;
           if (data.combatStyle) state.player.combatStyle = data.combatStyle;
           if (data.activeDaemonId !== undefined) state.player.activeDaemonId = data.activeDaemonId;

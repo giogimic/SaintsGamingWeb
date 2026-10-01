@@ -21,8 +21,9 @@ export interface CanonicalModelDef {
   id: string;
   name: string;
   modelUrl: string;
-  category: 'character' | 'creature' | 'monster';
+  category: 'character' | 'creature' | 'monster' | 'prop';
   skeleton: 'manny' | 'creature_custom' | 'mixamo' | 'daz_g8f' | 'static';
+  isPlayable?: boolean;
   defaultAnimationProfileId?: string;
   modularParts?: CanonicalModelPartDef[];
   embeddedAnimations?: string[];
@@ -78,10 +79,11 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
   },
   leoverse: {
     id: 'leoverse',
-    name: 'Heroic Armored Statue',
+    name: 'Red Runner 66',
     modelUrl: '/game-assets/models/humanoids/props/leoverse_statue.glb',
-    category: 'character',
+    category: 'prop',
     skeleton: 'static',
+    isPlayable: false,
     modularParts: [],
   },
   citizens: {
@@ -90,6 +92,7 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
     modelUrl: '/game-assets/models/humanoids/citizens/glb/man_1.glb',
     category: 'character',
     skeleton: 'static',
+    isPlayable: false,
     modularParts: [],
   },
 };
@@ -129,9 +132,7 @@ export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalMod
   if (key.includes('asian')) {
     return CANONICAL_BUILTIN_MODELS.asian_girl;
   }
-  if (key.includes('leoverse')) {
-    return CANONICAL_BUILTIN_MODELS.leoverse;
-  }
+  if (key.includes('leoverse')) return CANONICAL_BUILTIN_MODELS.leoverse;
   return undefined;
 }
 
@@ -239,7 +240,6 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
       ? model.modularAttachments
       : [];
   const modularAttachments: ModularAttachmentDef[] = configuredAttachments
-      .filter((att: any) => att?.defaultVisible !== false)
       .map((att: any): ModularAttachmentDef | undefined => {
         const rawId = typeof att === 'string' ? att : att?.assetId;
         const candidateUrl = typeof att === 'object' && att ? (att.modelUrl || att.source || att.url || att.cdnUrl) : undefined;

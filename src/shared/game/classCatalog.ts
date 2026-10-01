@@ -87,6 +87,20 @@ export function resolveStartingSkills(def: ClassDefData): Record<string, SkillDa
   return buildInitialSkills(def.skillDeltas as Record<string, number>);
 }
 
+export function resolveStartingAbilityLoadout(
+  classIds: string[],
+  classDefs: ClassDefData[]
+): { unlockedAbilities: string[]; equippedAbilities: string[] } {
+  const selectedDefs = classIds
+    .map((id) => classDefs.find((def) => def.classId === id))
+    .filter((def): def is ClassDefData => Boolean(def));
+  const unlockedAbilities = [...new Set(selectedDefs.flatMap((def) => def.abilities || []))];
+  return {
+    unlockedAbilities,
+    equippedAbilities: unlockedAbilities.slice(0, 5),
+  };
+}
+
 
 
 export const DEFAULT_PLAYABLE_CLASSES: ClassDefData[] = [

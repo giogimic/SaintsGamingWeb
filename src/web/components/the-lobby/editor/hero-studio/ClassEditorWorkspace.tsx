@@ -39,6 +39,7 @@ export function ClassEditorWorkspace() {
   const [showJson, setShowJson] = useState(false);
   const [jsonInput, setJsonInput] = useState('');
   const [globalShiny, setGlobalShiny] = useState(0.5);
+  const [abilityOptions, setAbilityOptions] = useState<{ slug: string; name: string; element1?: string | null }[]>([]);
 
   const load = useCallback(async () => {
     const [classesRes, shinyRes] = await Promise.all([
@@ -54,6 +55,19 @@ export function ClassEditorWorkspace() {
     setForm({ ...emptyClassDef(), profileId: null });
     setIsNew(false);
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/studio/abilities')
+      .then((res) => res.json())
+      .then((result) => {
+        if (!cancelled && result.success && Array.isArray(result.data)) {
+          setAbilityOptions(result.data);
+        }
+      })
+      .catch((error) => console.error('Failed to load Studio abilities', error));
+    return () => { cancelled = true; };
+  }, []);
 
   const showStatus = (type: 'success' | 'error', msg: string) => {
     setStatus({ type, msg });
@@ -74,6 +88,15 @@ export function ClassEditorWorkspace() {
     setForm((prev) => ({
       ...prev,
       skillDeltas: { ...prev.skillDeltas, [key]: value },
+    }));
+  };
+
+  const toggleAbility = (slug: string) => {
+    setForm((prev) => ({
+      ...prev,
+      abilities: prev.abilities.includes(slug)
+        ? prev.abilities.filter((ability) => ability !== slug)
+        : [...prev.abilities, slug],
     }));
   };
 
@@ -411,6 +434,30 @@ export function ClassEditorWorkspace() {
                     </div>
                   ))}
                 </div>
+              </div>
+
+              <div className="p-2 rounded border border-slate-800 bg-[#050b14]/60">
+                <div className={labelCls}>Starting abilities</div>
+                <p className="text-[10px] text-slate-500 mb-2">
+                  Select Studio abilities granted to characters who choose this class or an archetype using it.
+                </p>
+                {abilityOptions.length === 0 ? (
+                  <p className="text-[10px] text-amber-500">No Studio abilities found. Create abilities in Gameplay Studio first.</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto">
+                    {abilityOptions.map((ability) => (
+                      <label key={ability.slug} className="flex items-center gap-1.5 rounded border border-slate-800 px-2 py-1 text-[10px] text-slate-300">
+                        <input
+                          type="checkbox"
+                          checked={(form.abilities || []).includes(ability.slug)}
+                          onChange={() => toggleAbility(ability.slug)}
+                        />
+                        <span className="truncate">{ability.name}</span>
+                        <span className="ml-auto text-[8px] uppercase text-slate-500">{ability.element1 || ''}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-wrap gap-2 items-center">

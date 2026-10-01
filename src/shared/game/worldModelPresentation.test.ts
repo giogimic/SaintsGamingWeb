@@ -82,13 +82,14 @@ describe('worldModelPresentation', () => {
       expect(result?.modelScale).toBe(1.2);
       expect(result?.modularAttachments).toBeDefined();
       const attachments = result?.modularAttachments || [];
-      expect(attachments).toHaveLength(1);
+      expect(attachments).toHaveLength(2);
       expect(attachments[0].assetId).toBe('iron_chestplate');
       expect(attachments[0].modelUrl).toBe('/uploads/iron_chestplate.glb');
       expect(attachments[0].attachmentMode).toBe('SKINNED');
       expect(attachments[0].isSubmesh).toBe(true);
       expect(attachments[0].meshName).toBe('ChestMesh');
-      expect(result?.modularModelUrls).toEqual(['/uploads/iron_chestplate.glb']);
+      expect(attachments[1]).toMatchObject({ assetId: 'hidden_cape', defaultVisible: false });
+      expect(result?.modularModelUrls).toEqual(['/uploads/iron_chestplate.glb', '/uploads/hidden_cape.glb']);
     });
 
     it('returns undefined for invalid or non-3D input', () => {
@@ -99,6 +100,17 @@ describe('worldModelPresentation', () => {
   });
 
   describe('canonical built-in models and modular parts', () => {
+    it('classifies Red Runner as a static prop, not a character with animations', () => {
+      expect(getCanonicalModelDef('leoverse')).toMatchObject({
+        category: 'prop',
+        skeleton: 'static',
+        isPlayable: false,
+        name: 'Red Runner 66',
+      });
+      expect(getCharacterModelProfile('leoverse')).toBeUndefined();
+      expect(getWorldModelPresentation('leoverse')?.animationProfileId).toBeUndefined();
+    });
+
     it('retrieves definition for brute', () => {
       const brute = getCanonicalModelDef('brute');
       expect(brute).toBeDefined();
@@ -135,7 +147,7 @@ describe('worldModelPresentation', () => {
       }
     });
 
-    it('does not advertise an animation profile that is not registered for the Asian heroine', () => {
+    it('does not advertise a Mixamo animation profile for the Asian heroine G8F rig', () => {
       expect(getWorldModelPresentation('asian_girl')?.animationProfileId).toBeUndefined();
     });
   });

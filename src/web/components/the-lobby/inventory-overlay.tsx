@@ -93,24 +93,26 @@ export default function InventoryOverlay() {
         equipItem(slot as any, itemId);
         useGameStore.getState().showToast(`Equipped ${itemInfo.name}`);
       }
-    } else if (typeUpper === 'FOOD' || typeUpper === 'CONSUMABLE') {
-      if (itemInfo.stats?.hp) {
-        const socket = (window as any)._lobbySocket;
-        if (socket) {
-          socket.emit('use_item', { itemId });
-        }
-        if (inventory[itemId] === 1) setActiveItem(null);
+    } else if (typeUpper === 'FOOD' || typeUpper === 'CONSUMABLE' || typeUpper === 'POTION') {
+      const emitSocketEvent = useGameStore.getState().emitSocketEvent;
+      if (emitSocketEvent) {
+        emitSocketEvent('use_item', { itemId });
+      } else {
+        useGameStore.getState().showToast('Not connected to the lobby.');
       }
+    } else {
+      useGameStore.getState().showToast(`${itemInfo.name} cannot be used here.`);
     }
   };
 
   const handleDrop = (itemId: string, itemInfo: any) => {
     soundSynth?.playUiClick?.();
-    const socket = (window as any)._lobbySocket;
-    if (socket) {
-      socket.emit('drop_item', { itemId });
+    const emitSocketEvent = useGameStore.getState().emitSocketEvent;
+    if (emitSocketEvent) {
+      emitSocketEvent('drop_item', { itemId });
+    } else {
+      useGameStore.getState().showToast('Not connected to the lobby.');
     }
-    if (inventory[itemId] <= 1) setActiveItem(null);
   };
 
   const maxWeight = playerMaxWeight || (getStarterPerkEffectId(playerPerk) === 'PACK_MULE' ? 150 : 100);
@@ -172,7 +174,9 @@ export default function InventoryOverlay() {
     return { filled: false, isSelected: false };
   });
 
-  const selectedItemInfo = activeItem ? ITEM_DB[activeItem] : null;
+  const selectedItemInfo = activeItem
+    ? ITEM_DB[activeItem] || { name: activeItem, description: 'Unknown artifact', type: 'MISC' }
+    : null;
 
   return (
     <div className="flex h-full w-full flex-col p-3 md:p-4 font-mono select-none animate-in fade-in">

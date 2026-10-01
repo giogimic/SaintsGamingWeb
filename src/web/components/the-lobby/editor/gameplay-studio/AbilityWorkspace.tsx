@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Save, Plus, Wand2, Zap, ArrowRight, Droplets, Swords } from "lucide-react";
+import { useGameStore } from "../../store";
 
 export function AbilityWorkspace() {
   const [abilities, setAbilities] = useState<any[]>([]);
@@ -146,6 +147,7 @@ export function AbilityWorkspace() {
       
       if (result.success) {
         await fetchAbilities();
+        await useGameStore.getState().fetchGameRegistry();
         setSelectedSlug(result.data.slug);
       }
     } catch (e) {
@@ -266,6 +268,12 @@ export function AbilityWorkspace() {
                         {elementsList.map(el => <option key={el} value={el}>{el}</option>)}
                       </select>
                     </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted-foreground mb-1">Ability Type</label>
+                    <select value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})} className="w-full bg-black/40 border border-border/50 rounded px-2.5 py-1.5 outline-none">
+                      {['skill', 'DAMAGE', 'HEAL', 'BUFF', 'UTILITY'].map(type => <option key={type} value={type}>{type}</option>)}
+                    </select>
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div>

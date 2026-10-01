@@ -472,6 +472,15 @@ export function getAnimationProfile(profileId: string): AnimationProfile | undef
   return ANIMATION_PROFILES.find(p => p.id === profileId);
 }
 
+export function resolveAnimationProfileId(
+  profileId: string | undefined,
+  skeleton: string | undefined,
+  isHumanoidRig: boolean,
+): string | undefined {
+  if (profileId) return profileId;
+  return isHumanoidRig && skeleton === 'manny' ? 'GreystoneManny' : undefined;
+}
+
 /** Encode each folder/name segment while preserving clip folders in the URL. */
 export function resolveAnimationClipPath(basePath: string, clip: string): string {
   const ext = /\.(glb|gltf|fbx)$/i.test(clip) ? '' : '.glb';

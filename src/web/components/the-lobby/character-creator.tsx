@@ -34,6 +34,7 @@ import {
   ClassDefData,
   emptyClassDef,
   resolveClassStats,
+  resolveStartingAbilityLoadout,
   resolveStartingSkills,
 } from '@/shared/game/classCatalog';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
@@ -334,11 +335,7 @@ export function CharacterCreator({
     const defaultVisibleIds = initialWardrobe
       .filter((item) => {
         const isOffered = hasCreationTagged ? item.availableInCharacterCreation : true;
-        if (!isOffered) return false;
-        if (item.category === 'face' || item.category === 'hair') {
-          return item.defaultVisible !== false;
-        }
-        return Boolean((item as any).isStarterOutfit);
+        return isOffered && item.defaultVisible !== false;
       })
       .map((item) => item.assetId);
     setSelectedWardrobeAssetIds(defaultVisibleIds);
@@ -375,11 +372,7 @@ export function CharacterCreator({
     const rolledVisibleIds = rolledWardrobe
       .filter((item) => {
         const isOffered = hasRolledCreationTagged ? item.availableInCharacterCreation : true;
-        if (!isOffered) return false;
-        if (item.category === 'face' || item.category === 'hair') {
-          return item.defaultVisible !== false;
-        }
-        return Boolean((item as any).isStarterOutfit);
+        return isOffered && item.defaultVisible !== false;
       })
       .map((item) => item.assetId);
     setSelectedWardrobeAssetIds(rolledVisibleIds);
@@ -413,7 +406,9 @@ export function CharacterCreator({
     setLoading(true);
     soundSynth?.playActionSound?.();
 
-    const selectedDef = classDefs.find((c) => c.classId === classId);
+    const selectedClassIds = classId.split(',').filter(Boolean);
+    const selectedDef = classDefs.find((def) => selectedClassIds.includes(def.classId));
+    const { unlockedAbilities, equippedAbilities } = resolveStartingAbilityLoadout(selectedClassIds, classDefs);
     const initialSkills = selectedDef
       ? resolveStartingSkills(selectedDef)
       : JSON.parse(JSON.stringify(INITIAL_SKILLS));
@@ -550,8 +545,8 @@ export function CharacterCreator({
       perk: perkId || null,
       maxWeight: perkEffect === 'PACK_MULE' ? 150 : 100,
       maxPartySize: 4,
-      unlockedAbilities: selectedDef?.abilities || [],
-      equippedAbilities: (selectedDef?.abilities || []).slice(0, 5),
+      unlockedAbilities,
+      equippedAbilities,
     };
 
     const result = await createGameCharacter({
@@ -586,7 +581,7 @@ export function CharacterCreator({
     (spritePage + 1) * spritesPerPage
   );
 
-  const selectedDef = classDefs.find((c) => c.classId === classId);
+  const selectedDef = classDefs.find((c) => classId.split(',').includes(c.classId));
   const selectedPerk = dbPerks.find((p) => p.slug === perkId) || dbPerks[0] || { name: 'None' };
   const selectedPerkEffect = getStarterPerkEffectId(perkId);
   const reviewHp = selectedDef
@@ -1188,7 +1183,7 @@ export function CharacterCreator({
                         <p className="text-xs text-muted-foreground">Choose the clothing and gear to wear.</p>
                         <button
                           type="button"
-                          onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => (item.category === 'face' || item.category === 'hair' || (item as any).isStarterOutfit) && item.defaultVisible !== false).map((item) => item.assetId))}
+                          onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => item.defaultVisible !== false).map((item) => item.assetId))}
                           className="shrink-0 rounded-lg border border-border/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary"
                         >
                           Reset to default
