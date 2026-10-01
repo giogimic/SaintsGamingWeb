@@ -23,6 +23,7 @@ import { localMovementSystem } from './physics/LocalMovementSystem';
 import { WrappedCharacterMesher } from './rendering/WrappedCharacterMesher';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { loadAndRetargetAnimation } from '@/engine/animationRetarget';
+import { getCharacterModelProfile } from '@/shared/game/characterProfiles';
 import { applyAnimationProfileFallback } from '@/shared/game/animationProfiles';
 import { attachModularComponent } from '@/engine/helpers/babylonAttachmentHelpers';
 import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
@@ -141,6 +142,16 @@ export class EntityRenderer {
       let resolvedUrl = effectiveProfileId ? resolveEntitySpriteUrl(effectiveProfileId, { kind: defaultKind as any }) : undefined;
       let presentationType = effectiveProfileId?.includes('wrapped') ? '2D_WRAPPED' : (isModel ? '3D_MODEL' : '2D_SPRITE');
       let transform: any = visualTransform;
+      
+      const profile = getCharacterModelProfile(effectiveProfileId);
+      if (profile?.baseScale && transform?.scale) {
+        transform.scale *= profile.baseScale;
+      } else if (profile?.baseScale && !transform) {
+        transform = { scale: profile.baseScale };
+      } else if (profile?.baseScale && transform && !transform.scale) {
+        transform.scale = profile.baseScale;
+      }
+
       let animations: any = visualAnimations;
 
       if (effectiveProfileId && effectiveProfileId.length >= 20 && !effectiveProfileId.includes('.')) {

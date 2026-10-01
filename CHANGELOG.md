@@ -1,3 +1,9 @@
+## [2.2.084] - 2026-10-01
+- **Engine & Studio Enhancements**:
+  - **Dynamic Base Scale Extraction**: Updated `EntityRenderer.ts` and `ArchetypeModelPreview3D.tsx` to read the `baseScale` modifier dynamically from `getCharacterModelProfile`.
+  - **Asian Girl Scale Adjustment**: The Asian Girl model size is now properly corrected in both the 3D Studio Preview panel and the in-game overworld via the `baseScale` multiplier, solving the issue where it appeared invisible/oversized.
+- Bumped site version to 2.2.084.
+
 ## [2.2.083] - 2026-10-01
 - **3D Model Rendering & Visibility Fixes**:
   - **Asian Girl Scale Fix**: Fixed an issue where the Asian Girl modular components were invisible in-game. The `asian_girl.glb` file's internal nodes had a scale factor of 100, causing the rendered mesh to be scaled to 120 meters tall resulting in camera clipping/backface culling. Reduced internal node scale matrices to 1x.

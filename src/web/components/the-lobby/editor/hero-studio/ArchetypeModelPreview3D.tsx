@@ -10,6 +10,7 @@ import { resolveModelAssetUrl, getModelModularComponents } from '@/shared/game/w
 import { getDefaultModelWardrobeAttachmentMode, getDefaultModelWardrobeSocket } from '@/shared/game/modelWardrobe';
 import { normalizeBoneName } from '@/engine/animationRetarget';
 import { AssetManager } from '@/engine/assets/AssetManager';
+import { getCharacterModelProfile } from '@/shared/game/characterProfiles';
 import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 import { WorldModelValue, STANDARD_SOCKET_OPTIONS } from '../components/WorldModelSelector';
 import { Play, Pause, RotateCw, Bone, Layers, EyeOff, Shield } from 'lucide-react';
@@ -484,6 +485,8 @@ export function ArchetypeModelPreview3D({
   }, [baseAssetId, baseModelUrl]);
 
   const effectiveBaseUrl = resolvedBaseUrl || (baseAssetId ? resolveModelAssetUrl(baseAssetId) : null);
+  const profile = getCharacterModelProfile(baseAssetId || effectiveBaseUrl);
+  const effectiveScale = modelScale * (profile?.baseScale ?? 1.0);
 
   const handleLoadedAnimations = (loaded: { name: string; duration: number }[]) => {
     setAnimations(loaded);
@@ -576,7 +579,7 @@ export function ArchetypeModelPreview3D({
 
           <CompositeCharacter
             baseUrl={effectiveBaseUrl}
-            modelScale={modelScale}
+            modelScale={effectiveScale}
             modularAttachments={modularAttachments}
             activeAnimationIndex={activeAnimIndex}
             isPlaying={isPlaying}
@@ -585,7 +588,7 @@ export function ArchetypeModelPreview3D({
             onLoadedAnimations={handleLoadedAnimations}
           />
 
-          <OrbitControls makeDefault target={[0, 0.9 * modelScale, 0]} maxPolarAngle={Math.PI / 2 + 0.1} />
+          <OrbitControls makeDefault target={[0, 0.9 * effectiveScale, 0]} maxPolarAngle={Math.PI / 2 + 0.1} />
           <Grid infiniteGrid sectionColor="#eab308" cellColor="#1e293b" fadeDistance={12} />
         </Canvas>
       </div>
