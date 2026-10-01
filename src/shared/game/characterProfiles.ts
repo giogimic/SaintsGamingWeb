@@ -62,9 +62,9 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
     modularParts: [
       { id: 'brute_head', label: 'Beast Head', category: 'face', meshName: 'Head1', defaultVisible: true, isFaceVariant: true },
       { id: 'brute_helmet', label: 'War Helm', category: 'hat', meshName: 'Helmet1', defaultVisible: false },
-      { id: 'brute_torso', label: 'Heavy Torso', category: 'shirt', meshName: 'Torso1', defaultVisible: true },
-      { id: 'brute_pants', label: 'Armor Greaves', category: 'pants', meshName: 'Pants1', defaultVisible: true },
-      { id: 'brute_boots', label: 'War Boots', category: 'shoes', meshName: 'Boots1', defaultVisible: true },
+      { id: 'brute_torso', label: 'Heavy Torso', category: 'shirt', meshName: 'Torso1', defaultVisible: false },
+      { id: 'brute_pants', label: 'Armor Greaves', category: 'pants', meshName: 'Pants1', defaultVisible: false },
+      { id: 'brute_boots', label: 'War Boots', category: 'shoes', meshName: 'Boots1', defaultVisible: false },
       { id: 'brute_harness', label: 'Leather Shoulder Harness', category: 'accessory', meshName: 'Shoulder_Belt1', defaultVisible: false },
       { id: 'brute_shoulder', label: 'Spiked Pauldron', category: 'accessory', meshName: 'ShoulderPad1', defaultVisible: false },
       { id: 'brute_cape', label: 'Tattered Cape', category: 'back', meshName: 'Cape1', defaultVisible: false },
@@ -107,7 +107,7 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
         label: 'Uniform Blouse',
         category: 'shirt',
         meshName: '4_+Shirt1_01_0_0',
-        defaultVisible: true,
+        defaultVisible: false,
         suppressesSubmeshes: ['4_-Top1_01_0_0'],
       },
       {
@@ -115,7 +115,7 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
         label: 'Pleated Skirt',
         category: 'pants',
         meshName: '4_+Skirt1_01_0_0',
-        defaultVisible: true,
+        defaultVisible: false,
         suppressesSubmeshes: ['6_+Panty_01_0_0'],
       },
       {
@@ -123,14 +123,14 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
         label: 'Sneakers',
         category: 'shoes',
         meshName: '4_+Shoes_01_0_0002',
-        defaultVisible: true,
+        defaultVisible: false,
       },
       {
         id: 'ag_scabbard',
         label: 'Hip Scabbard',
         category: 'accessory',
         meshName: '6_+HolsterScabbard_01_0_0001',
-        defaultVisible: true,
+        defaultVisible: false,
       },
       {
         id: 'ag_katana_hand',

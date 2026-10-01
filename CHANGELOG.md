@@ -7446,3 +7446,6 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 - Fix: Asian Girl (daz_g8f) invisibility bug fixed. Engine scale adjustments replaced the GLB scale patch, properly preserving skin weights to avoid camera clipping.
 - Refactor: Added baseScale to CharacterModelProfile, propagated via WorldModelSelector presets.
 
+
+### v2.2.086
+- Hidden default clothing for modular characters (brute and asian_girl) upon spawn, leaving them in their base forms for character creation.
