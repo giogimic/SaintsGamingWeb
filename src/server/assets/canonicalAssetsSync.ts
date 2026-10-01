@@ -224,7 +224,7 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
     for (const f of files) {
       const baseName = f.replace(/\.glb$/i, '');
       const isKid = baseName.includes('kid');
-      const isWoman = baseName.includes('girl') || baseName.includes('wm') || baseName.includes('w_') || baseName.includes('d_') || baseName.includes('h_');
+      const isWoman = baseName.includes('girl') || baseName.includes('wm') || baseName.includes('w_') || baseName.includes('d_') || baseName.includes('h_') || baseName === 'w1' || baseName.startsWith('wgirl');
       const roleLabel = isKid ? 'Town Child' : (isWoman ? 'Townswoman' : 'Townsman');
       const label = `${roleLabel} (${baseName})`;
       const source = `/game-assets/models/humanoids/citizens/glb/${f}`;
@@ -382,7 +382,14 @@ export function buildCanonicalCharacterModelProfiles(): any[] {
       skeletonType: 'daz_g8f',
       transformData: JSON.stringify({ scale: 1.0, rotationY: 0, groundingOffsetY: 0, cameraHeightOffset: 0 }),
       skeletonData: JSON.stringify({ boneMap: {} }),
-      animationData: JSON.stringify({ actionSlots: {}, embeddedClips: [] }),
+      animationData: JSON.stringify({
+        profileId: 'GreystoneManny',
+        actionSlots: {
+          idle: { clipName: 'IdleAO/Idle', sourceKind: 'animation-set' },
+          walk_fwd: { clipName: 'Jog/Jog_Fwd', sourceKind: 'animation-set' },
+          run_fwd: { clipName: 'Jog/Jog_Fwd', sourceKind: 'animation-set' },
+        }
+      }),
       socketsData: JSON.stringify([
         { name: 'RightHandMount', parentBone: 'rHand', position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
         { name: 'SheathedHip_L', parentBone: 'lThighBend', position: [0, 0, 0], rotation: [0, 0, 0], scale: [1, 1, 1] },
@@ -466,7 +473,10 @@ export async function syncCanonicalGameAssets(prismaClient: any): Promise<number
     if (typeof prismaClient?.characterModelProfile?.deleteMany === 'function') {
       await prismaClient.characterModelProfile.deleteMany({
         where: {
-          slug: { notIn: canonicalSlugs }
+          AND: [
+            { id: { startsWith: 'profile-' } },
+            { slug: { notIn: canonicalSlugs } },
+          ]
         }
       });
     }

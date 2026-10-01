@@ -75,6 +75,8 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
     modelUrl: '/game-assets/models/humanoids/asian_girl/asian_girl.glb',
     category: 'character',
     skeleton: 'daz_g8f',
+    isPlayable: true,
+    defaultAnimationProfileId: 'GreystoneManny',
     modularParts: CHARACTER_MODEL_PROFILES.asian_girl.modularParts,
   },
   leoverse: {

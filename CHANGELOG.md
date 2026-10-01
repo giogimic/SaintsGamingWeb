@@ -1,3 +1,11 @@
+## [2.2.082] - 2026-10-01
+- **Asset Audit & Fixes**:
+  - Registered missing `boy_native` and `girl_native` animation profiles.
+  - Corrected `w1.glb` citizen gender detection logic to properly map as Townswoman.
+  - Mapped a temporary `GreystoneManny` animation fallback for the Asian Girl (`daz_g8f` skeleton) so the model properly appears in Studio asset listings instead of being rendered invisible due to missing animation profile slots.
+  - Protected custom user-created `characterModelProfile` records from being wiped out by the canonical asset sync process.
+- Bumped site version to 2.2.082.
+
 ## [2.2.081] - 2026-09-30
 - Asset audit fixes: citizen IDs now retain their unique GLB paths; canonical synchronization is repeatable and removes stale modular records.
 - Align Asian heroine modular mesh selectors with exported node names; prevent submesh assets from importing the entire source model.
