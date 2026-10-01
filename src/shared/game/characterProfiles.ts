@@ -198,6 +198,15 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
       },
     ],
   },
+  shadow_golem: {
+    id: 'shadow_golem',
+    name: 'Shadow Golem',
+    category: 'character',
+    skeleton: 'creature_custom',
+    modelUrl: '/game-assets/models/monsters/shadow_golem/shadow_golem.glb',
+    compatibleWardrobePack: 'none',
+    modularParts: [],
+  },
   citizens: {
     id: 'citizens',
     name: 'Town Citizen',
@@ -232,6 +241,9 @@ export function getCharacterModelProfile(modelIdOrUrl?: string | null): Characte
   }
   if (baseKey.includes('asian')) {
     return CHARACTER_MODEL_PROFILES.asian_girl;
+  }
+  if (baseKey.includes('golem')) {
+    return CHARACTER_MODEL_PROFILES.shadow_golem;
   }
   if (baseKey.includes('leoverse')) return undefined;
   if (baseKey.includes('citizen') || baseKey.includes('people')) {

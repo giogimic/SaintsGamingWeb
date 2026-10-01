@@ -7449,3 +7449,6 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 
 ### v2.2.086
 - Hidden default clothing for modular characters (brute and asian_girl) upon spawn, leaving them in their base forms for character creation.
+
+### v2.2.087
+- Registered the Shadow Golem model into the canonical built-in character models list.

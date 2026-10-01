@@ -42,6 +42,15 @@ export {
 };
 
 export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
+  shadow_golem: {
+    id: 'shadow_golem',
+    name: 'Shadow Golem',
+    modelUrl: '/game-assets/models/monsters/shadow_golem/shadow_golem.glb',
+    category: 'character',
+    skeleton: 'creature_custom',
+    defaultAnimationProfileId: 'shadow_golem_native',
+    modularParts: [],
+  },
   brute: {
     id: 'brute',
     name: 'Brute',
@@ -112,6 +121,9 @@ export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalMod
   }
   if (key.includes('brute')) {
     return CANONICAL_BUILTIN_MODELS.brute;
+  }
+  if (key.includes('golem')) {
+    return CANONICAL_BUILTIN_MODELS.shadow_golem;
   }
   if (key.includes('boy')) {
     return CANONICAL_BUILTIN_MODELS.boy;
@@ -194,7 +206,7 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
     if (!data || typeof data !== 'object' || Array.isArray(data)) {
       const canonical = getCanonicalModelDef(trimmed);
       const resolvedUrl = resolveModelAssetUrl(trimmed);
-      if (canonical || resolvedUrl || trimmed.includes('brute') || /\.(glb|gltf|fbx)$/i.test(trimmed)) {
+      if (canonical || resolvedUrl || trimmed.includes('brute') || trimmed.includes('golem') || /\.(glb|gltf|fbx)$/i.test(trimmed)) {
         data = {
           type: '3D Model',
           assetId: canonical?.id || (trimmed.startsWith('/') ? undefined : trimmed),
