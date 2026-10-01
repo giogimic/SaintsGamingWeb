@@ -1,3 +1,11 @@
+## [2.2.083] - 2026-10-01
+- **3D Model Rendering & Visibility Fixes**:
+  - **Asian Girl Scale Fix**: Fixed an issue where the Asian Girl modular components were invisible in-game. The `asian_girl.glb` file's internal nodes had a scale factor of 100, causing the rendered mesh to be scaled to 120 meters tall resulting in camera clipping/backface culling. Reduced internal node scale matrices to 1x.
+  - **Regex Parsing Fix**: Fixed a bug in `ArchetypeModelPreview3D.tsx` and `EntityRenderer.ts` where modular submesh names containing periods (e.g., `4_+Shirt.1_0.1_0_0`) were failing regex normalization and incorrectly defaulting to hidden.
+  - **Citizen Model Paths**: Corrected the `modelUrl` path for the 40+ citizen models in `characterProfiles.ts` (added the missing `/glb/` directory layer) to resolve 404 errors.
+  - **Low-Poly Texture Filtering**: Updated the Babylon `EntityRenderer` to enforce `NEAREST_SAMPLINGMODE` on `albedoTexture` for citizen models, fixing texture bleeding and "broken" textures caused by linear mipmapping on tiny texture atlases.
+- Bumped site version to 2.2.083.
+
 ## [2.2.082] - 2026-10-01
 - **Asset Audit & Fixes**:
   - Registered missing `boy_native` and `girl_native` animation profiles.

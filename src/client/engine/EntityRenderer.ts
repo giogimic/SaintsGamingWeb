@@ -607,8 +607,19 @@ export class EntityRenderer {
               }
             }
           }
-          
           const allMeshes = modelWrapper.getChildMeshes(false);
+          
+          if (id.includes('citizen') || data.modelUrl?.includes('citizens')) {
+            allMeshes.forEach(m => {
+              if (m.material) {
+                const mat = m.material as any;
+                if (mat.albedoTexture) {
+                  mat.albedoTexture.updateSamplingMode(BABYLON.Texture.NEAREST_SAMPLINGMODE);
+                }
+              }
+            });
+          }
+
           allMeshes.forEach(m => {
             m.isPickable = false;
             m.computeWorldMatrix(true);
@@ -624,7 +635,7 @@ export class EntityRenderer {
           // Configure modular submesh visibility for models with built-in modular pieces (e.g. Adventurer, Brute)
           const canonicalParts = getModelModularComponents(data.modelUrl);
           if (canonicalParts.length > 0) {
-            const norm = (s: string) => s.toLowerCase().replace(/[-_\s]/g, '');
+            const norm = (s: string) => s.toLowerCase().replace(/[-_\s.]/g, '');
             const partByMesh = new Map<string, any>();
             for (const p of canonicalParts) {
               partByMesh.set(norm(p.meshName), p);

@@ -252,7 +252,7 @@ function CompositeCharacter({
 
     // Anti-clipping, Modular Submesh Activation & Socket Attachment Logic
     const canonicalParts = getModelModularComponents(baseUrl);
-    const norm = (s: string) => s.toLowerCase().replace(/[-_\s]/g, '');
+    const norm = (s: string) => s.toLowerCase().replace(/[-_\s.]/g, '');
 
     const partByMesh = new Map<string, any>();
     for (const p of canonicalParts) {
