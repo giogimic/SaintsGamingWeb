@@ -2245,7 +2245,16 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         tabIndex={0}
         onClick={(e) => (e.currentTarget as HTMLCanvasElement).focus()}
         onMouseDown={(e) => {
-          if (e.button === 1) e.preventDefault();
+          if (e.button === 1) {
+            e.preventDefault();
+            const canvas = e.currentTarget;
+            if (document.pointerLockElement !== canvas) {
+              canvas.requestPointerLock().catch(() => {});
+            } else {
+              (window as any).__intentionalPointerLockExit = true;
+              document.exitPointerLock();
+            }
+          }
         }}
         onDragOver={(e) => {
           e.preventDefault();

@@ -1,3 +1,6 @@
+# 2026-10-02 (2.2.099c)
+- Fixed pointer lock behavior when middle clicking so it correctly captures/hides the cursor again.
+
 # 2026-10-02 (2.2.099b)
 - Separated movement and camera keybinds to allow arrow keys to control camera optionally.
 - Implemented arrow-key camera rotation functionality in CameraManager.

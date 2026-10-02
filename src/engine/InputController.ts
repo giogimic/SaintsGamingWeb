@@ -643,18 +643,7 @@ public enableTilePicking(
       const isFpsTps = !this.engine.editorCameraMode && (style === 'firstperson' || style === 'firstPerson' || style === 'thirdperson' || style === 'thirdPerson' || style === 'follow45' || style === 'adaptive' || style === 'dynamic' || style === 'free');
       const isOrthoMode = this.engine.renderer.camera.mode === 1; // ORTHOGRAPHIC_CAMERA
 
-      // Pointer lock toggle for FPS/TPS gameplay on Middle Click (button === 1)
-      if (button === 1 && isFpsTps && !isOrthoMode && this.engine.canvas && typeof this.engine.canvas.requestPointerLock === 'function') {
-        if (document.pointerLockElement !== this.engine.canvas) {
-          try { this.engine.canvas.requestPointerLock(); } catch {}
-        } else {
-          try { 
-            (window as any).__intentionalPointerLockExit = true;
-            document.exitPointerLock(); 
-          } catch {}
-        }
-        return;
-      }
+      // Pointer lock toggle is now handled natively by the React Canvas components via onMouseDown
 
       // If we are in Ortho (2.5D), right-click is pan
       const isPanTrigger = button === 1 || (button === 2 && isOrthoMode) || (button === 0 && options?.isPanActive?.());
