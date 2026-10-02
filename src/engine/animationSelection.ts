@@ -37,18 +37,16 @@ export function selectAnimationGroup<T extends NamedAnimationGroup>(
 	  return isLocomotionClip(name) && !isBackwardOrLateralClip(name) && !isActionClip(name);
 	});
 	if (neutralLocomotion) return neutralLocomotion;
-  } else {
-	const idle = groups.find((group) => group.name === 'idle') ||
-	  groups.find((group) => isIdleClip(group.name || ''));
-	if (idle) return idle;
-  }
 
-	if (isMoving) {
 	return groups.find((group) => {
 	  const name = group.name || '';
 	  return !isActionClip(name) && !isBackwardOrLateralClip(name);
 	});
   }
+
+  const idle = groups.find((group) => group.name === 'idle') ||
+	groups.find((group) => isIdleClip(group.name || ''));
+  if (idle) return idle;
 
   return groups.find((group) => !isActionClip(group.name || '')) || groups[0];
 }

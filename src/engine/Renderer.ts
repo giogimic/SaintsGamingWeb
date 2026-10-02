@@ -5,6 +5,8 @@ import { HemisphericLight, DirectionalLight, ImageProcessingPostProcess, Light, 
 
 import { DynamicTexture, Scene, ParticleSystem, FreeCamera, Scalar } from '@babylonjs/core';
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
+import { selectAnimationGroup } from './animationSelection';
+import { getLocomotionSpeedRatio } from './locomotionSpeed';
 
 
 export class Renderer {
@@ -622,10 +624,8 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
                 : groups.filter((ag: any) => isIdleClip(ag.name || ''));
 
               // Prevent bone morphing by ensuring we only play exactly ONE animation for each state
-              if (runAnims.length > 1) {
-                const fwdAnim = runAnims.find((ag: any) => /fwd|forward/i.test(ag.name || ''));
-                runAnims = [fwdAnim || runAnims[0]];
-              }
+              const selectedRunAnim = selectAnimationGroup(runAnims, undefined, true);
+              runAnims = selectedRunAnim ? [selectedRunAnim] : [];
 
               if (idleAnims.length > 1) {
                 idleAnims = [idleAnims[0]];
@@ -637,8 +637,9 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
               if (idleAnims.length === 0 && (pool.length > 0 || groups.length > 0)) {
                 idleAnims.push(pool.length > 0 ? pool[0] : groups[0]);
               }
-              if (runAnims.length === 0 && (pool.length > 0 || groups.length > 0)) {
-                runAnims.push(pool.length > 1 ? pool[1] : (groups.length > 1 ? groups[1] : (pool[0] || groups[0])));
+              if (runAnims.length === 0) {
+                const fallbackRunAnim = selectAnimationGroup(pool, undefined, true);
+                if (fallbackRunAnim) runAnims.push(fallbackRunAnim);
               }
 
               // Guard against any undefined elements in animation arrays
@@ -667,7 +668,13 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
               // Adjust speed ratio for run animation based on actual movement speed
               if (isEntityWalking && dist > 0.01) {
                  const speed = dist > 1.25 ? Math.min(14.0, dist * 5.5) : 4.0;
-                 if (anim) anim.speedRatio = speed / 4.0; 
+                 if (anim) {
+                   anim.speedRatio = getLocomotionSpeedRatio(
+                     speed,
+                     mesh.metadata.modelVisualHeight ?? 1.6,
+                     anim.getLength(),
+                   );
+                 }
               } else if (anim) {
                  anim.speedRatio = 1.0;
               }

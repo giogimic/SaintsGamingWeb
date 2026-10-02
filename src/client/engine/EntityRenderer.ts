@@ -25,7 +25,7 @@ import { AssetManager } from '@/engine/assets/AssetManager';
 import { loadAndRetargetAnimation } from '@/engine/animationRetarget';
 import { getCharacterModelProfile } from '@/shared/game/characterProfiles';
 import { applyAnimationProfileFallback } from '@/shared/game/animationProfiles';
-import { selectAnimationGroup } from './animationSelection';
+import { selectAnimationGroup } from '@/engine/animationSelection';
 import { attachModularComponent } from '@/engine/helpers/babylonAttachmentHelpers';
 import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 

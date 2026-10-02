@@ -4592,9 +4592,9 @@ export class BabylonEngine {
                     mesh.metadata._resolvedAnims = null;
 
                     const isMoving = mesh.metadata.isMoving;
-                    const isRunSlot = slot === 'run' || slot === 'run_fwd' || slot === 'walk' || slot === 'walk_fwd' || slot.includes('run') || slot.includes('walk') || slot.includes('jog');
+                    const isRunSlot = slot === 'run' || slot === 'run_fwd' || slot === 'walk' || slot === 'walk_fwd';
                     const isIdleSlot = slot === 'idle' || slot.includes('idle');
-                    const shouldPlay = (isMoving && isRunSlot) || (!isMoving && isIdleSlot) || !mesh.metadata.animationGroups.some((g: any) => g.isPlaying);
+                    const shouldPlay = (isMoving && isRunSlot) || (!isMoving && isIdleSlot);
 
                     if (shouldPlay) {
                       mesh.metadata.animationGroups.forEach((g: any) => { if (g !== retargetedAg) g.stop(); });

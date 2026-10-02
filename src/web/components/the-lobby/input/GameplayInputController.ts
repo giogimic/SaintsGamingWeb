@@ -8,6 +8,7 @@ import { toBaseMapId } from '@/shared/net/mapIds';
 import { getIsEditorMode } from '@/shared/game/studioSession';
 import { ensureMapHasStudioTilesets } from '@/shared/game/studioTilesetBootstrap';
 import { startMapTransition } from '@/shared/game/lobbyWorldJoin';
+import { rotateCameraRelativeInput } from '@/shared/game/cameraRelativeInput';
 
 export class GameplayInputController {
   private engineRef: any; // Reference to BabylonEngine if needed
@@ -43,10 +44,7 @@ export class GameplayInputController {
     const camera = this.engineRef?.renderer?.camera;
     if (camera && camera.mode === 0) {
       const yaw = this.engineRef.renderer.cameraYaw || 0;
-      const cosY = Math.cos(yaw);
-      const sinY = Math.sin(yaw);
-      const mappedX = dx * cosY - dy * sinY;
-      const mappedY = dx * sinY + dy * cosY;
+      const { x: mappedX, y: mappedY } = rotateCameraRelativeInput(dx, dy, yaw);
 
       if (Math.abs(mappedX) > Math.abs(mappedY)) {
         moveDx = mappedX > 0 ? 1 : -1;
