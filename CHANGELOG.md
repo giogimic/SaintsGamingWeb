@@ -1,3 +1,16 @@
+## [2.2.093] - 2026-10-02
+- **Guaranteed Setup Admin Account Provisioning**:
+  - Saved `ADMIN_USER`, `ADMIN_PASS`, and `ADMIN_EMAIL` directly to `.env` during `saints.sh setup` so the container runtime has the owner credentials.
+  - Updated `scripts/entrypoint.ts` to automatically execute `scripts/create-admin.ts` immediately after `npx prisma db push` finishes.
+  - Replaced the single-attempt command and HTTP curl fallback in `saints.sh setup` with a direct polling retry loop that verifies the database tables are pushed and provisions the owner account with bcrypt password hashing and permission level 1100.
+- **Caddy Service Startup & Permission Repair**:
+  - Fixed Caddy validation in `saints.sh`: added `--adapter caddyfile` so Caddy does not misparse temporary config files as JSON.
+  - Fixed Caddyfile file permissions: enforced `chmod 644 /etc/caddy/Caddyfile` and `chown root:root` so the `caddy` service user can read the file without permission denied errors.
+  - Added automatic stopping and disabling of conflicting `apache2` service on Debian to prevent port 80/443 binding collisions.
+  - Added automatic sanitization of `$DOMAIN` input in setup (stripping `http://`, `https://`, and trailing slashes).
+  - Added live journalctl and systemctl diagnostic output in `saints.sh` when Caddy fails to start.
+- Bumped site version to 2.2.093.
+
 ## [2.2.092] - 2026-10-02
 - **Caddyfile Safety Validation & Rollback in `saints.sh`**:
   - Implemented atomic Caddyfile installation with `caddy validate` verification before replacing `/etc/caddy/Caddyfile`.

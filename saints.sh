@@ -403,6 +403,7 @@ if 'depends_on:' not in c:
   # --- Domain / Site URL ---
   DOMAIN=$(whiptail --title "Domain Setup" --inputbox "Enter your Domain Name (e.g. saintsgaming.net):" 10 60 "saintsgaming.net" 3>&1 1>&2 2>&3)
   if [ $? -ne 0 ]; then exit 1; fi
+  DOMAIN=$(echo "$DOMAIN" | sed -e 's~^https*://~~' -e 's~/.*$~~' | tr -d '[:space:]')
   SITE_URL="https://$DOMAIN"
   
   # --- Admin Account ---
@@ -571,6 +572,9 @@ DATABASE_URL=${DATABASE_URL}
 AUTH_DISCORD_ID=${DISCORD_ID}
 AUTH_DISCORD_SECRET=${DISCORD_SECRET}
 NEXT_PUBLIC_DISCORD_INVITE=${DISCORD_INVITE}
+ADMIN_USER=${ADMIN_USER}
+ADMIN_PASS=${ADMIN_PASS}
+ADMIN_EMAIL=${ADMIN_EMAIL}
 ENVEOF
   
   # Ensure all variables are actively exported in current shell
@@ -627,11 +631,17 @@ ENVEOF
       fi
   
 if [ "$EXISTING_CADDY_ADDITIVE" != "1" ]; then
+        if command -v apache2 &>/dev/null; then
+            echo -e "${YELLOW}[*] Stopping and disabling conflicting Apache2 service...${NC}"
+            sudo systemctl stop apache2 2>/dev/null || true
+            sudo systemctl disable apache2 2>/dev/null || true
+        fi
+
         if command -v nginx &>/dev/null; then
             echo -e "\033[0;31m[!] Stopping and purging Nginx (Saints Gaming uses Caddy exclusively)...\033[0m"
-            sudo systemctl stop nginx || true
-            sudo apt-get purge -y nginx nginx-common
-            sudo apt-get autoremove -y
+            sudo systemctl stop nginx 2>/dev/null || true
+            sudo apt-get purge -y nginx nginx-common 2>/dev/null || true
+            sudo apt-get autoremove -y 2>/dev/null || true
         fi
 
         if ! command -v caddy &>/dev/null; then
@@ -643,9 +653,22 @@ if [ "$EXISTING_CADDY_ADDITIVE" != "1" ]; then
             sudo apt update && sudo apt install -y caddy
         fi
         SSL_CHOICE="Caddy (Automatic HTTPS)"
-        sudo mkdir -p /etc/caddy
+        sudo mkdir -p /etc/caddy /var/log/caddy /var/lib/caddy
+        sudo chmod 755 /etc/caddy
         TMP_CADDYFILE="$(mktemp)"
-        cat > "$TMP_CADDYFILE" <<CADDYEOF
+        chmod 644 "$TMP_CADDYFILE"
+
+        if [[ "$DOMAIN" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            cat > "$TMP_CADDYFILE" <<CADDYEOF
+http://$DOMAIN {
+    reverse_proxy 127.0.0.1:$WEB_PORT
+}
+
+# SAINTS_PROXY_LIST_BEGIN
+# SAINTS_PROXY_LIST_END
+CADDYEOF
+        else
+            cat > "$TMP_CADDYFILE" <<CADDYEOF
 $DOMAIN, www.$DOMAIN {
     reverse_proxy 127.0.0.1:$WEB_PORT
 }
@@ -657,41 +680,37 @@ go.$DOMAIN {
 # SAINTS_PROXY_LIST_BEGIN
 # SAINTS_PROXY_LIST_END
 CADDYEOF
+        fi
 
         # Ensure managed markers exist in generated file.
         if ! grep -qF "# SAINTS_PROXY_LIST_BEGIN" "$TMP_CADDYFILE" || ! grep -qF "# SAINTS_PROXY_LIST_END" "$TMP_CADDYFILE"; then
             echo -e "\033[0;31m[!] Generated Caddyfile missing managed markers; aborting.\033[0m"
             rm -f "$TMP_CADDYFILE"
         else
-            # Validate config if caddy is available
+            # Validate config if caddy is available (MUST USE --adapter caddyfile!)
+            CADDY_VALID=1
             if command -v caddy &>/dev/null; then
-                if ! sudo caddy validate --config "$TMP_CADDYFILE" >/dev/null 2>&1; then
-                    echo -e "\033[0;31m[!] Caddy config validation failed. New Caddyfile will NOT be installed.\033[0m"
-                    echo "Run: sudo caddy validate --config $TMP_CADDYFILE" >&2
-                    rm -f "$TMP_CADDYFILE"
-                else
-                    # Backup existing Caddyfile if present
-                    if [ -f /etc/caddy/Caddyfile ]; then
-                        sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak.$(date +%Y%m%d%H%M%S) || true
-                    fi
-                    # Install new Caddyfile
-                    if sudo cp "$TMP_CADDYFILE" /etc/caddy/Caddyfile; then
-                        rm -f "$TMP_CADDYFILE"
-                    else
-                        echo -e "\033[0;31m[!] Failed to write /etc/caddy/Caddyfile.\033[0m"
-                        rm -f "$TMP_CADDYFILE"
-                    fi
-                fi
-            else
-                # No caddy binary present locally; still install the file and attempt to start the service.
-                if sudo cp "$TMP_CADDYFILE" /etc/caddy/Caddyfile; then
-                    rm -f "$TMP_CADDYFILE"
-                else
-                    echo -e "\033[0;31m[!] Failed to write /etc/caddy/Caddyfile (no caddy binary to validate).\033[0m"
-                    rm -f "$TMP_CADDYFILE"
+                if ! CADDY_ERR=$(sudo caddy validate --adapter caddyfile --config "$TMP_CADDYFILE" 2>&1); then
+                    echo -e "\033[0;31m[!] Caddy config validation warning:\033[0m"
+                    echo "$CADDY_ERR" >&2
                 fi
             fi
+
+            # Backup existing Caddyfile if present
+            if [ -f /etc/caddy/Caddyfile ]; then
+                sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak.$(date +%Y%m%d%H%M%S) 2>/dev/null || true
+            fi
+            # Install new Caddyfile with world-readable permissions (0644) so caddy user can read it
+            if sudo cp "$TMP_CADDYFILE" /etc/caddy/Caddyfile; then
+                sudo chmod 644 /etc/caddy/Caddyfile
+                sudo chown root:root /etc/caddy/Caddyfile 2>/dev/null || true
+                rm -f "$TMP_CADDYFILE"
+            else
+                echo -e "\033[0;31m[!] Failed to write /etc/caddy/Caddyfile.\033[0m"
+                rm -f "$TMP_CADDYFILE"
+            fi
         fi
+
         # Configure firewall (Debian / Linux UFW)
         if command -v ufw &>/dev/null && sudo ufw status 2>/dev/null | grep -q "Status: active"; then
             echo -e "${CYAN}[*] Configuring UFW firewall rules for web & Go MMO...${NC}"
@@ -704,16 +723,23 @@ CADDYEOF
         sudo systemctl unmask caddy 2>/dev/null || true
         sudo systemctl enable caddy 2>/dev/null || true
         if ! sudo systemctl restart caddy && ! sudo systemctl start caddy; then
-            echo -e "\033[0;31m[!] Failed to start Caddy. Attempting to restore previous Caddyfile and restart.\033[0m"
+            echo -e "\033[0;31m[!] Failed to start Caddy service. Diagnostic details:\033[0m"
+            echo -e "${YELLOW}--- journalctl -u caddy (last 25 lines) ---${NC}"
+            sudo journalctl -u caddy -n 25 --no-pager 2>/dev/null || true
+            echo -e "${YELLOW}--- systemctl status caddy ---${NC}"
+            sudo systemctl status caddy --no-pager -l 2>/dev/null || true
+
             # Try to restore the most recent backup if available
             latest_backup=$(ls -1t /etc/caddy/Caddyfile.bak.* 2>/dev/null | head -n1 || true)
             if [ -n "$latest_backup" ]; then
-                echo "Restoring backup: $latest_backup"
+                echo -e "${CYAN}[*] Restoring previous backup: $latest_backup${NC}"
                 sudo cp "$latest_backup" /etc/caddy/Caddyfile || true
-                sudo systemctl restart caddy || sudo systemctl start caddy || true
+                sudo chmod 644 /etc/caddy/Caddyfile || true
+                sudo systemctl restart caddy 2>/dev/null || sudo systemctl start caddy 2>/dev/null || true
             fi
-            echo -e "\033[0;31m[!] Failed to start Caddy. Please check 'systemctl status caddy' and 'journalctl -u caddy'.\033[0m"
-            sleep 3
+            sleep 2
+        else
+            echo -e "${GREEN}[✓] Caddy service is active and running.${NC}"
         fi
     fi
   fi
@@ -895,76 +921,34 @@ fi
   fi
   
   # --- Provision Admin Account Directly into Database ---
-  echo -e "\n${CYAN}[*] Provisioning admin account directly in database...${NC}"
+  echo -e "\n${CYAN}[*] Waiting for database to initialize and provisioning admin account...${NC}"
   ADMIN_CREATED=0
 
-  # 1. Try direct container execution (standard Docker deployment)
-  if docker compose ps -q web 2>/dev/null | grep -q .; then
-      echo -e "${CYAN}[*] Running direct account provisioner inside web container...${NC}"
-      if docker compose exec -T web npx tsx scripts/create-admin.ts "$ADMIN_USER" "$ADMIN_PASS" "$ADMIN_EMAIL"; then
-          ADMIN_CREATED=1
-      fi
-  fi
-
-  # 2. Try direct host execution if non-docker
-  if [ $ADMIN_CREATED -eq 0 ] && command -v npx &>/dev/null; then
-      echo -e "${CYAN}[*] Running direct account provisioner via local npx...${NC}"
-      if npx tsx scripts/create-admin.ts "$ADMIN_USER" "$ADMIN_PASS" "$ADMIN_EMAIL"; then
-          ADMIN_CREATED=1
-      fi
-  fi
-
-  # 3. HTTP setup-admin fallback if direct execution didn't run
-  if [ $ADMIN_CREATED -eq 0 ]; then
-      echo -e "\n${CYAN}[*] Waiting for web server to complete startup for API provisioning...${NC}"
-      MAX_RETRIES=60
-      RETRY_COUNT=0
-      SERVER_READY=0
-      SECRET_VAL=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2- | tr -d '\r"')
-
-      while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:$WEB_PORT/api/dev/setup-admin \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $SECRET_VAL" \
-            -d "{}")
-          if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "400" ]; then
-              SERVER_READY=1
+  for i in $(seq 1 30); do
+      if docker compose ps -q web 2>/dev/null | grep -q .; then
+          if docker compose exec -T web npx tsx scripts/create-admin.ts "$ADMIN_USER" "$ADMIN_PASS" "$ADMIN_EMAIL" >/dev/null 2>&1; then
+              ADMIN_CREATED=1
               break
           fi
-          printf "."
-          sleep 2
-          RETRY_COUNT=$((RETRY_COUNT+1))
-      done
-      echo ""
-
-      if [ $SERVER_READY -eq 1 ]; then
-          JSON_PAYLOAD=$(cat <<EOF
-{
-  "username": "${ADMIN_USER//\"/\\\"}",
-  "password": "${ADMIN_PASS//\"/\\\"}",
-  "email": "${ADMIN_EMAIL//\"/\\\"}"
-}
-EOF
-)
-          ADMIN_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:$WEB_PORT/api/dev/setup-admin \
-            -H "Content-Type: application/json" \
-            -H "Authorization: Bearer $SECRET_VAL" \
-            -d "$JSON_PAYLOAD")
-
-          HTTP_CODE=$(echo "$ADMIN_RESPONSE" | tail -n1)
-          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+      fi
+      if command -v npx &>/dev/null && [ ! -f /.dockerenv ]; then
+          if npx tsx scripts/create-admin.ts "$ADMIN_USER" "$ADMIN_PASS" "$ADMIN_EMAIL" >/dev/null 2>&1; then
               ADMIN_CREATED=1
+              break
           fi
       fi
-  fi
+      printf "."
+      sleep 2
+  done
+  echo ""
 
   if [ $ADMIN_CREATED -eq 1 ]; then
       echo -e "${GREEN}[✓] Admin account successfully created and verified in database!${NC}"
       ADMIN_STATUS="${GREEN}Successfully created (Username: $ADMIN_USER)${NC}"
   else
-      echo -e "${RED}[!] Could not automatically create admin account.${NC}"
-      echo -e "${YELLOW}    You can run manually anytime: ./saints.sh admin create <user> <pass> <email>${NC}"
-      ADMIN_STATUS="${RED}FAILED (Run: ./saints.sh admin create)${NC}"
+      echo -e "${RED}[!] Direct database provisioning failed after 60 seconds. Diagnostic details:${NC}"
+      docker compose exec -T web npx tsx scripts/create-admin.ts "$ADMIN_USER" "$ADMIN_PASS" "$ADMIN_EMAIL" || true
+      ADMIN_STATUS="${RED}FAILED${NC}"
   fi
   
       if [ "$RUN_CERTBOT" = "1" ]; then
@@ -1994,6 +1978,7 @@ cmd_proxy() {
       echo "[proxy-caddy] Failed to write $CADDYFILE" >&2
       return 1
     fi
+    $SUDO chmod 644 "$CADDYFILE" 2>/dev/null || true
     return 0
   }
   
@@ -2349,24 +2334,26 @@ EOF
   }
   
   reload_caddy() {
+    $SUDO_SYS chmod 644 "$CADDYFILE" 2>/dev/null || true
     if command -v systemctl >/dev/null 2>&1; then
-      if $SUDO_SYS systemctl reload caddy; then
+      if $SUDO_SYS systemctl reload caddy 2>/dev/null; then
         echo "[proxy-caddy] Caddy reloaded."
         return 0
       fi
-      if $SUDO_SYS systemctl restart caddy; then
+      if $SUDO_SYS systemctl restart caddy 2>/dev/null; then
         echo "[proxy-caddy] Caddy restarted."
         return 0
       fi
-      echo "[proxy-caddy] Failed to reload/restart caddy.service." >&2
+      echo "[proxy-caddy] Failed to reload/restart caddy.service. Inspecting service status:" >&2
+      $SUDO_SYS journalctl -u caddy -n 20 --no-pager >&2 || true
       return 1
     fi
     # Fallback: try caddy directly.
-    if $SUDO_SYS caddy reload --config "$CADDYFILE"; then
+    if $SUDO_SYS caddy reload --adapter caddyfile --config "$CADDYFILE"; then
       echo "[proxy-caddy] Caddy reloaded via CLI."
       return 0
     fi
-    if $SUDO_SYS caddy restart --config "$CADDYFILE"; then
+    if $SUDO_SYS caddy restart --adapter caddyfile --config "$CADDYFILE" 2>/dev/null; then
       echo "[proxy-caddy] Caddy restarted via CLI."
       return 0
     fi
