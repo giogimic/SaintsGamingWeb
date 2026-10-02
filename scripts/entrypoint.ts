@@ -26,6 +26,13 @@ async function main() {
     console.log(`[*] Warning: DATABASE_URL not set. Defaulting to ${process.env.DATABASE_URL}`);
   }
 
+  if (!process.env.AUTH_URL && process.env.NEXT_PUBLIC_SITE_URL) {
+    process.env.AUTH_URL = `${process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, '')}/api/auth`;
+  }
+  if (!process.env.NEXTAUTH_URL && process.env.AUTH_URL) {
+    process.env.NEXTAUTH_URL = process.env.AUTH_URL;
+  }
+
   console.log("[*] Starting Saints Gaming...");
 
   if (process.env.DB_SKIP_MIGRATION !== "true") {

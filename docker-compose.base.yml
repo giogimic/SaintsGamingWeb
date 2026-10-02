@@ -26,13 +26,7 @@ services:
       - NODE_ENV=production
       - AUTH_TRUST_HOST=true
       - DB_SKIP_MIGRATION=${DB_SKIP_MIGRATION:-false}
-      - AUTH_SECRET=${AUTH_SECRET}
-      - NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
-      - AUTH_URL=${NEXT_PUBLIC_SITE_URL}/api/auth
-      - NEXTAUTH_URL=${NEXT_PUBLIC_SITE_URL}/api/auth
-      - NEXT_PUBLIC_DISCORD_INVITE=${NEXT_PUBLIC_DISCORD_INVITE}
       - GO_MMO_INTERNAL_URL=${GO_MMO_INTERNAL_URL:-http://game-server:24011}
-      - GO_MMO_ADMIN_SECRET=${GO_MMO_ADMIN_SECRET:-${AUTH_SECRET}}
 
     healthcheck:
       test: [ "CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:24001/" ]
@@ -62,7 +56,6 @@ services:
       - GO_MMO_PORT=24011
       - GO_MMO_DATABASE_URL=file:/app/data/dev.db
       - NEXT_JS_URL=http://web:24001
-      - GO_MMO_ADMIN_SECRET=${AUTH_SECRET}
 
 networks:
   saints_network:

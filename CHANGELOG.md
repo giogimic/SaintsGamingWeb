@@ -1,3 +1,13 @@
+## [2.2.090] - 2026-10-02
+- **Admin Setup Account Creation & Docker Environment Fix**:
+  - Fixed root cause where `bash saints.sh setup` failed to create the owner admin account in the database due to unexported `AUTH_SECRET` and redundant `docker-compose.yml` environment overrides blanking the container secret.
+  - Switched `AUTH_SECRET` generation in `saints.sh` from base64 to clean 32-byte hex (`openssl rand -hex 32`) to eliminate escaping and token mismatch issues in HTTP headers.
+  - Created [`scripts/create-admin.ts`](file:///c:/Users/Matth/OneDrive/Desktop/Saints%20Web/scripts/create-admin.ts) direct database provisioner that seeds the Admin role, sets Owner permission level (1100), hashes passwords with bcrypt, and handles duplicate email/username conflicts gracefully.
+  - Updated `saints.sh setup` to run direct database provisioning via `docker compose exec -T web npx tsx scripts/create-admin.ts` as the primary mechanism, eliminating network timing race conditions.
+  - Added `./saints.sh admin create <user> <pass> [email]` CLI command to create or reset owner accounts at any time from the terminal.
+  - Hardened `/api/dev/setup-admin` route to handle token sanitization, link the `Admin` role ID, and prevent unique constraint failures.
+- Bumped site version to 2.2.090.
+
 ## [2.2.089] - 2026-10-02
 - **Go MMO Server Lifecycle & Debian Host Reachability Fix**:
   - Created missing root control scripts `scripts/start-go.sh`, `scripts/status-go.sh`, and `scripts/stop-go.sh` supporting Docker Compose, systemd (`saints-lobby`), and direct binary execution on Debian/Linux.

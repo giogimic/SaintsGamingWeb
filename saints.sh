@@ -26,6 +26,7 @@ show_help() {
     echo "  status      - View the running status of containers"
     echo "  logs        - Tail logs for all containers (or specific ones)"
     echo "  proxy       - Manage Caddy subdomains (add/remove/list)"
+    echo "  admin       - Create or reset owner admin account (create <user> <pass> [email])"
     echo "  clear-cache - Clear Next.js cache"
     echo "  uninstall   - Remove Saints Gaming from this server"
     echo "  pull        - Pull latest git changes"
@@ -476,9 +477,9 @@ if 'depends_on:' not in c:
   
   # --- Generate .env (pure bash, no Node.js required) ---
   if [ "$REUSE_ENV" = "1" ] && [ -n "$OLD_AUTH_SECRET" ]; then
-      AUTH_SECRET=$OLD_AUTH_SECRET
+      export AUTH_SECRET="$OLD_AUTH_SECRET"
   else
-      AUTH_SECRET=$(openssl rand -base64 32)
+      export AUTH_SECRET=$(openssl rand -hex 32)
   fi
   
   
@@ -563,12 +564,19 @@ NETEOF
 NEXT_PUBLIC_SITE_URL=${SITE_URL}
 AUTH_TRUST_HOST=true
 AUTH_SECRET=${AUTH_SECRET}
+AUTH_URL=${SITE_URL}/api/auth
+NEXTAUTH_URL=${SITE_URL}/api/auth
 DB_PROVIDER=${DB_PROVIDER}
 DATABASE_URL=${DATABASE_URL}
 AUTH_DISCORD_ID=${DISCORD_ID}
 AUTH_DISCORD_SECRET=${DISCORD_SECRET}
 NEXT_PUBLIC_DISCORD_INVITE=${DISCORD_INVITE}
 ENVEOF
+  
+  # Ensure all variables are actively exported in current shell
+  set -a
+  [ -f .env ] && . .env
+  set +a
   
   echo -e "${GREEN}[✓] .env file created successfully.${NC}"
   
@@ -842,32 +850,51 @@ fi
       fi
   fi
   
-  # --- Wait for Web Server & Create Admin ---
-  echo -e "\n${CYAN}[*] Waiting for the web server to become healthy...${NC}"
-  MAX_RETRIES=150
-  RETRY_COUNT=0
-  SERVER_READY=0
-  SECRET_VAL=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2- | tr -d '\r')
-  
-  while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
-      HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:$WEB_PORT/api/dev/setup-admin \
-        -H "Content-Type: application/json" \
-        -H "Authorization: Bearer $SECRET_VAL" \
-        -d "{}")
-      if [ "$HTTP_STATUS" == "200" ] || [ "$HTTP_STATUS" == "400" ]; then
-          SERVER_READY=1
-          break
+  # --- Provision Admin Account Directly into Database ---
+  echo -e "\n${CYAN}[*] Provisioning admin account directly in database...${NC}"
+  ADMIN_CREATED=0
+
+  # 1. Try direct container execution (standard Docker deployment)
+  if docker compose ps -q web 2>/dev/null | grep -q .; then
+      echo -e "${CYAN}[*] Running direct account provisioner inside web container...${NC}"
+      if docker compose exec -T web npx tsx scripts/create-admin.ts "$ADMIN_USER" "$ADMIN_PASS" "$ADMIN_EMAIL"; then
+          ADMIN_CREATED=1
       fi
-      printf "."
-      sleep 2
-      RETRY_COUNT=$((RETRY_COUNT+1))
-  done
-  echo ""
-  
-  if [ $SERVER_READY -eq 1 ]; then
-      echo -e "\n${CYAN}[*] Creating admin account...${NC}"
-      
-      JSON_PAYLOAD=$(cat <<EOF
+  fi
+
+  # 2. Try direct host execution if non-docker
+  if [ $ADMIN_CREATED -eq 0 ] && command -v npx &>/dev/null; then
+      echo -e "${CYAN}[*] Running direct account provisioner via local npx...${NC}"
+      if npx tsx scripts/create-admin.ts "$ADMIN_USER" "$ADMIN_PASS" "$ADMIN_EMAIL"; then
+          ADMIN_CREATED=1
+      fi
+  fi
+
+  # 3. HTTP setup-admin fallback if direct execution didn't run
+  if [ $ADMIN_CREATED -eq 0 ]; then
+      echo -e "\n${CYAN}[*] Waiting for web server to complete startup for API provisioning...${NC}"
+      MAX_RETRIES=60
+      RETRY_COUNT=0
+      SERVER_READY=0
+      SECRET_VAL=$(grep "^AUTH_SECRET=" .env | cut -d'=' -f2- | tr -d '\r"')
+
+      while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:$WEB_PORT/api/dev/setup-admin \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $SECRET_VAL" \
+            -d "{}")
+          if [ "$HTTP_STATUS" = "200" ] || [ "$HTTP_STATUS" = "400" ]; then
+              SERVER_READY=1
+              break
+          fi
+          printf "."
+          sleep 2
+          RETRY_COUNT=$((RETRY_COUNT+1))
+      done
+      echo ""
+
+      if [ $SERVER_READY -eq 1 ]; then
+          JSON_PAYLOAD=$(cat <<EOF
 {
   "username": "${ADMIN_USER//\"/\\\"}",
   "password": "${ADMIN_PASS//\"/\\\"}",
@@ -875,24 +902,26 @@ fi
 }
 EOF
 )
-      
-      ADMIN_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:$WEB_PORT/api/dev/setup-admin \
-        -H "Content-Type: application/json" \
-        -H "Authorization: Bearer $SECRET_VAL" \
-        -d "$JSON_PAYLOAD")
-      
-      HTTP_CODE=$(echo "$ADMIN_RESPONSE" | tail -n1)
-      BODY=$(echo "$ADMIN_RESPONSE" | sed '$d')
-      
-      if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
-          echo -e "${GREEN}[✓] Admin account successfully created!${NC}"
-          ADMIN_STATUS="${GREEN}Successfully created (Username: $ADMIN_USER)${NC}"
-      else
-          echo -e "${RED}[!] Failed to create admin account. (HTTP $HTTP_CODE)${NC}"
-          echo -e "${YELLOW}    Response: $BODY${NC}"
-          ADMIN_STATUS="${RED}FAILED (Please register manually at /auth/register)${NC}"
-          sleep 5
+          ADMIN_RESPONSE=$(curl -s -w "\n%{http_code}" -X POST http://localhost:$WEB_PORT/api/dev/setup-admin \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $SECRET_VAL" \
+            -d "$JSON_PAYLOAD")
+
+          HTTP_CODE=$(echo "$ADMIN_RESPONSE" | tail -n1)
+          if [ "$HTTP_CODE" = "200" ] || [ "$HTTP_CODE" = "201" ]; then
+              ADMIN_CREATED=1
+          fi
       fi
+  fi
+
+  if [ $ADMIN_CREATED -eq 1 ]; then
+      echo -e "${GREEN}[✓] Admin account successfully created and verified in database!${NC}"
+      ADMIN_STATUS="${GREEN}Successfully created (Username: $ADMIN_USER)${NC}"
+  else
+      echo -e "${RED}[!] Could not automatically create admin account.${NC}"
+      echo -e "${YELLOW}    You can run manually anytime: ./saints.sh admin create <user> <pass> <email>${NC}"
+      ADMIN_STATUS="${RED}FAILED (Run: ./saints.sh admin create)${NC}"
+  fi
   
       if [ "$RUN_CERTBOT" = "1" ]; then
           echo -e "\n${CYAN}[*] Running Certbot for SSL...${NC}"
@@ -2532,6 +2561,28 @@ case "$COMMAND" in
     pull)
         echo -e "${CYAN}[*] Pulling latest repository changes...${NC}"
         git pull
+        ;;
+    admin)
+        shift
+        ACTION="${1:-}"
+        if [ "$ACTION" = "create" ] || [ "$ACTION" = "reset" ]; then
+            shift
+            if [ -z "$1" ] || [ -z "$2" ]; then
+                echo "Usage: ./saints.sh admin create <username> <password> [email]"
+                exit 1
+            fi
+            if docker compose ps -q web 2>/dev/null | grep -q .; then
+                docker compose exec -T web npx tsx scripts/create-admin.ts "$@"
+            elif command -v npx &>/dev/null; then
+                npx tsx scripts/create-admin.ts "$@"
+            else
+                echo "Error: Neither docker compose nor npx available."
+                exit 1
+            fi
+        else
+            echo "Usage: ./saints.sh admin create <username> <password> [email]"
+            exit 1
+        fi
         ;;
     *)
         show_help
