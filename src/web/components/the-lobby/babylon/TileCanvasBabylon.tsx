@@ -133,6 +133,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
   const isShiftHeldRef = useRef(false);
   isShiftHeldRef.current = isShiftHeld;
   const toolDispatcherRef = useRef<ToolDispatcher>(new ToolDispatcher());
+  const [isPointerLocked, setIsPointerLocked] = useState(false);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -159,6 +160,12 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
+  }, []);
+
+  useEffect(() => {
+    const handlePointerLockChange = () => setIsPointerLocked(document.pointerLockElement === canvasRef.current);
+    document.addEventListener('pointerlockchange', handlePointerLockChange);
+    return () => document.removeEventListener('pointerlockchange', handlePointerLockChange);
   }, []);
 
   useEffect(() => {
@@ -1685,7 +1692,7 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           };
 
           const targetIsSolid = !isWalkable(c, r);
-          engine.setDestinationIndicator(c, r, !targetIsSolid);
+          engine.playClickToMoveIndicator(c, r, !targetIsSolid);
 
           if (targetIsSolid) {
             soundSynth?.playUiClick?.();
@@ -2294,6 +2301,17 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       {isEngineReady && engineRef.current && (
         <FloatingHealthBars engine={engineRef.current} />
       )}
+      
+      {isPointerLocked && !isDevEditorOpen && (
+        <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-40 mix-blend-difference">
+          <div className="relative flex items-center justify-center opacity-70">
+            <div className="w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
+            <div className="absolute w-5 h-[2px] bg-white shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
+            <div className="absolute h-5 w-[2px] bg-white shadow-[0_0_2px_rgba(0,0,0,0.8)]" />
+          </div>
+        </div>
+      )}
+
       
 
     </div>

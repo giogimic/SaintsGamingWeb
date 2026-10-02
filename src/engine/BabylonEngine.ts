@@ -3752,11 +3752,12 @@ export class BabylonEngine {
     const posZ = (h / 2 - r) * s;
 
     if (!this.destinationIndicatorMesh || this.destinationIndicatorMesh.isDisposed()) {
-      const disc = MeshBuilder.CreateTorus(
+      const disc = MeshBuilder.CreatePlane(
         'destination_indicator_disc',
-        { diameter: s * 0.8, thickness: s * 0.08, tessellation: 32 },
+        { size: s * 0.9 },
         this.scene
       );
+      disc.rotation.x = Math.PI / 2;
       disc.isPickable = false;
       disc.parent = this.rootNode;
       this.destinationIndicatorMesh = disc;
@@ -3767,67 +3768,99 @@ export class BabylonEngine {
     if (!mat) {
       mat = new StandardMaterial(matKey, this.scene);
       if (isWalkable) {
-        mat.diffuseColor = new Color3(1, 0.8, 0.2); // Warm gold/amber color matching design system
+        mat.diffuseColor = new Color3(1, 0.8, 0.2);
         mat.emissiveColor = new Color3(0.6, 0.4, 0.05);
+        mat.alpha = 0.4;
       } else {
         mat.diffuseColor = new Color3(0.95, 0.25, 0.25);
         mat.emissiveColor = new Color3(0.5, 0.1, 0.1);
+        mat.alpha = 0.4;
       }
       mat.disableLighting = true;
       mat.backFaceCulling = false;
     }
 
-    // Stop any currently playing animation
-    this.scene.stopAnimation(this.destinationIndicatorMesh);
-
     const elevation = this.voxel.getVoxelSurfaceY(posX, posZ);
     this.destinationIndicatorMesh.material = mat;
     this.destinationIndicatorMesh.position = new Vector3(posX, elevation + SPATIAL_LAYER_ALTITUDES.DESTINATION_PREVIEW, posZ);
     this.destinationIndicatorMesh.isVisible = true;
+    this.destinationIndicatorMesh.scaling = new Vector3(1, 1, 1);
+  }
 
-    // Reset visibility and scaling for the animation
-    this.destinationIndicatorMesh.visibility = 1.0;
-    this.destinationIndicatorMesh.scaling = new Vector3(0.2, 0.2, 0.2);
+  public clearDestinationIndicator() {
+    if (this.destinationIndicatorMesh) {
+      this.destinationIndicatorMesh.isVisible = false;
+    }
+  }
 
-    // Scaling animation (expand outwards)
+  /**
+   * Seamless indication effect for click-to-move.
+   */
+  public playClickToMoveIndicator(c: number, r: number, isWalkable: boolean) {
+    if (!this.scene) return;
+    const s = this.currentTileSize || 1;
+    const w = this.currentMapWidth;
+    const h = this.currentMapHeight;
+    const posX = (c - w / 2) * s;
+    const posZ = (h / 2 - r) * s;
+
+    const effect = MeshBuilder.CreateTorus(
+      'click_indicator_effect',
+      { diameter: s * 0.8, thickness: s * 0.1, tessellation: 32 },
+      this.scene
+    );
+    effect.isPickable = false;
+    effect.parent = this.rootNode;
+
+    const matKey = `click_indicator_${isWalkable ? 'valid' : 'invalid'}`;
+    let mat = this.scene.getMaterialByName(matKey) as StandardMaterial | null;
+    if (!mat) {
+      mat = new StandardMaterial(matKey, this.scene);
+      if (isWalkable) {
+        mat.diffuseColor = new Color3(0.2, 1, 0.4); 
+        mat.emissiveColor = new Color3(0.1, 0.8, 0.2);
+      } else {
+        mat.diffuseColor = new Color3(1, 0.2, 0.2);
+        mat.emissiveColor = new Color3(0.8, 0.1, 0.1);
+      }
+      mat.disableLighting = true;
+      mat.backFaceCulling = false;
+    }
+    effect.material = mat;
+
+    const elevation = this.voxel.getVoxelSurfaceY(posX, posZ);
+    effect.position = new Vector3(posX, elevation + SPATIAL_LAYER_ALTITUDES.DESTINATION_PREVIEW + 0.05, posZ);
+
     const scaleAnim = new Animation(
-      'rippleScale',
+      'clickScale',
       'scaling',
       60,
       Animation.ANIMATIONTYPE_VECTOR3,
       Animation.ANIMATIONLOOPMODE_CONSTANT
     );
     scaleAnim.setKeys([
-      { frame: 0, value: new Vector3(0.1, 0.1, 0.1) },
-      { frame: 15, value: new Vector3(1.2, 1.2, 1.2) },
-      { frame: 30, value: new Vector3(1.5, 1.5, 1.5) },
+      { frame: 0, value: new Vector3(1.2, 1.2, 1.2) },
+      { frame: 10, value: new Vector3(0.7, 0.7, 0.7) },
+      { frame: 25, value: new Vector3(0.1, 0.1, 0.1) },
     ]);
 
-    // Visibility animation (fade out)
     const fadeAnim = new Animation(
-      'rippleFade',
+      'clickFade',
       'visibility',
       60,
       Animation.ANIMATIONTYPE_FLOAT,
       Animation.ANIMATIONLOOPMODE_CONSTANT
     );
     fadeAnim.setKeys([
-      { frame: 0, value: 0.8 },
-      { frame: 15, value: 0.4 },
-      { frame: 30, value: 0.0 },
+      { frame: 0, value: 0.9 },
+      { frame: 10, value: 0.6 },
+      { frame: 25, value: 0.0 },
     ]);
 
-    this.destinationIndicatorMesh.animations = [scaleAnim, fadeAnim];
-    this.scene.beginAnimation(this.destinationIndicatorMesh, 0, 30, false, 1.5, () => {
-      this.destinationIndicatorMesh!.isVisible = false;
+    effect.animations = [scaleAnim, fadeAnim];
+    this.scene.beginAnimation(effect, 0, 25, false, 1.5, () => {
+      effect.dispose();
     });
-  }
-
-  public clearDestinationIndicator() {
-    if (this.destinationIndicatorMesh) {
-      if (this.scene) this.scene.stopAnimation(this.destinationIndicatorMesh);
-      this.destinationIndicatorMesh.isVisible = false;
-    }
   }
 
   /**

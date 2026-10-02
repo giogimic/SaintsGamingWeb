@@ -59,7 +59,7 @@ export function GameCanvas() {
       } catch (e) {}
 
       if (isFirstPersonOrThirdPerson) {
-        canvasRef.current.requestPointerLock?.();
+        // Pointer lock is now toggled via middle mouse click in the engine
       }
     }
   };

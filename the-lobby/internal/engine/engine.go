@@ -296,17 +296,29 @@ func (e *Engine) processMove3DInput(accountID string, in protocol.PlayerInput) {
 			cz--
 		}
 
-		// If player is hitting the boundary or close to it, generate adjacent chunks
-		// Sweep a 3x3 around the player's current chunk
-		for dx := -1; dx <= 1; dx++ {
-			for dz := -1; dz <= 1; dz++ {
-				ncx := cx + dx
-				ncz := cz + dz
-				// We only care about base Y level (cy=0) for ground checks
-				chunk := mapDef.Voxel.GetChunk(ncx, 0, ncz)
-				exists := chunk != nil
-				if !exists {
-					e.world.Jit.RequestChunk(p.BaseMapID, ncx, ncz)
+		abs := func(n int) int {
+			if n < 0 {
+				return -n
+			}
+			return n
+		}
+
+		// Sweep a 7x7 (radius 3) around the player's current chunk.
+		// We iterate by radius so inner (more critical) chunks are requested first.
+		for r := 0; r <= 3; r++ {
+			for dx := -r; dx <= r; dx++ {
+				for dz := -r; dz <= r; dz++ {
+					// Only process the outer shell of the current radius
+					if abs(dx) != r && abs(dz) != r {
+						continue
+					}
+					ncx := cx + dx
+					ncz := cz + dz
+					// We only care about base Y level (cy=0) for ground checks
+					chunk := mapDef.Voxel.GetChunk(ncx, 0, ncz)
+					if chunk == nil {
+						e.world.Jit.RequestChunk(p.BaseMapID, ncx, ncz)
+					}
 				}
 			}
 		}

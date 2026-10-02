@@ -32,7 +32,7 @@ func NewGeneratorClient(nextJsURL, secret string, wm *Manager) *GeneratorClient 
 	gc := &GeneratorClient{
 		nextJsURL:  nextJsURL,
 		secret:     secret,
-		queue:      make(chan GenRequest, 100),
+		queue:      make(chan GenRequest, 1000), // Increased to handle massive distant horizons radius
 		active:     make(map[string]bool),
 		worldMgr:   wm,
 		httpClient: &http.Client{Timeout: 10 * time.Second},

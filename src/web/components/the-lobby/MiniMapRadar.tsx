@@ -7,6 +7,7 @@ import { Compass, Map, Settings, Hammer, LogOut, Radio } from 'lucide-react';
 import { useEditorStore } from './editor/editor-store';
 import { soundSynth } from '@/engine/sound-synth';
 import { getHudTheme } from './hud/hud-themes';
+import { useSessionStore } from '@/client/state/useSessionStore';
 
 const TILE_COLORS: Record<number, string> = {
   0: '#132a1c',  // Safe walkable — dark neon green
@@ -266,10 +267,10 @@ export default function MiniMapRadar({ onOpenOptions, enableStudio = false }: Mi
             type="button"
             onClick={() => {
               soundSynth?.playSelectSound?.();
-              window.location.href = '/';
+              useSessionStore.getState().setScene('character_select');
             }}
             className="flex items-center justify-center p-1 shrink-0 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-400 hover:text-white transition-colors cursor-pointer"
-            title="Leave Game (Return to Portal)"
+            title="Leave Game (Return to Character Select)"
           >
             <LogOut className="w-3 h-3" />
           </button>

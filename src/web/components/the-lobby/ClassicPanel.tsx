@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useGameStore } from './store';
+import { useHudStore } from '@/client/state/useHudStore';
 import {
   Backpack,
   Sword,
@@ -39,8 +40,8 @@ interface MenuItemDef {
 }
 
 export default function ClassicPanel() {
-  const toggleWindow = useGameStore((s) => s.toggleWindow);
-  const openWindows = useGameStore((s) => s.openWindows);
+  const toggleWindow = useHudStore((s) => s.toggleWindow);
+  const openWindows = useHudStore((s) => s.openWindows);
   const toggleSystemMenu = useGameStore((s) => s.toggleSystemMenu);
   const inventory = useGameStore((s) => s.player.inventory);
   const activeQuests = useGameStore((s) => s.player.activeQuests);

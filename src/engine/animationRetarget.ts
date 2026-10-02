@@ -232,16 +232,23 @@ export function retargetAnimationGroup(
   for (const ta of sourceAg.targetedAnimations) {
     const sourceTarget = ta.target;
     const targetName = sourceTarget?.name;
-    if (!targetName) continue;
+    if (!targetName || targetName === '__root__') continue;
 
     const destNodes = findAllMatchingTargetNodes(targetName, targetNodes);
     for (const destNode of destNodes) {
       // Prevent limb detachment by stripping translation and scale keys from non-root bones
+      const normalizedName = normalizeBoneName(destNode.name);
       const isPositionTrack = ta.animation.targetProperty === 'position';
       const isScaleTrack = ta.animation.targetProperty === 'scaling';
-      const isRootBone = ROOT_BONE_NAMES.includes(normalizeBoneName(destNode.name));
+      const isRotationTrack = ta.animation.targetProperty === 'rotationQuaternion' || ta.animation.targetProperty === 'rotation';
+      const isRootBone = ROOT_BONE_NAMES.includes(normalizedName);
+      const isStructuralRoot = ['armature', 'origin', 'bip01'].includes(normalizedName);
       
       if ((isPositionTrack || isScaleTrack) && !isRootBone) {
+        continue;
+      }
+
+      if (isRotationTrack && isStructuralRoot) {
         continue;
       }
       

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useGameStore } from '../store';
+import { useSessionStore } from '@/client/state/useSessionStore';
 import {
   X,
   Monitor,
@@ -199,6 +200,9 @@ export default function GameOptionsMenu({
   const resolutionScale = Math.round((clientSettings?.graphics?.resolutionScale ?? 1.0) * 100);
   const shadowsEnabled = clientSettings?.graphics?.shadows ?? true;
   const postProcessingEnabled = clientSettings?.graphics?.postProcessing ?? true;
+  const renderDistance = clientSettings?.graphics?.renderDistance ?? 12;
+  const lodQuality = clientSettings?.graphics?.lodQuality ?? 'high';
+  const backgroundMeshing = clientSettings?.graphics?.backgroundMeshing ?? 'balanced';
   const showDamageNumbers = clientSettings?.gameplay?.damageNumbers ?? true;
   const showFloatingLoot = clientSettings?.gameplay?.showFloatingLoot ?? true;
   const footstepDust = clientSettings?.gameplay?.footstepDust ?? true;
@@ -366,7 +370,7 @@ export default function GameOptionsMenu({
                 type="button"
                 onClick={() => {
                   soundSynth?.playUiClick?.();
-                  useGameStore.getState().setGameMode('CHARACTER_SELECT');
+                  useSessionStore.getState().setScene('character_select');
                   onClose();
                 }}
                 className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/10 text-xs font-bold transition-all cursor-pointer"
@@ -379,7 +383,7 @@ export default function GameOptionsMenu({
                 type="button"
                 onClick={() => {
                   soundSynth?.playActionSound?.();
-                  useGameStore.getState().setGameMode('TITLE_SCREEN');
+                  useSessionStore.getState().setScene('title');
                   onClose();
                 }}
                 className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold transition-all cursor-pointer"
@@ -588,6 +592,73 @@ export default function GameOptionsMenu({
                         </button>
                       ))}
                     </div>
+                  </div>
+                </div>
+
+                {/* World Generation & Distant Horizons */}
+                <div className="p-4 rounded-xl bg-[#0a1628]/60 border border-white/10 space-y-3.5">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-300">Render Distance (Chunks)</span>
+                      <span className="font-bold text-amber-300">{renderDistance}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min={2}
+                      max={64}
+                      step={2}
+                      value={renderDistance}
+                      onChange={(e) => patchClientSettings('graphics', { renderDistance: parseInt(e.target.value) })}
+                      className="w-full accent-amber-400 h-1.5 cursor-pointer"
+                    />
+                    <p className="text-[10px] text-slate-400">Higher values allow you to see further but use more RAM. Chunks beyond the active area use simplified LOD meshes.</p>
+                  </div>
+
+                  <div className="space-y-1.5 pt-2 border-t border-white/10">
+                    <span className="text-xs font-bold text-slate-300 block">Distant Scenery Quality (LOD)</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['low', 'medium', 'high'] as const).map((q) => (
+                        <button
+                          key={q}
+                          type="button"
+                          onClick={() => {
+                            soundSynth?.playUiClick?.();
+                            patchClientSettings('graphics', { lodQuality: q });
+                          }}
+                          className={`py-1.5 rounded-lg text-xs font-bold uppercase transition-all border cursor-pointer ${
+                            lodQuality === q
+                              ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                              : 'bg-black/60 border-white/10 text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                          }`}
+                        >
+                          {q}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5 pt-2 border-t border-white/10">
+                    <span className="text-xs font-bold text-slate-300 block">Background Meshing Speed</span>
+                    <div className="grid grid-cols-3 gap-2">
+                      {(['slow', 'balanced', 'fast'] as const).map((speed) => (
+                        <button
+                          key={speed}
+                          type="button"
+                          onClick={() => {
+                            soundSynth?.playUiClick?.();
+                            patchClientSettings('graphics', { backgroundMeshing: speed });
+                          }}
+                          className={`py-1.5 rounded-lg text-xs font-bold uppercase transition-all border cursor-pointer ${
+                            backgroundMeshing === speed
+                              ? 'bg-amber-500/20 border-amber-500/50 text-amber-300 shadow-[0_0_10px_rgba(245,158,11,0.2)]'
+                              : 'bg-black/60 border-white/10 text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                          }`}
+                        >
+                          {speed}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-slate-400 pt-1">Controls how aggressively Web Workers generate distant terrain.</p>
                   </div>
                 </div>
 

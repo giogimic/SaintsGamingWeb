@@ -1,3 +1,12 @@
+## [2.2.097] - 2026-10-02
+- **Click To Move & 3D Engine Improvements**:
+  - Implemented click-to-move pathfinding and visual radar/minimap feedback.
+  - Added server-side chunk generation and ChunkCache for voxel/tile canvases.
+  - Debugged and improved game UI panels including ClassicPanel, MiniMapRadar, and GameOptionsMenu.
+  - Updated BabylonEngine, EntityRenderer, and InputController to handle new movement intent and animation retargeting.
+  - Updated client settings schema to support click-to-move toggles and new control schemes.
+- Bumped site version to 2.2.097.
+
 ## [2.2.096] - 2026-10-02
 - **Camera & Locomotion Simplification**:
   - Extracted shared `getCameraFacingAngle()` and `isMovingBackward()` utilities into `src/shared/game/cameraFacing.ts` and `locomotionDirection.ts` with full test coverage.

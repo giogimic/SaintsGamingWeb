@@ -39,6 +39,9 @@ export const ClientSettingsSchema = z.object({
     postProcessing: z.boolean().default(true),
     maxFps: z.number().default(60),
     resolutionScale: z.number().min(0.5).max(2.0).default(1.0),
+    renderDistance: z.number().min(2).max(64).default(12),
+    lodQuality: z.enum(['low', 'medium', 'high']).default('high'),
+    backgroundMeshing: z.enum(['slow', 'balanced', 'fast']).default('balanced'),
   }).default({}),
 
   audio: z.object({
@@ -102,6 +105,9 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
     postProcessing: true,
     maxFps: 60,
     resolutionScale: 1.0,
+    renderDistance: 12,
+    lodQuality: 'high',
+    backgroundMeshing: 'balanced',
   },
   audio: {
     masterVolume: 1.0,

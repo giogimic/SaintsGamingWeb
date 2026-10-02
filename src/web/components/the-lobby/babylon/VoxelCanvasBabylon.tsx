@@ -13,6 +13,7 @@ import { WorldSimulation } from '@/engine/WorldSimulation';
 import { FloatingHealthBars } from './FloatingHealthBar';
 import { LOBBY_TOUCH_INTERACT_EVENT, LOBBY_TOUCH_MOVE_EVENT } from '../MobileControls';
 import { globalGameplayInputController } from '../input/GameplayInputController';
+import { voxelChunkCache } from './ChunkCache';
 
 
 import CraftingOverlay from '../crafting-overlay';
@@ -415,6 +416,11 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             const key = VoxelChunk.getChunkKey(chunk.cx, chunk.cz, chunk.cy);
             world.chunks.set(key, chunk);
             dirty = true;
+            
+            const mapId = (activeMap as any).id || store.currentMapId;
+            if (mapId) {
+              voxelChunkCache.saveChunk(mapId, chunk.cx, chunk.cy, chunk.cz, new Uint8Array(rleArray)).catch(console.error);
+            }
           }
         } catch (err) {
           console.error("Failed to deserialize chunk from chunk_loaded event", err);
@@ -471,6 +477,64 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     if (onCanvasReady) {
       onCanvasReady(babylonEngine);
     }
+    
+    // Background cache loading loop for Distant Horizons
+    const cacheLoopId = setInterval(async () => {
+      const store = useGameStore.getState();
+      const p = store.player;
+      if (!p || typeof p.position?.x !== 'number' || typeof p.position?.z !== 'number') return;
+      const activeMap = store.activeMapData;
+      if (!activeMap || !activeMap.voxelDoc) return;
+      
+      const world = (activeMap as any).__voxelWorldInstance;
+      if (!world) return;
+      const mapId = (activeMap as any).id || store.currentMapId;
+      if (!mapId) return;
+
+      const renderDistance = store.clientSettings?.graphics?.renderDistance || 12;
+      const radius = Math.floor(renderDistance / 2);
+      const cx = Math.floor((p.position?.x || 0) / 32);
+      const cz = Math.floor((p.position?.z || 0) / 32);
+      
+      let dirty = false;
+      let loadedCount = 0;
+      
+      // Sweep outward
+      for (let r = 0; r <= radius; r++) {
+        for (let dx = -r; dx <= r; dx++) {
+          for (let dz = -r; dz <= r; dz++) {
+            if (Math.abs(dx) !== r && Math.abs(dz) !== r) continue;
+            
+            const ncx = cx + dx;
+            const ncz = cz + dz;
+            const key = VoxelChunk.getChunkKey(ncx, ncz, 0);
+            
+            if (!world.chunks.has(key)) {
+              try {
+                const cachedData = await voxelChunkCache.loadChunk(mapId, ncx, 0, ncz);
+                if (cachedData) {
+                  const chunk = VoxelChunk.deserializePaletteRLEBinary(cachedData);
+                  if (chunk) {
+                    world.chunks.set(key, chunk);
+                    dirty = true;
+                    loadedCount++;
+                  }
+                }
+              } catch (err) {
+                console.error('Cache load error', err);
+              }
+            }
+            if (loadedCount > 4) break; // Don't block main thread too much per tick
+          }
+          if (loadedCount > 4) break;
+        }
+        if (loadedCount > 4) break;
+      }
+      
+      if (dirty && engineRef.current && typeof (engineRef.current as any).voxel?.meshDirtyVoxelChunks === 'function') {
+        (engineRef.current as any).voxel.meshDirtyVoxelChunks();
+      }
+    }, 250);
     
     // Watch for actual DOM container resize
     let resizeObserver: ResizeObserver | null = null;
@@ -933,6 +997,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     });
 
     return () => {
+      clearInterval(cacheLoopId);
       if (resizeObserver) {
         resizeObserver.disconnect();
       }
