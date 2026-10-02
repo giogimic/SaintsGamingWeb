@@ -21,20 +21,6 @@ app.prepare().then(async () => {
     try {
       const parsedUrl = parse(req.url!, true);
 
-      // Live player count for status widgets (GET only). Mutations go through Next route + Admin+ auth.
-      if (parsedUrl.pathname === "/api/game/server-status" && (req.method === "GET" || !req.method)) {
-        res.setHeader("Content-Type", "application/json");
-        res.end(
-          JSON.stringify({
-            players: null,
-            capacity: 500,
-            status: "online",
-            engine: "hybrid",
-            note: "unified lobby/Studio realtime sockets enabled",
-          })
-        );
-        return;
-      }
 
       // Serve Animations from external or public directories (cross-platform Linux/Debian + Windows)
       if (parsedUrl.pathname?.startsWith("/animations/")) {

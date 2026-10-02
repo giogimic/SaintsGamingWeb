@@ -641,9 +641,22 @@ $DOMAIN, www.$DOMAIN {
     reverse_proxy 127.0.0.1:$WEB_PORT
 }
 
+go.$DOMAIN {
+    reverse_proxy 127.0.0.1:24011
+}
+
 # SAINTS_PROXY_LIST_BEGIN
 # SAINTS_PROXY_LIST_END
 CADDYEOF
+        # Configure firewall (Debian / Linux UFW)
+        if command -v ufw &>/dev/null && sudo ufw status 2>/dev/null | grep -q "Status: active"; then
+            echo -e "${CYAN}[*] Configuring UFW firewall rules for web & Go MMO...${NC}"
+            sudo ufw allow 80/tcp >/dev/null 2>&1 || true
+            sudo ufw allow 443/tcp >/dev/null 2>&1 || true
+            sudo ufw allow 24011/tcp >/dev/null 2>&1 || true
+            sudo ufw reload >/dev/null 2>&1 || true
+        fi
+
         sudo systemctl unmask caddy 2>/dev/null || true
         sudo systemctl enable caddy 2>/dev/null || true
         sudo systemctl restart caddy || sudo systemctl start caddy || {
@@ -1742,9 +1755,20 @@ NETEOF
           fi
       fi
 
-      # Reload proxies
-      if command -v systemctl &>/dev/null; then
-          if systemctl is-active --quiet caddy; then sudo systemctl reload caddy 2>/dev/null; fi
+      # Ensure Caddy is active & reloaded, and UFW firewall allows traffic
+      if command -v systemctl &>/dev/null && systemctl list-unit-files 2>/dev/null | grep -q caddy; then
+          if systemctl is-active --quiet caddy; then
+              sudo systemctl reload caddy 2>/dev/null || sudo systemctl restart caddy 2>/dev/null || true
+          else
+              sudo systemctl restart caddy 2>/dev/null || sudo systemctl start caddy 2>/dev/null || true
+          fi
+      fi
+
+      if command -v ufw &>/dev/null && sudo ufw status 2>/dev/null | grep -q "Status: active"; then
+          sudo ufw allow 80/tcp >/dev/null 2>&1 || true
+          sudo ufw allow 443/tcp >/dev/null 2>&1 || true
+          sudo ufw allow 24011/tcp >/dev/null 2>&1 || true
+          sudo ufw reload >/dev/null 2>&1 || true
       fi
   
   else
@@ -2477,6 +2501,15 @@ case "$COMMAND" in
     start)
         echo -e "${CYAN}[*] Starting Saints Gaming Stack...${NC}"
         docker compose up -d
+        if command -v systemctl &>/dev/null && systemctl list-unit-files 2>/dev/null | grep -q caddy; then
+            sudo systemctl restart caddy 2>/dev/null || sudo systemctl start caddy 2>/dev/null || true
+        fi
+        if command -v ufw &>/dev/null && sudo ufw status 2>/dev/null | grep -q "Status: active"; then
+            sudo ufw allow 80/tcp >/dev/null 2>&1 || true
+            sudo ufw allow 443/tcp >/dev/null 2>&1 || true
+            sudo ufw allow 24011/tcp >/dev/null 2>&1 || true
+            sudo ufw reload >/dev/null 2>&1 || true
+        fi
         ;;
     stop)
         echo -e "${YELLOW}[*] Stopping Saints Gaming Stack...${NC}"

@@ -107,12 +107,38 @@ function Model({
   useEffect(() => {
     if (mixer.current && activeAnimationIndex !== undefined && rawAnimations[activeAnimationIndex]) {
       mixer.current.stopAllAction();
-      const action = mixer.current.clipAction(rawAnimations[activeAnimationIndex]);
+      const originalClip = rawAnimations[activeAnimationIndex];
+      const rootObj = scene || group.current;
+
+      const existingNodes = new Set<string>();
+      if (rootObj) {
+        rootObj.traverse((child: any) => {
+          if (child.name) {
+            existingNodes.add(child.name);
+            const leaf = child.name.split(/[:\/|]/).pop();
+            if (leaf) existingNodes.add(leaf);
+          }
+        });
+      }
+
+      const validTracks = originalClip.tracks.filter((track) => {
+        const targetName = track.name.split('.')[0];
+        const leaf = targetName.split(/[:\/|]/).pop() || targetName;
+        return existingNodes.has(targetName) || existingNodes.has(leaf);
+      });
+
+      let clipToPlay = originalClip;
+      if (validTracks.length !== originalClip.tracks.length) {
+        clipToPlay = originalClip.clone();
+        clipToPlay.tracks = validTracks;
+      }
+
+      const action = mixer.current.clipAction(clipToPlay);
       action.play();
     } else if (mixer.current) {
       mixer.current.stopAllAction();
     }
-  }, [activeAnimationIndex, rawAnimations]);
+  }, [activeAnimationIndex, rawAnimations, scene]);
 
   useFrame((state, delta) => {
     mixer.current?.update(delta);

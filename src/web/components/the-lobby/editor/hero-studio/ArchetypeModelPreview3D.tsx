@@ -217,8 +217,30 @@ function CompositeCharacter({
     mixerRef.current = new THREE.AnimationMixer(baseScene);
 
     if (activeAnimationIndex >= 0 && animations[activeAnimationIndex]) {
-      const clip = animations[activeAnimationIndex];
-      const action = mixerRef.current.clipAction(clip);
+      const originalClip = animations[activeAnimationIndex];
+      // Gather existing node names to prevent Three.js PropertyBinding warning spam
+      const existingNodes = new Set<string>();
+      baseScene.traverse((child) => {
+        if (child.name) {
+          existingNodes.add(child.name);
+          const leaf = child.name.split(/[:\/|]/).pop();
+          if (leaf) existingNodes.add(leaf);
+        }
+      });
+
+      const validTracks = originalClip.tracks.filter((track) => {
+        const targetName = track.name.split('.')[0];
+        const leaf = targetName.split(/[:\/|]/).pop() || targetName;
+        return existingNodes.has(targetName) || existingNodes.has(leaf);
+      });
+
+      let clipToPlay = originalClip;
+      if (validTracks.length !== originalClip.tracks.length) {
+        clipToPlay = originalClip.clone();
+        clipToPlay.tracks = validTracks;
+      }
+
+      const action = mixerRef.current.clipAction(clipToPlay);
       if (isPlaying) {
         action.play();
       } else {

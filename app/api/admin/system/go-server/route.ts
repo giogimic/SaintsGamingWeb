@@ -39,7 +39,15 @@ export async function GET(req: Request) {
         isRunning = false;
       }
     } else {
-      isRunning = !!(g[GO_SERVER_SYMBOL] && !g[GO_SERVER_SYMBOL].killed);
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 800);
+        const res = await fetch("http://127.0.0.1:24011/api/health", { signal: controller.signal });
+        clearTimeout(timeoutId);
+        isRunning = res.ok;
+      } catch {
+        isRunning = !!(g[GO_SERVER_SYMBOL] && !g[GO_SERVER_SYMBOL].killed);
+      }
     }
     
     return NextResponse.json({ 

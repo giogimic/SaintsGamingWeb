@@ -1,3 +1,13 @@
+## [2.2.089] - 2026-10-02
+- **Go MMO Server Lifecycle & Debian Host Reachability Fix**:
+  - Created missing root control scripts `scripts/start-go.sh`, `scripts/status-go.sh`, and `scripts/stop-go.sh` supporting Docker Compose, systemd (`saints-lobby`), and direct binary execution on Debian/Linux.
+  - Removed misleading fake hardcoded `status: "online"` fast-path from `server.ts` that caused the web client to report the server as online or starting when the Go backend was unreachable.
+  - Updated `app/api/game/server-status/route.ts` to actively query `${GO_MMO_INTERNAL_URL}/api/health`, `http://127.0.0.1:24011/api/health`, and `http://game-server:24011/api/health`, correctly distinguishing between `online`, `starting`, and `offline`.
+  - Added real server process spawning in `app/api/game/server-status/route.ts` when starting or stopping the realm.
+  - Updated `saints.sh setup`, `update`, and `start` commands to automatically add `go.$DOMAIN` reverse-proxy block to `/etc/caddy/Caddyfile`, ensure Caddy is restarted, and automatically configure Debian UFW firewall rules for ports `80/tcp`, `443/tcp`, and `24011/tcp`.
+  - Filtered Three.js animation tracks in `ArchetypeModelPreview3D.tsx` and `AssetInspector3D.tsx` to match existing scene skeleton nodes, suppressing thousands of `THREE.PropertyBinding: No target node found for track` warnings that froze the browser console.
+- Bumped site version to 2.2.089.
+
 ## [2.2.088] - 2026-10-01
 - **Caddy Proxy & Go MMO Auto-Configuration**:
   - Added automatic detection and repair in `saints.sh update` to ensure Caddy reverse-proxy block is generated for the Go MMO subdomain (`go.$DOMAIN -> 127.0.0.1:24011`) if missing from `/etc/caddy/Caddyfile`.

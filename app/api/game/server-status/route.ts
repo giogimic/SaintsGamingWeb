@@ -2,17 +2,19 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { prisma } from '@/web/lib/prisma';
 import { canUseStudioServerControls } from '@/shared/game/studioPermissions';
+import { spawn } from 'child_process';
+import path from 'path';
 
 // In-memory dev override toggle state (defaults to online in dev mode)
 let devServerStatusOverride: 'online' | 'offline' | 'maintenance' | null = null;
 
 export async function GET() {
   try {
-    if (devServerStatusOverride !== null) {
+    if (devServerStatusOverride === 'maintenance') {
       return NextResponse.json({
-        players: devServerStatusOverride === 'online' ? 1 : 0,
+        players: 0,
         capacity: 500,
-        status: devServerStatusOverride,
+        status: 'maintenance',
         isDevOverride: true
       });
     }
@@ -21,10 +23,13 @@ export async function GET() {
     const goMmoBase = process.env.GO_MMO_INTERNAL_URL || process.env.NEXT_PUBLIC_GO_MMO_URL;
     const urlsToTry: string[] = [];
     if (goMmoBase) {
-      urlsToTry.push(`${goMmoBase.replace(/\/$/, '')}/api/health`, `${goMmoBase.replace(/\/$/, '')}/status`);
-    } else {
-      urlsToTry.push('http://go-mmo:24011/status');
+      urlsToTry.push(`${goMmoBase.replace(/\/$/, '')}/api/health`, `${goMmoBase.replace(/\/$/, '')}/healthz`);
     }
+    // Also try direct Docker and localhost addresses
+    urlsToTry.push(
+      'http://127.0.0.1:24011/api/health',
+      'http://game-server:24011/api/health'
+    );
 
     for (const url of urlsToTry) {
       try {
@@ -37,9 +42,9 @@ export async function GET() {
         if (res.ok) {
           const data = await res.json();
           return NextResponse.json({
-            players: data.players ?? 1,
+            players: data.players ?? (data.map ? 1 : 0),
             capacity: data.capacity ?? 500,
-            status: data.status ?? 'online',
+            status: 'online',
           });
         }
       } catch {
@@ -47,8 +52,18 @@ export async function GET() {
       }
     }
 
-    // In local development or standalone Next.js server mode, the web server is online
-    if (process.env.NODE_ENV === 'development' || process.env.NEXT_PHASE !== undefined) {
+    // If an admin manually clicked "Start Realm", report starting until Go responds
+    if (devServerStatusOverride === 'online') {
+      return NextResponse.json({
+        players: 0,
+        capacity: 500,
+        status: 'starting',
+        isDevOverride: true
+      });
+    }
+
+    // In local development mode without a running Go server, provide dev fallback
+    if (process.env.NODE_ENV === 'development') {
       return NextResponse.json({
         players: 1,
         capacity: 500,
@@ -89,10 +104,51 @@ export async function POST(req: Request) {
     const body = await req.json();
     if (body.action === 'start' || body.status === 'online') {
       devServerStatusOverride = 'online';
+
+      // Proactively trigger the Go MMO start script if on Linux
+      if (process.platform === 'linux') {
+        try {
+          const proc = spawn('bash', ['scripts/start-go.sh'], {
+            cwd: process.cwd(),
+            detached: true,
+            stdio: 'ignore',
+          });
+          proc.unref();
+        } catch (spawnErr) {
+          console.error('[server-status] Failed to spawn start-go.sh:', spawnErr);
+        }
+      } else {
+        // Windows fallback
+        try {
+          const serverCwd = path.join(process.cwd(), 'the-lobby');
+          const proc = spawn('go', ['run', 'cmd/server/main.go'], {
+            cwd: serverCwd,
+            detached: true,
+            stdio: 'ignore',
+            shell: true,
+          });
+          proc.unref();
+        } catch (spawnErr) {
+          console.error('[server-status] Failed to spawn Go server locally:', spawnErr);
+        }
+      }
     } else if (body.action === 'maintenance' || body.status === 'maintenance') {
       devServerStatusOverride = 'maintenance';
     } else if (body.action === 'stop' || body.status === 'offline') {
       devServerStatusOverride = 'offline';
+
+      if (process.platform === 'linux') {
+        try {
+          const proc = spawn('bash', ['scripts/stop-go.sh'], {
+            cwd: process.cwd(),
+            detached: true,
+            stdio: 'ignore',
+          });
+          proc.unref();
+        } catch (spawnErr) {
+          console.error('[server-status] Failed to spawn stop-go.sh:', spawnErr);
+        }
+      }
     } else if (body.action === 'reset') {
       devServerStatusOverride = null;
     }
