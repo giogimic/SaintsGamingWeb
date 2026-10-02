@@ -673,10 +673,6 @@ $DOMAIN, www.$DOMAIN {
     reverse_proxy 127.0.0.1:$WEB_PORT
 }
 
-go.$DOMAIN {
-    reverse_proxy 127.0.0.1:24011
-}
-
 # SAINTS_PROXY_LIST_BEGIN
 # SAINTS_PROXY_LIST_END
 CADDYEOF
@@ -2222,8 +2218,12 @@ EOF
             "}\n";
         printf("%s", s);
       }
-  
-      $0 ~ begin { managed=1; print; next }
+
+      $0 ~ begin {
+        if (cap==1 && capDomain != targetDomain) printf("%s", capText);
+        cap=0;
+        managed=1; print; next
+      }
       $0 ~ end {
         # If we never saw the domain block, append it right before END_MARK.
         if (managed==1 && updated!=1) emit_block(targetDomain, targetUpstream);
@@ -2231,12 +2231,10 @@ EOF
         print
         next
       }
-  
-      managed!=1 { print; next }
-  
-      # Inside managed section:
+
+      # Outside or inside managed section:
       # We capture blocks for each domain and decide to keep/update.
-      /^[[:space:]]*[A-Za-z0-9._-]+[[:space:]]*\{[[:space:]]*$/ {
+      cap==0 && /^[[:space:]]*[A-Za-z0-9._-]+[[:space:]]*\{[[:space:]]*$/ {
         cap=1
         capDomain=""
         capText=""
@@ -2251,8 +2249,11 @@ EOF
         }
         if ($0 ~ /^[[:space:]]*\}[[:space:]]*$/) {
           if (capDomain == targetDomain) {
-            emit_block(targetDomain, targetUpstream);
-            updated=1
+            if (managed == 1) {
+              emit_block(targetDomain, targetUpstream);
+              updated=1
+            }
+            # If outside managed section, silently drop to eliminate duplicate definitions
           } else {
             printf("%s", capText)
           }

@@ -1,3 +1,9 @@
+## [2.2.094] - 2026-10-02
+- **Fix Ambiguous Site Definition in Caddyfile**:
+  - Removed duplicate static `go.$DOMAIN` block from the base Caddyfile generation template in `saints.sh`.
+  - Updated `add_proxy` awk script to automatically strip duplicate blocks outside the managed markers, preventing Caddy's `ambiguous site definition: go.$DOMAIN` error.
+- Bumped site version to 2.2.094.
+
 ## [2.2.093] - 2026-10-02
 - **Guaranteed Setup Admin Account Provisioning**:
   - Saved `ADMIN_USER`, `ADMIN_PASS`, and `ADMIN_EMAIL` directly to `.env` during `saints.sh setup` so the container runtime has the owner credentials.
