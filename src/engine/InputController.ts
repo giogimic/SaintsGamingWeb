@@ -3,6 +3,7 @@ import { isInGridFootprint } from '../shared/game/brushGeometry';
 import { isTilePickTarget } from '../shared/game/tilePaint';
 import { Vector3, Matrix, Ray } from '@babylonjs/core';
 import { VoxelTargetResolution } from '../shared/game/voxel/VoxelTargetResolver';
+import { useGameStore } from '@/web/components/the-lobby/store';
 
 export class InputController {
   private engine: BabylonEngine;
@@ -417,7 +418,8 @@ public enableTilePicking(
       layerIdx?: number,
       eventType?: 'down' | 'move' | 'up',
       point?: { x: number; z: number },
-      voxelTarget?: VoxelTargetResolution | null
+      voxelTarget?: VoxelTargetResolution | null,
+      pointerButton?: number
     ) => void,
     options?: { 
       drag?: boolean; 
@@ -461,7 +463,7 @@ public enableTilePicking(
       return this.pickTileFromGroundPlane(screenX, screenY);
     };
 
-    const emitFromScenePick = (eventType?: 'down' | 'move' | 'up') => {
+    const emitFromScenePick = (eventType?: 'down' | 'move' | 'up', pointerButton = 0) => {
       if (!this.engine.scene) return;
       const resolved = this.engine.mapType !== 'VOXEL' ? getResolvedTile(this.engine.scene.pointerX, this.engine.scene.pointerY) : null;
       let voxelTarget = null;
@@ -499,7 +501,7 @@ public enableTilePicking(
         lastContinuousZ = point.z;
         lastKey = '';
 
-        onTileClick(r, c, layerIdx, eventType, point, voxelTarget);
+        onTileClick(r, c, layerIdx, eventType, point, voxelTarget, pointerButton);
         return;
       }
 
@@ -510,7 +512,7 @@ public enableTilePicking(
 
       // Apply brush radius for grid painting
       if (this.engine.brushRadius <= 1 || this.engine.activeBrushPattern || this.engine.activeLayerType === 'voxel') {
-        onTileClick(r, c, layerIdx, eventType, point, voxelTarget);
+        onTileClick(r, c, layerIdx, eventType, point, voxelTarget, pointerButton);
       } else {
         const rad = this.engine.brushRadius - 1;
         const w = this.engine.currentMapWidth;
@@ -525,7 +527,7 @@ public enableTilePicking(
                 x: point.x + (nc - c) * this.engine.currentTileSize,
                 z: point.z - (nr - r) * this.engine.currentTileSize
               } : undefined;
-              onTileClick(nr, nc, layerIdx, eventType, pt, voxelTarget);
+              onTileClick(nr, nc, layerIdx, eventType, pt, voxelTarget, pointerButton);
             }
           }
         }
@@ -599,6 +601,44 @@ public enableTilePicking(
     this.engine.scene.onPointerDown = (evt) => {
       if (!this.engine.scene) return;
       const button = evt.button;
+      if (!this.engine.editorCameraMode && button === 2) {
+        if (this.engine.mapType === 'VOXEL' || this.engine.mapType === 'FRACTAL' || this.engine.mapType === 'HYBRID') {
+          // For voxel-like maps, dispatch a block-hit or guard-action based on voxel target.
+          const target = this.engine.voxel.resolveVoxelTargetAtScreenCoord(this.engine.scene.pointerX, this.engine.scene.pointerY);
+          if (target?.kind === 'voxel-hit' && target.isInsideWorld) {
+            const pos = useGameStore.getState().player?.position;
+            const socketPayload = {
+              mapId: useGameStore.getState().currentMapId,
+              x: target.voxelCoord.wx,
+              y: target.voxelCoord.wy,
+              z: target.voxelCoord.wz,
+            };
+            // If player position lacks Z (legacy / server-side checks), treat as guard_action; otherwise block_hit.
+            if (pos?.z === undefined) {
+              useGameStore.getState().emitSocketEvent?.('guard_action', socketPayload);
+            } else {
+              useGameStore.getState().emitSocketEvent?.('block_hit', socketPayload);
+            }
+          }
+          // Also dispatch the tile/voxel pick into the map callback so maps can handle right-click picks.
+          emitFromScenePick('down', button);
+        }
+        // Start orbiting regardless to preserve existing camera behavior.
+        isOrbiting = true;
+        lastPointerX = evt.clientX;
+        lastPointerY = evt.clientY;
+        if (this.engine.canvas) {
+          this.engine.canvas.style.cursor = 'grab';
+          try { this.engine.canvas.setPointerCapture(evt.pointerId); } catch {}
+        }
+        // Preserve mouse-look pointer lock when possible for right-click orbiting.
+        if (this.engine.canvas && typeof (this.engine.canvas as any).requestPointerLock === 'function' && document.pointerLockElement !== this.engine.canvas) {
+          try { this.engine.canvas.requestPointerLock(); } catch {}
+        }
+        // Treat right-click as hold-to-guard action regardless of voxel target.
+        useGameStore.getState().emitSocketEvent?.('guard_state', { active: true });
+        return;
+      }
       const style = this.engine.renderer.cameraSettings.playerCameraStyle as string;
       const isFpsTps = !this.engine.editorCameraMode && (style === 'firstperson' || style === 'firstPerson' || style === 'thirdperson' || style === 'thirdPerson' || style === 'follow45' || style === 'adaptive' || style === 'dynamic' || style === 'free');
       const isOrthoMode = this.engine.renderer.camera.mode === 1; // ORTHOGRAPHIC_CAMERA
@@ -645,6 +685,9 @@ public enableTilePicking(
     };
 
     this.engine.scene.onPointerUp = (evt) => {
+      if (evt.button === 2 && !this.engine.editorCameraMode) {
+        useGameStore.getState().emitSocketEvent?.('guard_state', { active: false });
+      }
       if (isPanning) {
         isPanning = false;
         if (this.engine.canvas) this.engine.canvas.style.cursor = 'default';

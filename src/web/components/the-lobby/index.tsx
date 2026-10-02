@@ -1474,6 +1474,17 @@ export default function TheLobby({
       useGameStore.getState().showToast(data.message);
     });
 
+    socket.on('block_damaged', (data: { health?: number; maxHealth?: number }) => {
+      if (typeof data?.health === 'number' && typeof data.maxHealth === 'number') {
+        useGameStore.getState().showToast(`Block damaged (${data.health}/${data.maxHealth})`);
+      }
+    });
+
+    socket.on('guard_state', (data: { socketId?: string; active?: boolean }) => {
+      if (!data?.socketId) return;
+      useGameStore.getState().updateOtherPlayer(data.socketId, { isGuarding: !!data.active } as any);
+    });
+
     // Party invite from friends list / PartyManager (Y accept / N decline while focused)
     socket.on('party_invite', (data: { fromName?: string; fromAccountId?: string }) => {
       const from = data?.fromName || 'A tamer';

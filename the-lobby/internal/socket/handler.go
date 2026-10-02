@@ -57,6 +57,10 @@ type Hub struct {
 	sockets map[string]*socket.Socket
 	rooms   map[string]map[string]struct{}
 	userOf  map[string]string
+	blockMu sync.Mutex
+	blockHealth map[string]int
+	lastBlockHit map[string]time.Time
+	guarding map[string]bool
 }
 
 func NewHub(cfg config.Config, eng *engine.Engine, deps Deps) *Hub {
@@ -97,6 +101,9 @@ func NewHub(cfg config.Config, eng *engine.Engine, deps Deps) *Hub {
 		sockets: make(map[string]*socket.Socket),
 		rooms:   make(map[string]map[string]struct{}),
 		userOf:  make(map[string]string),
+		blockHealth: make(map[string]int),
+		lastBlockHit: make(map[string]time.Time),
+		guarding: make(map[string]bool),
 	}
 }
 
@@ -272,6 +279,7 @@ func (h *Hub) onConnect(client *socket.Socket) {
 	})
 	h.registerGameplay(client, accountID, sid)
 	client.On("disconnect", func(datas ...any) {
+		h.handleGuardRelease(accountID)
 		h.onDisconnect(sid, accountID)
 	})
 }

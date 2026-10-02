@@ -19,7 +19,7 @@ import { mapMesher } from './MapMesher';
 import { inputManager } from '../input/InputManager';
 import { entityRenderer } from './EntityRenderer';
 
-export type CameraStyle = 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'dynamic';
+export type CameraStyle = 'follow45' | 'firstperson';
 
 export interface CameraSettings {
   fov: number;
@@ -36,6 +36,7 @@ export interface CameraSettings {
   borderClamping: boolean;
   vignetteEnabled: boolean;
   vignetteWeight: number;
+  mouseLookEnabled?: boolean;
 }
 
 const DEFAULT_CAMERA_SETTINGS: CameraSettings = {
@@ -49,10 +50,11 @@ const DEFAULT_CAMERA_SETTINGS: CameraSettings = {
   isometricPitch: Math.PI / 4,
   isometricDistance: 14,
   playerFollowSmoothing: 0.35,
-  playerCameraStyle: 'dynamic',
+  playerCameraStyle: 'follow45',
   borderClamping: true,
   vignetteEnabled: true,
   vignetteWeight: 1.5,
+  mouseLookEnabled: true,
 };
 
 const LS_KEY = 'saints_camera_settings';
@@ -123,11 +125,14 @@ export class CameraManager {
     if (settings && settings.camera) {
        this.setCameraSettings({
          fov: settings.camera.fov !== undefined ? settings.camera.fov * (Math.PI / 180) : this.settings.fov,
-         playerCameraStyle: settings.camera.profile || this.settings.playerCameraStyle,
+         playerCameraStyle: settings.camera.profile === 'firstperson' ? 'firstperson' : 'follow45',
          playerFollowSmoothing: settings.camera.smoothing ?? this.settings.playerFollowSmoothing,
          borderClamping: settings.camera.borderClamping ?? this.settings.borderClamping,
          vignetteEnabled: settings.camera.vignetteEnabled ?? this.settings.vignetteEnabled
        });
+       if (typeof settings.controls?.mouseLookEnabled === 'boolean') {
+         this.settings.mouseLookEnabled = settings.controls.mouseLookEnabled;
+       }
        if (settings.camera.thirdPersonDistance && this.settings.playerCameraStyle === 'follow45') {
           this.profile.distance = settings.camera.thirdPersonDistance;
        }
@@ -158,7 +163,11 @@ export class CameraManager {
       const raw = localStorage.getItem(LS_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        this.settings = { ...DEFAULT_CAMERA_SETTINGS, ...parsed };
+        this.settings = {
+          ...DEFAULT_CAMERA_SETTINGS,
+          ...parsed,
+          playerCameraStyle: parsed.playerCameraStyle === 'firstperson' ? 'firstperson' : 'follow45',
+        };
       }
     } catch {
       // Ignore corrupt localStorage
@@ -197,79 +206,23 @@ export class CameraManager {
   // ── Camera Style Application ───────────────────────────────────────────────
 
   public applyStyle(style: CameraStyle) {
-    this.settings.playerCameraStyle = style;
-    if (style === 'dynamic') {
-      this.updateDynamicCamera(true);
-    } else {
-      this.applyInternalStyle(style, true);
-    }
+    this.settings.playerCameraStyle = style === 'firstperson' ? 'firstperson' : 'follow45';
+    this.applyInternalStyle(this.settings.playerCameraStyle, true);
   }
 
-  public updateDynamicCamera(snap: boolean = false) {
-    if (this.settings.playerCameraStyle !== 'dynamic') return;
-    const zoom = this.currentZoom || 10;
-
-    if (this.camera && this.camera.mode !== BABYLON.Camera.PERSPECTIVE_CAMERA) {
-      this.camera.mode = BABYLON.Camera.PERSPECTIVE_CAMERA;
-    }
-
-    if (zoom < 5.0) {
-      this.profile.distance = 0;
-      this.profile.pitch = 0;
-    } else if (zoom <= 12.0) {
-      const t = (zoom - 5.0) / 7.0; // 0 to 1
-      this.profile.distance = t * 14.0;
-      this.profile.pitch = t * (Math.PI / 4);
-    } else {
-      const t = Math.min(1.0, (zoom - 12.0) / 3.0); // 0 to 1
-      this.profile.distance = 14.0 + t * 6.0;
-      this.profile.pitch = (Math.PI / 4) + t * (Math.PI / 8); 
-    }
-
-    if (snap) {
-      this.snapCameraTo(this.targetX, this.targetZ, this.targetY);
-    }
-  }
-
-  private applyInternalStyle(style: Exclude<CameraStyle, 'dynamic'>, snap: boolean = true) {
+  private applyInternalStyle(style: CameraStyle, snap: boolean = true) {
     if (!this.camera) return;
 
-    switch (style) {
-      case 'topdown':
-        this.camera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
-        this.profile.pitch = Math.PI / 2 - 0.01;
-        this.profile.distance = 14;
-        this.updateOrthoSize(this.currentZoom);
-        break;
-
-      case 'follow45':
-        this.camera.mode = BABYLON.Camera.PERSPECTIVE_CAMERA;
-        this.camera.fov = this.currentFov;
-        this.profile.distance = 16;
-        this.profile.pitch = Math.PI / 6;
-        break;
-
-      case 'firstperson':
-        this.camera.mode = BABYLON.Camera.PERSPECTIVE_CAMERA;
-        this.camera.fov = this.currentFov;
-        this.profile.pitch = 0;
-        this.profile.distance = 0;
-        break;
-
-      case 'free':
-        this.camera.mode = BABYLON.Camera.PERSPECTIVE_CAMERA;
-        this.camera.fov = this.currentFov;
-        this.profile.pitch = this.pitch || Math.PI / 4;
-        this.profile.distance = this.distance || 18;
-        break;
-
-      case 'isometric':
-      default:
-        this.camera.mode = BABYLON.Camera.ORTHOGRAPHIC_CAMERA;
-        this.profile.pitch = this.settings.isometricPitch || Math.PI / 4;
-        this.profile.distance = this.settings.isometricDistance || 14;
-        this.updateOrthoSize(this.currentZoom);
-        break;
+    if (style === 'firstperson') {
+      this.camera.mode = BABYLON.Camera.PERSPECTIVE_CAMERA;
+      this.camera.fov = this.currentFov;
+      this.profile.pitch = 0;
+      this.profile.distance = 0;
+    } else {
+      this.camera.mode = BABYLON.Camera.PERSPECTIVE_CAMERA;
+      this.camera.fov = this.currentFov;
+      this.profile.distance = 16;
+      this.profile.pitch = Math.PI / 6;
     }
 
     if (snap) {
@@ -308,24 +261,10 @@ export class CameraManager {
     
     e.preventDefault();
 
-    if (this.settings.playerCameraStyle === 'dynamic') {
-      // Dynamic mode transitions between first-person, third-person, and isometric based on zoom level
-      const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
-      const newZoom = Math.max(3, Math.min(15, this.currentZoom * zoomFactor));
-      this.updateOrthoSize(newZoom);
-      this.updateDynamicCamera(false);
-    } else if (this.camera?.mode === BABYLON.Camera.ORTHOGRAPHIC_CAMERA) {
-      // Zoom ortho for fixed 2.5d modes
-      const zoomFactor = e.deltaY > 0 ? 1.1 : 0.9;
-      const newZoom = Math.max(3, Math.min(15, this.currentZoom * zoomFactor));
-      this.updateOrthoSize(newZoom);
-    } else {
-      // Zoom distance for fixed 3D modes (third-person/free)
-      if (this.settings.playerCameraStyle === 'follow45' || this.settings.playerCameraStyle === 'free') {
-        const distFactor = e.deltaY > 0 ? 1.1 : 0.9;
-        this.profile.distance = Math.max(2, Math.min(50, this.profile.distance * distFactor));
-        this.saveSettingsToStorage();
-      }
+    if (this.settings.playerCameraStyle === 'follow45') {
+      const distFactor = e.deltaY > 0 ? 1.1 : 0.9;
+      this.profile.distance = Math.max(2, Math.min(50, this.profile.distance * distFactor));
+      this.saveSettingsToStorage();
     }
   };
 
@@ -354,9 +293,7 @@ export class CameraManager {
     const dist = this.currentActualDistance;
     const currentYaw = this.yaw || 0;
     
-    const firstPersonWeight = this.settings.playerCameraStyle === 'isometric' || this.settings.playerCameraStyle === 'topdown'
-      ? 0.0
-      : Math.max(0, Math.min(1.0, 1.0 - (dist / 2.0)));
+    const firstPersonWeight = Math.max(0, Math.min(1.0, 1.0 - (dist / 2.0)));
     
     const sprite = entityRenderer.getSprite('local_player');
     const playerHeight = sprite?.computedHeight ?? 1.6;
@@ -391,20 +328,15 @@ export class CameraManager {
     if (!this.camera || !this.scene) return;
 
     // Handle Mouse Look
-    if (this.canvas && document.pointerLockElement === this.canvas) {
+    if (this.settings.mouseLookEnabled && this.canvas && document.pointerLockElement === this.canvas) {
       const delta = inputManager.consumeMouseDelta();
       if (delta.x !== 0 || delta.y !== 0) {
         const sens = (this.settings.orbitSensitivity || 1.0) * 0.002;
         this.yaw += delta.x * sens * (this.settings.invertOrbitX ? -1 : 1);
         
-        // Only allow pitch to change when not in isometric mode
-        const style = this.settings.playerCameraStyle;
-        const isIsometric = (style === 'dynamic' && this.currentZoom >= 12.0) || style === 'topdown' || style === 'isometric';
-        if (!isIsometric) {
-          this.pitch += delta.y * sens * (this.settings.invertOrbitY ? 1 : -1);
-          this.pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.pitch));
-          this.profile.pitch = this.pitch;
-        }
+        this.pitch += delta.y * sens * (this.settings.invertOrbitY ? 1 : -1);
+        this.pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.pitch));
+        this.profile.pitch = this.pitch;
       }
     } else {
       inputManager.consumeMouseDelta(); // discard delta when not locked
@@ -461,9 +393,7 @@ export class CameraManager {
       const currentYaw = this.yaw || 0;
       
       // Smoothly blend to first-person when distance is small (< 2.0)
-      const firstPersonWeight = this.settings.playerCameraStyle === 'isometric' || this.settings.playerCameraStyle === 'topdown'
-        ? 0.0
-        : Math.max(0, Math.min(1.0, 1.0 - (dist / 2.0)));
+      const firstPersonWeight = Math.max(0, Math.min(1.0, 1.0 - (dist / 2.0)));
       
       const sprite = entityRenderer.getSprite('local_player');
       const playerHeight = sprite?.computedHeight ?? 1.6;

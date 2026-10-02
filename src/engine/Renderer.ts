@@ -7,6 +7,8 @@ import { DynamicTexture, Scene, ParticleSystem, FreeCamera, Scalar } from '@baby
 import { DefaultRenderingPipeline } from '@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline';
 import { selectAnimationGroup } from './animationSelection';
 import { getLocomotionSpeedRatio } from './locomotionSpeed';
+import { getCameraFacingAngle } from '@/shared/game/cameraFacing';
+import { isMovingBackward } from '@/shared/game/locomotionDirection';
 
 
 export class Renderer {
@@ -67,7 +69,7 @@ public cameraPitch: number = Math.PI / 4;
 public cameraDistance: number = 20;
 public targetCameraDistance: number = 20;
 public continuousZoom: number = 10;
-public activePlayerCameraStyle: 'firstPerson' | 'firstperson' | 'thirdPerson' | 'overview2_5d' | 'isometric' | 'follow45' | 'topdown' | 'free' = 'overview2_5d';
+public activePlayerCameraStyle: 'firstPerson' | 'firstperson' | 'thirdPerson' | 'overview2_5d' | 'isometric' | 'follow45' | 'topdown' | 'free' = 'thirdPerson';
 public cameraVelocityYaw: number = 0;
 public cameraVelocityPitch: number = 0;
 public cameraVelocityPanX: number = 0;
@@ -83,7 +85,7 @@ public cameraSettings = {
     isometricPitch: Math.PI / 4,
     isometricDistance: 14,
     playerFollowSmoothing: 0.35,
-    playerCameraStyle: 'overview2_5d' as 'firstPerson' | 'thirdPerson' | 'overview2_5d' | 'adaptive' | 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'dynamic',
+    playerCameraStyle: 'follow45' as 'firstPerson' | 'thirdPerson' | 'overview2_5d' | 'adaptive' | 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson' | 'dynamic',
     borderClamping: true,
     vignetteEnabled: true,
     vignetteWeight: 1.5,
@@ -624,7 +626,14 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
                 : groups.filter((ag: any) => isIdleClip(ag.name || ''));
 
               // Prevent bone morphing by ensuring we only play exactly ONE animation for each state
-              const selectedRunAnim = selectAnimationGroup(runAnims, undefined, true);
+              const selectedRunAnim = selectAnimationGroup(
+                runAnims,
+                state.isPlayer && this.camera && moveDir && moveDir.lengthSquared() > 0.0001 &&
+                  isMovingBackward(Math.atan2(-moveDir.x, moveDir.z), this.cameraYaw)
+                  ? 'run_bwd'
+                  : undefined,
+                true,
+              );
               runAnims = selectedRunAnim ? [selectedRunAnim] : [];
 
               if (idleAnims.length > 1) {
@@ -656,6 +665,20 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
 
             const { runAnims, idleAnims } = mesh.metadata._resolvedAnims || { runAnims: [], idleAnims: [] };
             let targetAnims = isEntityWalking ? runAnims : idleAnims;
+            if (
+              state.isPlayer &&
+              isEntityWalking &&
+              this.camera &&
+              this.camera.mode === 0 &&
+              moveDir &&
+              moveDir.lengthSquared() > 0.0001 &&
+              isMovingBackward(Math.atan2(-moveDir.x, moveDir.z), this.cameraYaw)
+            ) {
+              const backwardAnimation = selectAnimationGroup(groups, 'run_bwd', true);
+              if (backwardAnimation?.name === 'run_bwd' || backwardAnimation?.name === 'walk_bwd') {
+                targetAnims = [backwardAnimation];
+              }
+            }
             if (targetAnims.length === 0) {
               targetAnims = isEntityWalking
                 ? (idleAnims.length > 0 ? idleAnims : groups)
@@ -698,16 +721,8 @@ public startRenderLoop(onTick?: (deltaTime: number) => void) {
           let targetAngle = mesh.rotation.y;
           
           if (state.isPlayer && this.camera && this.camera.mode === 0) {
-            // Local player in 3D perspective mode:
-            // When walking, face towards the active movement trajectory.
-            // When stationary or orbiting view, adaptively turn to align with the camera screen view.
-            if (isEntityWalking && moveDir && moveDir.lengthSquared() > 0.0001) {
-              targetAngle = Math.atan2(-moveDir.x, moveDir.z);
-              mesh.metadata.lastRotationY = targetAngle;
-            } else {
-              targetAngle = -(this.cameraYaw || 0);
-              mesh.metadata.lastRotationY = targetAngle;
-            }
+            targetAngle = getCameraFacingAngle(this.cameraYaw);
+            mesh.metadata.lastRotationY = targetAngle;
           } else {
             // NPCs, remote players, or orthographic 2.5D mode:
             if (isEntityWalking && moveDir && moveDir.lengthSquared() > 0.0001) {
@@ -1029,11 +1044,19 @@ public getCameraSettings() {
   }
 
   public applyPlayerCameraStyle(style: 'firstPerson' | 'thirdPerson' | 'overview2_5d' | 'adaptive' | 'dynamic' | 'isometric' | 'follow45' | 'topdown' | 'free' | 'firstperson') {
-    this.cameraSettings.playerCameraStyle = style;
-    if (style === 'dynamic' || style === 'adaptive') {
+    const isStudioToolsOpen = Boolean((window as any)._isDevEditorOpen) || this.engine.editorCameraMode;
+    const isFirstPerson = style === 'firstperson' || style === 'firstPerson';
+    const isStudioCameraStyle = ['overview2_5d', 'adaptive', 'dynamic', 'isometric', 'topdown', 'free'].includes(style);
+    const normalizedStyle = isFirstPerson
+      ? 'firstperson'
+      : isStudioToolsOpen && isStudioCameraStyle
+        ? style
+        : 'follow45';
+    this.cameraSettings.playerCameraStyle = normalizedStyle;
+    if (normalizedStyle === 'dynamic' || normalizedStyle === 'adaptive') {
       this.updateDynamicCamera();
     } else {
-      this.applyInternalCameraStyle(style);
+      this.applyInternalCameraStyle(normalizedStyle);
     }
   }
 

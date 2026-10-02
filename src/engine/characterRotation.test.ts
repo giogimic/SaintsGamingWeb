@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { isMovingBackward } from '@/shared/game/locomotionDirection';
 
 describe('Character Rotation and Camera-Relative Heading', () => {
   it('aligns 3D movement trajectory with cardinal directions using Math.atan2(-x, z)', () => {
@@ -76,7 +77,7 @@ describe('Character Rotation and Camera-Relative Heading', () => {
     expect(mapInput(1, 0, 0)).toEqual({ moveDx: 1, moveDy: 0 });
   });
 
-  it('computes continuous 3D movement angle facing forward for W regardless of camera yaw', () => {
+  it('keeps camera-facing independent from forward and backward 3D travel', () => {
     function compute3DMoveAngle(inputX: number, inputZ: number, yaw: number) {
       const length = Math.sqrt(inputX * inputX + inputZ * inputZ);
       const normX = length > 0 ? inputX / length : 0;

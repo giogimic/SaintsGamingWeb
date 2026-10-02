@@ -33,6 +33,7 @@ export default function Hotbar() {
   const cooldowns = useGameStore((s) => s.cooldowns);
   const emitSocketEvent = useGameStore((s) => s.emitSocketEvent);
   const setCooldown = useGameStore((s) => s.setCooldown);
+  const keybinds = useGameStore((s) => s.clientSettings.controls.keybinds);
 
   const [globalCooldown, setGlobalCooldown] = useState(0);
   const [now, setNow] = useState(Date.now());
@@ -118,18 +119,18 @@ export default function Hotbar() {
   const slots = useMemo<HotbarSlot[]>(
     () => {
       const populatedSlots: HotbarSlot[] = [
-        { key: '1', action: 'ability', ability: abilities[0] || null },
-        { key: '2', action: 'ability', ability: abilities[1] || null },
-        { key: '3', action: 'ability', ability: abilities[2] || null },
-        { key: '4', action: 'ability', ability: abilities[3] || null },
+        { key: keybinds.hotbar_1 || '0', action: 'ability', ability: abilities[0] || null },
+        { key: keybinds.hotbar_2 || '1', action: 'ability', ability: abilities[1] || null },
+        { key: keybinds.hotbar_3 || '2', action: 'ability', ability: abilities[2] || null },
+        { key: keybinds.hotbar_4 || '3', action: 'ability', ability: abilities[3] || null },
         {
-          key: '5',
+          key: keybinds.hotbar_5 || '4',
           action: 'item',
           count: potionCount,
           ability: { id: 'potion', name: 'Healing Potion', icon: '/assets/icons/items/health_potion.svg', type: 'heal', cooldownMs: 1000 },
         },
         ...abilities.slice(4, 9).map((ability, index): HotbarSlot => ({
-          key: index === 4 ? '0' : String(index + 6),
+          key: keybinds[`hotbar_${index + 6}`] || String(index + 5),
           action: 'ability',
           ability,
         })),
@@ -137,14 +138,14 @@ export default function Hotbar() {
       while (populatedSlots.length < 10) {
         const index = populatedSlots.length;
         populatedSlots.push({
-          key: index === 9 ? '0' : String(index + 1),
+          key: keybinds[`hotbar_${index + 1}`] || String(index),
           action: 'none',
           ability: null,
         });
       }
       return populatedSlots;
     },
-    [abilities, potionCount]
+    [abilities, potionCount, keybinds]
   );
 
   const handleCast = (slot: (typeof slots)[number]) => {
@@ -213,7 +214,7 @@ export default function Hotbar() {
     }
   };
 
-  // Keyboard shortcut listener mapped to keys 1-5
+  // Keyboard shortcuts map configured keys to hotbar slots.
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement;
@@ -228,7 +229,7 @@ export default function Hotbar() {
       if (!isCurrentlyPlayable) return;
 
       const key = e.key;
-      const slotIndex = key === '0' ? 9 : parseInt(key) - 1;
+      const slotIndex = slots.findIndex((slot) => slot.key.toLowerCase() === key.toLowerCase());
       const visibleSlotCount = useGameStore.getState().hudConfig?.hotbarLayout === '1x5' ? 5 : 10;
       if (slotIndex >= 0 && slotIndex < visibleSlotCount) {
         handleCast(slots[slotIndex]);
@@ -236,7 +237,7 @@ export default function Hotbar() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [globalCooldown, combatTarget, emitSocketEvent, slots, cooldowns]);
+  }, [globalCooldown, combatTarget, emitSocketEvent, slots, cooldowns, keybinds]);
 
   const hudThemeId = useGameStore((s) => s.hudThemeId);
   const hudConfig = useGameStore((s) => s.hudConfig);

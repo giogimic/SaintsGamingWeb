@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+export const DEFAULT_HOTBAR_KEYBINDS = Object.fromEntries(
+  Array.from({ length: 10 }, (_, index) => [`hotbar_${index + 1}`, String(index)]),
+) as Record<string, string>;
+
+const keybindsSchema = z.preprocess(
+  (value) => ({ ...DEFAULT_HOTBAR_KEYBINDS, ...(value && typeof value === 'object' ? value : {}) }),
+  z.record(z.string()),
+);
+
 export const ClientSettingsSchema = z.object({
   version: z.literal(1),
   
@@ -7,11 +16,15 @@ export const ClientSettingsSchema = z.object({
     mobileControlMode: z.enum(['floating', 'dpad']).default('floating'),
     invertY: z.boolean().default(false),
     mouseSensitivity: z.number().min(0.1).max(5.0).default(1.0),
-    keybinds: z.record(z.string()).default({}), // Map of action to key (e.g. 'inventory': 'i')
+    mouseLookEnabled: z.boolean().default(true),
+    keybinds: keybindsSchema,
   }).default({}),
 
   camera: z.object({
-    profile: z.enum(['firstperson', 'follow45', 'isometric', 'dynamic']).default('dynamic'),
+    profile: z.preprocess(
+      (profile) => profile === 'firstperson' ? 'firstperson' : 'follow45',
+      z.enum(['firstperson', 'follow45']).default('follow45'),
+    ),
     fov: z.number().min(60).max(120).default(90),
     thirdPersonDistance: z.number().min(2).max(20).default(6),
     cameraShake: z.boolean().default(true),
@@ -47,6 +60,7 @@ export const ClientSettingsSchema = z.object({
 
   gameplay: z.object({
     autoRun: z.boolean().default(false),
+    clickToMove: z.boolean().default(false),
     showNames: z.boolean().default(true),
     damageNumbers: z.boolean().default(true),
     showFloatingLoot: z.boolean().default(true),
@@ -70,10 +84,11 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
     mobileControlMode: 'floating',
     invertY: false,
     mouseSensitivity: 1.0,
-    keybinds: {},
+    mouseLookEnabled: true,
+    keybinds: DEFAULT_HOTBAR_KEYBINDS,
   },
   camera: {
-    profile: 'dynamic',
+    profile: 'follow45',
     fov: 90,
     thirdPersonDistance: 6,
     cameraShake: true,
@@ -103,6 +118,7 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
   },
   gameplay: {
     autoRun: false,
+    clickToMove: false,
     showNames: true,
     damageNumbers: true,
     showFloatingLoot: true,

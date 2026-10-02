@@ -106,6 +106,9 @@ func (h *Hub) registerGameplay(client *socket.Socket, accountID, sid string) {
 	client.On(protocol.EvVoxelEdit, func(datas ...any) {
 		h.handleVoxelEdit(accountID, datas)
 	})
+	client.On(protocol.EvBlockHit, func(datas ...any) {
+		h.handleBlockHit(accountID, datas)
+	})
 	client.On(protocol.EvUseItem, func(datas ...any) {
 		h.handleUseItem(accountID, datas)
 	})
@@ -118,6 +121,98 @@ func (h *Hub) registerGameplay(client *socket.Socket, accountID, sid string) {
 	client.On(protocol.EvClinicHeal, func(datas ...any) {
 		h.handleClinicHeal(accountID, datas)
 	})
+}
+
+func (h *Hub) handleBlockHit(accountID string, datas []any) {
+	if len(datas) == 0 {
+		return
+	}
+	b, _ := json.Marshal(datas[0])
+	var payload protocol.BlockHitPayload
+	if json.Unmarshal(b, &payload) != nil {
+		return
+	}
+	p := h.eng.Players().GetByAccount(accountID)
+	if p == nil || world.ToBaseMapID(payload.MapID) != p.BaseMapID {
+		return
+	}
+	dx, dy, dz := float64(payload.X)-p.X, float64(payload.Z)-p.Y, float64(payload.Y)-p.Z
+	if dx*dx+dy*dy+dz*dz > 36 {
+		return
+	}
+	mapDef, err := h.eng.World().GetDef(p.BaseMapID)
+	if err != nil || mapDef.Voxel == nil {
+		return
+	}
+	key := fmt.Sprintf("%s:%d:%d:%d", p.BaseMapID, payload.X, payload.Y, payload.Z)
+	now := time.Now()
+	h.blockMu.Lock()
+	if now.Sub(h.lastBlockHit[accountID]) < 250 {
+		h.blockMu.Unlock()
+		return
+	}
+	h.lastBlockHit[accountID] = now
+	word := mapDef.Voxel.GetVoxel(payload.X, payload.Y, payload.Z)
+	if world.IsVoxelAir(word) {
+		delete(h.blockHealth, key)
+		h.blockMu.Unlock()
+		return
+	}
+	health, exists := h.blockHealth[key]
+	if !exists {
+		health = 5
+	}
+	strengthLevel := h.deps.Skills.Levels(accountID)["strength"]
+	damage := strengthLevel / 5
+	if damage < 1 {
+		damage = 1
+	}
+	health -= damage
+	if health > 0 {
+		h.blockHealth[key] = health
+		h.blockMu.Unlock()
+		h.EmitToSocket(p.SocketID, "block_damaged", map[string]any{"x": payload.X, "y": payload.Y, "z": payload.Z, "health": health, "maxHealth": 5})
+		return
+	}
+	delete(h.blockHealth, key)
+	h.blockMu.Unlock()
+	mapDef.Voxel.SetVoxel(payload.X, payload.Y, payload.Z, 0)
+	h.EmitToRoom(p.MapID, protocol.EvVoxelEdit, map[string]any{
+		"mapId": p.BaseMapID, "x": payload.X, "y": payload.Y, "z": payload.Z,
+		"cx": payload.X / 32, "cy": payload.Y / 32, "cz": payload.Z / 32,
+		"lx": payload.X % 32, "ly": payload.Y % 32, "lz": payload.Z % 32,
+		"voxel": 0, "voxelHigh": 0, "wordLow": 0, "wordHigh": 0,
+	})
+}
+
+func (h *Hub) handleGuardState(accountID string, datas []any) {
+	if len(datas) == 0 {
+		return
+	}
+	b, _ := json.Marshal(datas[0])
+	var payload struct {
+		Active bool `json:"active"`
+	}
+	if json.Unmarshal(b, &payload) != nil {
+		return
+	}
+	p := h.eng.Players().GetByAccount(accountID)
+	if p == nil {
+		return
+	}
+	h.blockMu.Lock()
+	h.guarding[accountID] = payload.Active
+	h.blockMu.Unlock()
+	h.EmitToRoom(p.MapID, protocol.EvGuardState, map[string]any{"accountId": accountID, "active": payload.Active})
+}
+
+func (h *Hub) handleGuardRelease(accountID string) {
+	h.blockMu.Lock()
+	delete(h.guarding, accountID)
+	h.blockMu.Unlock()
+	if p := h.eng.Players().GetByAccount(accountID); p != nil {
+		h.EmitToRoom(p.MapID, protocol.EvGuardState, map[string]any{"accountId": accountID, "socketId": p.SocketID, "active": false})
+	}
 }
 
 func (h *Hub) handleBattleSubmit(accountID string, datas []any) {

@@ -70,6 +70,7 @@ updateOtherPlayer: (socketId, data: any) => set((state) => {
             assetProfileId: resolvedSprite || 'adventurer',
             direction: data.direction,
             isMoving: data.isMoving,
+            isGuarding: data.isGuarding,
             chatMessage: data.chatMessage,
             customization: data.customization,
           };
@@ -80,6 +81,7 @@ updateOtherPlayer: (socketId, data: any) => set((state) => {
           if (resolvedSprite !== undefined) state.otherPlayers[socketId].assetProfileId = resolvedSprite;
           if (data.direction !== undefined) state.otherPlayers[socketId].direction = data.direction;
           if (data.isMoving !== undefined) state.otherPlayers[socketId].isMoving = data.isMoving;
+          if (data.isGuarding !== undefined) state.otherPlayers[socketId].isGuarding = data.isGuarding;
           if (data.customization !== undefined) state.otherPlayers[socketId].customization = data.customization;
           if (data.chatMessage !== undefined) {
             state.otherPlayers[socketId].chatMessage = data.chatMessage;

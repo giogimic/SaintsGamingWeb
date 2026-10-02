@@ -256,7 +256,6 @@ export class LocalMovementSystem {
         if (isMoving) {
           const moveAngle = Math.atan2(-moveX, moveZ);
           this.currentMoveAngle = moveAngle;
-          this.lastFacingAngle = moveAngle;
         } else {
           this.currentMoveAngle = null;
         }

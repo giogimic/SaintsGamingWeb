@@ -761,7 +761,7 @@ export class BabylonEngine {
         this.renderer.applyPlayerCameraStyle(mapCameraStyle as any);
       } else {
         // Apply user's active camera style, defaulting to map author's camera style
-        this.renderer.applyPlayerCameraStyle(this.renderer.cameraSettings.playerCameraStyle || (mapCameraStyle as any) || 'isometric');
+        this.renderer.applyPlayerCameraStyle(this.renderer.cameraSettings.playerCameraStyle || (mapCameraStyle as any) || 'follow45');
       }
     }
 

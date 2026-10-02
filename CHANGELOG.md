@@ -1,4 +1,31 @@
-## [2.2.095] - 2026-10-02
+## [2.2.096] - 2026-10-02
+- **Camera & Locomotion Simplification**:
+  - Extracted shared `getCameraFacingAngle()` and `isMovingBackward()` utilities into `src/shared/game/cameraFacing.ts` and `locomotionDirection.ts` with full test coverage.
+  - Simplified gameplay camera profiles to First Person and Third Person only; removed `dynamic`, `isometric`, `topdown`, and `free` from player-facing settings. Studio-only camera styles remain available in the editor.
+  - Stripped `updateDynamicCamera()` and orthographic/isometric branches from `CameraManager.ts`.
+  - Added `mouseLookEnabled` toggle (default on) to controls settings and GameOptionsMenu.
+- **Optional Click-to-Move**:
+  - Added `clickToMove` boolean to client settings schema (default off).
+  - Ground click pathfinding in Tile and Voxel canvases now gated behind this setting.
+  - Toggle added to GameOptionsMenu under Controls.
+- **Configurable Hotbar Keys (0–9)**:
+  - Added `DEFAULT_HOTBAR_KEYBINDS` mapping 10 slots (`hotbar_1`–`hotbar_10`) to keys `0`–`9`.
+  - Hotbar component reads from configurable keybinds instead of hardcoded key numbers.
+  - Added hotbar key remapping UI in GameOptionsMenu with per-slot input fields.
+  - Updated keybinds reference table to reflect `0–9` hotbar slots.
+- **Right-Click Guard Toggle (Server-Owned)**:
+  - New `guard_state` and `block_hit` protocol events in Go server.
+  - Server-side `handleGuardState()` and `handleGuardRelease()` with automatic cleanup on disconnect.
+  - Right-click in gameplay mode emits `guard_state` hold-to-guard and starts camera orbiting.
+  - Guard state broadcast to room; `isGuarding` field added to multiplayer player state.
+- **Server-Validated Block Hit**:
+  - New `handleBlockHit()` in Go server with 250ms rate limiting, 6-block range check, and strength-scaled damage.
+  - Block health tracked per-coordinate; on break, voxel removal broadcast to all players via `voxel_edit` event.
+  - Client sends `block_hit` on left-click voxel targets and right-click voxel targets in gameplay mode.
+  - `block_damaged` socket event shows damage feedback toast on client.
+- Bumped site version to 2.2.096.
+
+
 - **Animation Selection & Locomotion Improvements**:
   - Extracted modular `selectAnimationGroup` helper into `src/client/engine/animationSelection.ts` with dedicated unit test suite.
   - Resolved character movement animation glitch where turning/lateral clips were prioritized over forward running and walking cycles.

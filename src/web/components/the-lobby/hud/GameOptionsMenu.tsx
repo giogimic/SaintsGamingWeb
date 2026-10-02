@@ -204,8 +204,8 @@ export default function GameOptionsMenu({
   const footstepDust = clientSettings?.gameplay?.footstepDust ?? true;
 
   // Camera values
-  const cameraProfile = clientSettings?.camera?.profile || 'dynamic';
-  const selectedCameraProfile = cameraProfile === 'isometric' ? 'dynamic' : cameraProfile;
+  const cameraProfile = clientSettings?.camera?.profile || 'follow45';
+  const selectedCameraProfile = cameraProfile;
   const cameraFov = clientSettings?.camera?.fov ?? 90;
   const cameraSmoothing = Math.round((clientSettings?.camera?.smoothing ?? 0.35) * 100);
   const cameraShake = clientSettings?.camera?.cameraShake ?? true;
@@ -214,7 +214,9 @@ export default function GameOptionsMenu({
 
   // Controls values
   const mouseSensitivity = clientSettings?.controls?.mouseSensitivity ?? 1.0;
+  const mouseLookEnabled = clientSettings?.controls?.mouseLookEnabled ?? true;
   const invertY = clientSettings?.controls?.invertY ?? false;
+  const clickToMove = clientSettings?.gameplay?.clickToMove ?? false;
 
   // Gameplay & Social values
   const showNames = clientSettings?.gameplay?.showNames ?? true;
@@ -815,11 +817,10 @@ export default function GameOptionsMenu({
                 {/* Camera Perspective Mode */}
                 <div className="p-4 rounded-xl bg-[#0a1628]/60 border border-white/10 space-y-3">
                   <span className="text-xs font-bold text-slate-300 block">Perspective Mode</span>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 gap-2">
                     {[
                       { id: 'firstperson', label: 'First Person', desc: 'Mouse-locked view at eye level' },
                       { id: 'follow45', label: 'Third Person', desc: 'Mouse-locked follow camera' },
-                      { id: 'dynamic', label: '2.5D Mode', desc: 'Click to move; scroll in for 3rd and 1st person' },
                     ].map((mode) => {
                       const isSelected = selectedCameraProfile === mode.id;
                       return (
@@ -956,6 +957,19 @@ export default function GameOptionsMenu({
 
                   <label className="flex items-center justify-between text-xs text-slate-200 cursor-pointer pt-2 border-t border-white/10">
                     <div>
+                      <div className="font-bold">Mouse Look</div>
+                      <div className="text-[10px] text-slate-400">Enable camera rotation with mouse movement while locked</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={mouseLookEnabled}
+                      onChange={(e) => patchClientSettings('controls', { mouseLookEnabled: e.target.checked })}
+                      className="accent-amber-400 rounded w-4 h-4 cursor-pointer"
+                    />
+                  </label>
+
+                  <label className="flex items-center justify-between text-xs text-slate-200 cursor-pointer pt-2 border-t border-white/10">
+                    <div>
                       <div className="font-bold">Invert Look Y-Axis</div>
                       <div className="text-[10px] text-slate-400">Invert vertical camera direction</div>
                     </div>
@@ -995,6 +1009,44 @@ export default function GameOptionsMenu({
 
                 {/* Keybindings Reference Table */}
                 <div className="p-4 rounded-xl bg-[#0a1628]/60 border border-white/10 space-y-3">
+                  <label className="flex items-center justify-between text-xs text-slate-200 cursor-pointer">
+                    <div>
+                      <div className="font-bold">Click-to-Move</div>
+                      <div className="text-[10px] text-slate-400">Navigate to ground clicks when enabled</div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={clickToMove}
+                      onChange={(e) => patchClientSettings('gameplay', { clickToMove: e.target.checked })}
+                      className="accent-amber-400 rounded w-4 h-4 cursor-pointer"
+                    />
+                  </label>
+                  <div className="text-xs font-bold text-slate-300 uppercase tracking-wider border-t border-white/10 pt-3">
+                    Hotbar Keys (slots 1–10)
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Array.from({ length: 10 }, (_, index) => {
+                      const action = `hotbar_${index + 1}`;
+                      const key = clientSettings?.controls?.keybinds?.[action] ?? String(index);
+                      return (
+                        <label key={action} className="flex items-center justify-between p-2 rounded-lg bg-black/60 border border-white/10 text-[11px] text-slate-300">
+                          <span>Slot {index + 1}</span>
+                          <input
+                            value={key}
+                            maxLength={24}
+                            aria-label={`Hotbar slot ${index + 1} key`}
+                            onChange={(e) => patchClientSettings('controls', {
+                              keybinds: { ...clientSettings?.controls?.keybinds, [action]: e.target.value },
+                            })}
+                            className="w-10 rounded bg-slate-900 border border-white/20 px-2 py-1 text-center font-mono text-amber-300"
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="p-4 rounded-xl bg-[#0a1628]/60 border border-white/10 space-y-3">
                   <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
                     Core Gameplay Binds
                   </span>
@@ -1002,7 +1054,7 @@ export default function GameOptionsMenu({
                     {[
                       { key: 'W, A, S, D', action: 'Move Character' },
                       { key: 'Space / E', action: 'Interact / Talk with NPCs' },
-                      { key: '1 â€“ 5', action: 'Cast Abilities & Use Potions' },
+                      { key: '0–9', action: 'Hotbar Slots 1–10' },
                       { key: 'Tab', action: 'Target Nearest Enemy' },
                       { key: 'I', action: 'Inventory Backpack' },
                       { key: 'K', action: 'Skills & Progression' },

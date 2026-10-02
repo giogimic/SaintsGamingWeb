@@ -32,7 +32,8 @@ export function GameCanvas() {
     };
   }, []);
 
-  const handleClick = () => {
+  const handleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (event.button !== 0) return;
     if (!canvasRef.current) return;
     const isHudMenuOpen = useHudStore.getState().openWindows.length > 0;
     
@@ -47,12 +48,14 @@ export function GameCanvas() {
       try {
         const style = cameraManager.settings.playerCameraStyle;
         const currentZoom = cameraManager.currentZoom;
+        const mouseLookEnabled = useGameStore.getState().clientSettings.controls.mouseLookEnabled;
         
-        isFirstPersonOrThirdPerson = 
+        isFirstPersonOrThirdPerson = mouseLookEnabled && (
           style === 'firstperson' || 
           style === 'follow45' || 
           style === 'free' || 
-          (style === 'dynamic' && currentZoom < 12.0);
+          (style === 'dynamic' && currentZoom < 12.0)
+        );
       } catch (e) {}
 
       if (isFirstPersonOrThirdPerson) {

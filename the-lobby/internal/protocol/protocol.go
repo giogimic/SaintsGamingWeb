@@ -34,6 +34,8 @@ const (
 	EvEncounterCheck    = "encounter_check"
 	EvBattleSubmit      = "battle_submit_action"
 	EvVoxelEdit         = "voxel_edit"
+	EvBlockHit          = "block_hit"
+	EvGuardState        = "guard_state"
 	
 	EvAdminSaveMap      = "admin_save_map"
 	EvAdminReloadMap    = "admin_reload_map"
@@ -138,6 +140,13 @@ type JoinMapRequest struct {
 	VisualData     string   `json:"visualData"`
 	JoinSeq        uint64   `json:"joinSeq"`
 	Version        int      `json:"version"`
+}
+
+type BlockHitPayload struct {
+	MapID string `json:"mapId"`
+	X     int    `json:"x"`
+	Y     int    `json:"y"`
+	Z     int    `json:"z"`
 }
 
 // PlayerInput matches PlayerInput on the TS wire.

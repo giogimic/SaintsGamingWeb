@@ -1571,10 +1571,20 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
     } else {
       // Spatial Interaction & Targeting in exploration mode
       engine.input.enableTilePicking(
-        (r, c, _layerIdx, eventType, point) => {
+        (r, c, _layerIdx, eventType, point, voxelTarget, pointerButton = 0) => {
           if (eventType && eventType !== 'down') return;
           const currentPos = useGameStore.getState().player?.position;
           if (!currentPos) return;
+
+          if (pointerButton === 0 && voxelTarget?.kind === 'voxel-hit' && voxelTarget.isInsideWorld) {
+            emitSocketEvent?.('block_hit', {
+              mapId: currentMapId,
+              x: voxelTarget.voxelCoord.wx,
+              y: voxelTarget.voxelCoord.wy,
+              z: voxelTarget.voxelCoord.wz,
+            });
+            return;
+          }
 
           const picked = engine.input.pickWorldTarget();
           const dynamicEntities = useGameStore.getState().mapEntities || [];
@@ -1628,6 +1638,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
           }
 
           // Otherwise, ground click / navigation
+          if (!useGameStore.getState().clientSettings.gameplay.clickToMove) return;
           const isWalkable = (x: number, y: number) => {
             const tileId = map.grid[y]?.[x];
             if (logicTiles[tileId]?.isSolid) return false;

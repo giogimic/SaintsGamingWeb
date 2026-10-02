@@ -26,6 +26,8 @@ import { loadAndRetargetAnimation } from '@/engine/animationRetarget';
 import { getCharacterModelProfile } from '@/shared/game/characterProfiles';
 import { applyAnimationProfileFallback } from '@/shared/game/animationProfiles';
 import { selectAnimationGroup } from '@/engine/animationSelection';
+import { getCameraFacingAngle } from '@/shared/game/cameraFacing';
+import { isMovingBackward } from '@/shared/game/locomotionDirection';
 import { attachModularComponent } from '@/engine/helpers/babylonAttachmentHelpers';
 import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 
@@ -49,6 +51,7 @@ interface ManagedSprite {
   targetRotationY: number;
   lastRotationY: number;
   direction?: string;
+  isGuarding?: boolean;
   lastSeen: number;
   modelUrl?: string;
   spriteUrl?: string;
@@ -255,11 +258,17 @@ export class EntityRenderer {
     let localRotationY: number;
     const moveAngle = localMovementSystem.getCurrentMoveAngle();
     const isPointerLocked = typeof document !== 'undefined' && document.pointerLockElement !== null;
+    const isMovingBackwardRelativeToCamera = is3D && moveAngle !== null &&
+      isMovingBackward(moveAngle, cameraManager.yaw);
+    const locomotionAnimationState = isMovingBackwardRelativeToCamera ? 'run_bwd' : undefined;
 
-    if (moveAngle !== null) {
+    if (is3D) {
+      localRotationY = getCameraFacingAngle(cameraManager.yaw);
+      localMovementSystem.setLastFacingAngle(localRotationY);
+    } else if (moveAngle !== null) {
       localRotationY = moveAngle;
     } else if (isPointerLocked || cameraManager.isFirstPerson()) {
-      localRotationY = -(cameraManager.yaw || 0);
+      localRotationY = getCameraFacingAngle(cameraManager.yaw);
       localMovementSystem.setLastFacingAngle(localRotationY);
     } else if (player.rotationY !== undefined) {
       localRotationY = player.rotationY;
@@ -288,7 +297,7 @@ export class EntityRenderer {
       transform: pAssetInfo.transform,
       animations: pAssetInfo.animations,
       isMoving: player.isMoving,
-      animationState: player.animationState,
+      animationState: player.animationState || locomotionAnimationState,
       modularAttachments: pAssetInfo.modularAttachments,
       presentationSignature: pAssetInfo.presentationSignature,
       rotationY: localRotationY,
@@ -352,6 +361,7 @@ export class EntityRenderer {
         transform: rpAssetInfo.transform,
         animations: rpAssetInfo.animations,
         isMoving: rp.isMoving,
+        isGuarding: rp.isGuarding,
         modularAttachments: rpAssetInfo.modularAttachments,
         presentationSignature: rpAssetInfo.presentationSignature,
         rotationY: remoteRotY,
@@ -464,6 +474,7 @@ export class EntityRenderer {
       presentationSignature?: string;
       rotationY?: number;
       direction?: string;
+      isGuarding?: boolean;
     },
     now: number
   ) {
@@ -988,6 +999,7 @@ export class EntityRenderer {
         modelUrl: data.modelUrl,
         spriteUrl: data.spriteUrl,
         presentationSignature: data.presentationSignature,
+        isGuarding: data.isGuarding,
       };
       mesh.rotationQuaternion = null;
       mesh.rotation = new BABYLON.Vector3(0, data.rotationY ?? 0, 0);
@@ -1007,7 +1019,10 @@ export class EntityRenderer {
           if (a !== nextAnim) a.stop();
         });
         if (nextAnim && !nextAnim.isPlaying) {
-          const shouldLoop = data.animationState ? false : (nextAnim.loopAnimation ?? true);
+          const isLocomotionState = /^((run|walk)_(fwd|bwd|left|right)|run|walk)$/.test(data.animationState || '');
+          const shouldLoop = data.animationState && !isLocomotionState
+            ? false
+            : (nextAnim.loopAnimation ?? true);
           nextAnim.play(shouldLoop);
 
           if (data.animationState && !shouldLoop) {
@@ -1064,6 +1079,24 @@ export class EntityRenderer {
     }
     
     sprite.lastSeen = now;
+    if (sprite.isGuarding !== data.isGuarding) {
+      sprite.isGuarding = data.isGuarding;
+      const label = sprite.label as BABYLON.Mesh & { __guardGui?: AdvancedDynamicTexture };
+      let guardGui = label.__guardGui;
+      if (data.isGuarding && !guardGui) {
+        guardGui = AdvancedDynamicTexture.CreateForMesh(label, 256, 64);
+        const text = new TextBlock('guard_indicator');
+        text.text = 'DEFENDING';
+        text.color = '#7dd3fc';
+        text.fontSize = 14;
+        text.fontWeight = 'bold';
+        guardGui.addControl(text);
+        label.__guardGui = guardGui;
+      } else if (!data.isGuarding && guardGui) {
+        guardGui.dispose();
+        delete label.__guardGui;
+      }
+    }
   }
 
   // ── Texture Cache ──────────────────────────────────────────────────────────
