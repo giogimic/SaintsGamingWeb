@@ -110,23 +110,8 @@ function CompositeCharacter({
             validAnims.map((a) => ({ name: a.name || 'Animation', duration: a.duration }))
           );
         } else {
-          // Fallback to GreystoneManny Idle for models without embedded animation tracks (e.g. Brute)
-          loader.load(
-            '/animations/Paragon/GreystoneManny/IdleAO/Idle.glb',
-            (animGltf) => {
-              if (isCancelled) return;
-              const extAnims = (animGltf.animations || []).filter((a) => a.tracks && a.tracks.length > 0);
-              if (extAnims.length > 0) {
-                extAnims[0].name = 'Idle';
-                setAnimations(extAnims);
-                onLoadedAnimations(
-                  extAnims.map((a) => ({ name: a.name || 'Idle', duration: a.duration }))
-                );
-              }
-            },
-            undefined,
-            (animErr) => console.warn('[ArchetypeModelPreview3D] Fallback animation load error:', animErr)
-          );
+          setAnimations([]);
+          onLoadedAnimations([]);
         }
       },
       undefined,

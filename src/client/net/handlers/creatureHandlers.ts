@@ -91,7 +91,15 @@ export function onCreatureHpUpdate(data: CreatureHpUpdatePayload): void {
   const hp = data.hp ?? (data.hpPercent !== undefined ? data.hpPercent : undefined);
   if (hp === undefined) return;
 
-  useWorldStore.getState().updateEntityHp(entityId, hp, data.maxHp);
+  const store = useWorldStore.getState();
+  const ent = store.mapEntities.find(e => e.id === entityId);
+  if (ent && ent.hp !== undefined && hp < ent.hp) {
+    import('../../../engine/sound-synth').then(({ soundSynth }) => {
+      if (soundSynth && soundSynth.playCombatHit) soundSynth.playCombatHit();
+    });
+  }
+
+  store.updateEntityHp(entityId, hp, data.maxHp);
 }
 
 /**

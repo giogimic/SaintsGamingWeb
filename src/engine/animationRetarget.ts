@@ -24,10 +24,10 @@ export function normalizeBoneName(name: string): string {
 // Equivalence groups across common rig standards (Unreal Manny, Mixamo, Biped, Humanoid)
 const BONE_EQUIVALENCE_GROUPS: string[][] = [
   // Pelvis / Hips (primary locomotion & torso pivot)
-  ['pelvis', 'hips', 'hip', 'bip01pelvis'],
+  ['pelvis', 'hips', 'hip', 'bip01pelvis', 'body'], // 'body' is often the root/pelvis in Quaternius rigs
 
   // Root origin
-  ['root', 'armature', 'origin', 'bip01'],
+  ['root', 'armature', 'origin', 'bip01', 'characterarmature'], // 'characterarmature' is the common glTF root for Quaternius
 
   // Spine / Chest / Torso
   ['spine', 'spine01', 'spine1', 'lowerspine', 'spine0', 'abdomenlower'],
@@ -61,7 +61,7 @@ const BONE_EQUIVALENCE_GROUPS: string[][] = [
   // Left Calf / Lower Leg
   ['leftleg', 'calfl', 'lcalf', 'shinl', 'lowerlegl', 'lleg', 'lshinbend'],
   // Left Foot
-  ['leftfoot', 'footl', 'lfoot', 'anklel'],
+  ['leftfoot', 'footl', 'lfoot', 'anklel', 'footl'],
   // Left Toe
   ['lefttoebase', 'balll', 'ltoe', 'toel', 'lefttoe'],
 
@@ -70,7 +70,7 @@ const BONE_EQUIVALENCE_GROUPS: string[][] = [
   // Right Calf / Lower Leg
   ['rightleg', 'calfr', 'rcalf', 'shinr', 'lowerlegr', 'rleg', 'rshinbend'],
   // Right Foot
-  ['rightfoot', 'footr', 'rfoot', 'ankler'],
+  ['rightfoot', 'footr', 'rfoot', 'ankler', 'footr'],
   // Right Toe
   ['righttoebase', 'ballr', 'rtoe', 'toer', 'righttoe'],
 
@@ -158,6 +158,7 @@ export interface RetargetOptions {
   loop?: boolean;
   speed?: number;
   lockRootHorizontalTranslation?: boolean;
+  clipName?: string;
 }
 
 export interface RetargetResult {
@@ -307,7 +308,13 @@ export async function loadAndRetargetAnimation(
       return null;
     }
 
-    const sourceAg = container.animationGroups[0];
+    let sourceAg = container.animationGroups[0];
+    if (options?.clipName) {
+      const found = container.animationGroups.find(ag => ag.name === options.clipName);
+      if (found) {
+        sourceAg = found;
+      }
+    }
     const retargetResult = retargetAnimationGroup(sourceAg, slotName, targetNodes, scene, options);
 
     // Clean up container resources completely so only the new retargeted AnimationGroup remains

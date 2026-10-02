@@ -532,10 +532,7 @@ export function FeedVideoPlayer({
     } else if (e.key === "p" || e.key === "P") {
       e.preventDefault();
       handleTogglePiP(e as any);
-    } else if (e.key === "Tab") {
-      e.preventDefault();
-      useAppStore.getState().toggleBars();
-    }
+
   };
 
   if (hasError) {

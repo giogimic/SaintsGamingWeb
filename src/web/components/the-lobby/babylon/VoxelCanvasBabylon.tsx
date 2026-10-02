@@ -712,7 +712,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             maxHp: freshPlayer.maxHp,
             presentation: getWorldModelPresentation(freshPlayer.visualData)
               || getWorldModelPresentation(freshPlayer.assetProfileId)
-              || getWorldModelPresentation('brute')
+
           });
           babylonEngine.setEntityVisible('player_main', true);
 
@@ -849,7 +849,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             maxHp: other.maxHp,
             presentation: getWorldModelPresentation((other as any).visualData)
               || getWorldModelPresentation((other as any).assetProfileId)
-              || getWorldModelPresentation('brute')
+
           });
         }
       }
@@ -1287,10 +1287,9 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
       markDirty: () => useEditorStore.getState().markMapDirty(),
     };
 
-      let cleanupPan = () => {};
+      let cleanupPan = engine.input.startKeyboardCameraControl() || (() => {});
 
       if (isDevEditorOpen) {
-        cleanupPan = engine.input.startEditorKeyboardPan() || (() => {});
         engine.input.enableTilePicking((r, c, _, eventType, point, voxelTarget) => {
           const map = useGameStore.getState().activeMapData || activeMap;
           const store = useEditorStore.getState();

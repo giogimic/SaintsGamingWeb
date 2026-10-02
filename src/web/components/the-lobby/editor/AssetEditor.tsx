@@ -613,10 +613,13 @@ export default function AssetEditor({
                   className="bg-black/70 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-amber-400 cursor-pointer"
                 >
                   <option value="ALL">All Types</option>
-                  <option value="SPRITE">Characters & Sprites</option>
+                  <option value="SPRITE">2D Sprites</option>
+                  <option value="CHARACTER">3D Characters</option>
+                  <option value="MODEL">3D Models & Modular Parts</option>
                   <option value="CREATURE">Creatures & Monsters</option>
                   <option value="TILE">Tilesets & Terrain</option>
-                  <option value="ITEM">Items & UI Icons</option>
+                  <option value="ITEM">Weapons, Props & Items</option>
+                  <option value="ANIMATION">Animations</option>
                   <option value="AUDIO">Audio & SFX</option>
                   <option value="UI">UI Elements</option>
                 </select>

@@ -39,7 +39,7 @@ const EMPTY_NPC: NpcDefState = {
   description: '',
   componentsData: {
     identity: { slug: '', name: '' },
-    appearance: { assetProfileId: '3D Model', assetId: 'brute', scale: 0.8 },
+    appearance: { assetProfileId: '3D Model', assetId: '', scale: 1 },
     capabilities: {
       shopkeeper: false,
       banker: false,
@@ -266,7 +266,7 @@ export function NpcEditorPanel() {
     if (app && app.assetId) {
       return { type: (app.assetProfileId || '3D Model') as any, assetId: app.assetId, scale: app.scale ?? 0.8 };
     }
-    return { type: '3D Model', assetId: 'brute', scale: 0.8 };
+    return { type: '3D Model', assetId: '', scale: 1 };
   };
 
   const handleWorldModelChange = (val: WorldModelValue) => {

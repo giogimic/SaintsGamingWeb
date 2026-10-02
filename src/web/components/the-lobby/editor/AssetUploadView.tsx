@@ -124,7 +124,7 @@ function getModelRoleInfo(asset: GameAssetItem) {
     (asset.categories || []).some((c) => /character|npc|archetype/i.test(c))
   );
   const slotName = asset.componentCategory || asset.metadata?.componentCategory || asset.metadata?.cat;
-  const setName = asset.metadata?.modularSetName || asset.metadata?.assetDefinition?.modularSetName || (asset.tags || []).find((t) => ['citizen', 'brute', 'adventurer', 'golem', 'samurai', 'school girl'].includes(t.toLowerCase()));
+  const setName = asset.metadata?.modularSetName || asset.metadata?.assetDefinition?.modularSetName;
 
   return {
     is3D,
@@ -234,12 +234,30 @@ export function AssetUploadView({
     const requestId = ++libraryRequestId.current;
     setIsLoadingLibrary(true);
     try {
-      const typeFilter = activeAssetPicker?.filterType || (libraryCategoryFilter === '2D' ? 'CHARACTER' : 'MODEL');
+      let typeFilter = 'MODEL';
+      if (activeAssetPicker?.filterType) {
+        typeFilter = activeAssetPicker.filterType;
+      } else {
+        if (libraryCategoryFilter === '2D' || libraryCategoryFilter === 'CHARACTERS') typeFilter = 'CHARACTER';
+        else if (libraryCategoryFilter === 'CREATURES' || libraryCategoryFilter === 'MONSTERS') typeFilter = 'CREATURE';
+        else if (libraryCategoryFilter === 'WEAPONS' || libraryCategoryFilter === 'PROPS') typeFilter = 'ITEM';
+        // 'MODULAR' and 'ALL' default to 'MODEL' but we'll apply tag/category filters below
+      }
+
+      let tagsFilter: string[] | undefined = undefined;
+      if (!activeAssetPicker?.filterType) {
+        if (libraryCategoryFilter === 'MODULAR') tagsFilter = ['modular'];
+        else if (libraryCategoryFilter === 'WEAPONS') tagsFilter = ['weapon'];
+        else if (libraryCategoryFilter === 'PROPS') tagsFilter = ['prop'];
+        else if (libraryCategoryFilter === 'MONSTERS') tagsFilter = ['monster'];
+      }
+
       const manager = AssetManager.getInstance();
       const res = await manager.searchAssets(
         {
-          type: typeFilter as any,
+          type: typeFilter === 'ALL' ? undefined : (typeFilter as any),
           query: searchQuery || undefined,
+          tags: tagsFilter,
         },
         0,
         100
@@ -834,7 +852,7 @@ export function AssetUploadView({
                     <span className="font-bold text-xs text-emerald-300">Modular Base Body</span>
                   </div>
                   <p className="text-[10px] text-slate-400 leading-tight">
-                    Reference base mesh (e.g. Brute, Citizen) meant to mount modular wardrobe & armor.
+                    Reference base mesh meant to mount modular wardrobe & armor.
                   </p>
                 </button>
 

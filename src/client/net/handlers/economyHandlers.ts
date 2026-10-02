@@ -28,6 +28,15 @@ export function onSyncCredits(data: SyncCreditsPayload): void {
  * Server syncs our HP.
  */
 export function onSyncHp(data: SyncHpPayload): void {
+  const store = usePlayerStore.getState();
+  const oldHp = store.player.hp;
+  
+  if (oldHp !== undefined && data.hp < oldHp) {
+    import('../../../engine/sound-synth').then(({ soundSynth }) => {
+      if (soundSynth && soundSynth.playCombatHit) soundSynth.playCombatHit();
+    });
+  }
+
   usePlayerStore.setState((s) => {
     s.player.hp = data.hp;
     if (data.maxHp !== undefined) s.player.maxHp = data.maxHp;

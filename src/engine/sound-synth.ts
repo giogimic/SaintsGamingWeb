@@ -292,6 +292,60 @@ class SoundSynthEngine {
       // Ignore audio errors
     }
   }
+
+  // Play Footstep Sound
+  public playFootstepSound() {
+    if (!this.canPlaySound('footstep', 250)) return;
+    try {
+      const ctx = this.getContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(100, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(30, ctx.currentTime + 0.05);
+
+      filter.type = 'lowpass';
+      filter.frequency.value = 300;
+
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.05);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.05);
+    } catch {
+      // Ignore
+    }
+  }
+
+  // Play Jump Grunt / Woosh Sound
+  public playJumpSound() {
+    try {
+      const ctx = this.getContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.linearRampToValueAtTime(300, ctx.currentTime + 0.15);
+
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.15);
+    } catch {
+      // Ignore
+    }
+  }
 }
 
 export const soundSynth = new SoundSynthEngine();

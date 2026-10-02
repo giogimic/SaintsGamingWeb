@@ -108,6 +108,10 @@
     "unrs-resolver"
   ],
   "devDependencies": {
+    "@gltf-transform/cli": "^4.5.1",
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
     "@tailwindcss/postcss": "^4",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^7.0.1",

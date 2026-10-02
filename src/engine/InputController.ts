@@ -188,9 +188,8 @@ public panEditorCameraByScreenDelta(dxPx: number, dyPx: number) {
     this.engine.renderer.cameraSnapped = true;
   }
 
-public startEditorKeyboardPan() {
+public startKeyboardCameraControl() {
     const onKeyDown = (e: KeyboardEvent) => {
-      if (!this.engine.editorCameraMode) return;
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       const code = e.code;
@@ -201,7 +200,7 @@ public startEditorKeyboardPan() {
           return;
         }
         this.editorPanKeysHeld.add(code);
-        this.startEditorPanLoop();
+        this.startKeyboardCameraLoop();
       }
     };
     const onKeyUp = (e: KeyboardEvent) => {
@@ -225,7 +224,7 @@ public startEditorKeyboardPan() {
     };
   }
 
-public startEditorPanLoop() {
+  public startKeyboardCameraLoop() {
     if (this.editorPanAnimFrameId !== null) return;
     let lastTime = performance.now();
     const loop = (now: number) => {
@@ -235,21 +234,38 @@ public startEditorPanLoop() {
         this.editorPanAnimFrameId = null;
         return;
       }
-      // Pan speed scales with current zoom level.
-      const ortho = this.engine.renderer.camera.orthoTop || 10;
-      const speed = ortho * 1.2 * dt;
-      let dx = 0;
-      let dz = 0;
-      if (this.editorPanKeysHeld.has('KeyW') || this.editorPanKeysHeld.has('ArrowUp')) dz += speed;
-      if (this.editorPanKeysHeld.has('KeyS') || this.editorPanKeysHeld.has('ArrowDown')) dz -= speed;
-      if (this.editorPanKeysHeld.has('KeyA') || this.editorPanKeysHeld.has('ArrowLeft')) dx -= speed;
-      if (this.editorPanKeysHeld.has('KeyD') || this.editorPanKeysHeld.has('ArrowRight')) dx += speed;
-      if (dx !== 0 || dz !== 0) {
-        this.engine.renderer.cameraTargetX += dx;
-        this.engine.renderer.cameraTargetZ += dz;
-        this.engine.renderer.camera.position = new Vector3(this.engine.renderer.cameraTargetX, 14, this.engine.renderer.cameraTargetZ - 14);
-        this.engine.renderer.camera.setTarget(new Vector3(this.engine.renderer.cameraTargetX, 0, this.engine.renderer.cameraTargetZ));
-        this.engine.renderer.cameraSnapped = true;
+
+      if (this.engine.editorCameraMode) {
+        // Pan speed scales with current zoom level.
+        const ortho = this.engine.renderer.camera.orthoTop || 10;
+        const speed = ortho * 1.2 * dt;
+        let dx = 0;
+        let dz = 0;
+        if (this.editorPanKeysHeld.has('KeyW') || this.editorPanKeysHeld.has('ArrowUp')) dz += speed;
+        if (this.editorPanKeysHeld.has('KeyS') || this.editorPanKeysHeld.has('ArrowDown')) dz -= speed;
+        if (this.editorPanKeysHeld.has('KeyA') || this.editorPanKeysHeld.has('ArrowLeft')) dx -= speed;
+        if (this.editorPanKeysHeld.has('KeyD') || this.editorPanKeysHeld.has('ArrowRight')) dx += speed;
+        if (dx !== 0 || dz !== 0) {
+          this.engine.renderer.cameraTargetX += dx;
+          this.engine.renderer.cameraTargetZ += dz;
+          this.engine.renderer.camera.position = new BABYLON.Vector3(this.engine.renderer.cameraTargetX, 14, this.engine.renderer.cameraTargetZ - 14);
+          this.engine.renderer.camera.setTarget(new BABYLON.Vector3(this.engine.renderer.cameraTargetX, 0, this.engine.renderer.cameraTargetZ));
+          this.engine.renderer.cameraSnapped = true;
+        }
+      } else {
+        // Gameplay camera rotation via arrow keys
+        let kbDeltaX = 0;
+        let kbDeltaY = 0;
+        // Px per second equivalent to align with mouse rotateCamera pixel deltas
+        const kbSens = 1500.0 * dt; 
+        if (this.editorPanKeysHeld.has('ArrowLeft')) kbDeltaX -= kbSens;
+        if (this.editorPanKeysHeld.has('ArrowRight')) kbDeltaX += kbSens;
+        if (this.editorPanKeysHeld.has('ArrowUp')) kbDeltaY -= kbSens;
+        if (this.editorPanKeysHeld.has('ArrowDown')) kbDeltaY += kbSens;
+        
+        if (kbDeltaX !== 0 || kbDeltaY !== 0) {
+          this.engine.renderer.rotateCamera(-kbDeltaX, -kbDeltaY);
+        }
       }
       this.editorPanAnimFrameId = requestAnimationFrame(loop);
     };

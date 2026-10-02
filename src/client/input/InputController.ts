@@ -34,6 +34,37 @@ export class InputController {
       }
     }
 
+    if (inputManager.consumeKey(KEYBINDS.ATTACK)) {
+      // Play Action/Combat sound locally
+      import('../../engine/sound-synth').then(({ soundSynth }) => {
+        if (soundSynth && soundSynth.playActionSound) {
+          soundSynth.playActionSound();
+        }
+      });
+      
+      // Dispatch MMO Combat/Attack Input Packet
+      Promise.all([
+        import('../net/SocketManager'),
+        import('../state/useMultiplayerStore'),
+        import('../state/usePlayerStore')
+      ]).then(([{ socketManager }, { useMultiplayerStore }, { usePlayerStore }]) => {
+        const playerPos = usePlayerStore.getState().player.position;
+        const playerDir = usePlayerStore.getState().player.direction;
+        if (playerPos) {
+          const seq = useMultiplayerStore.getState().incrementMoveSeq();
+          socketManager.emit('input' as any, {
+            type: 'ATTACK',
+            sequence: seq,
+            x: playerPos.x,
+            y: playerPos.y,
+            z: playerPos.z,
+            direction: playerDir,
+            timestamp: Date.now()
+          });
+        }
+      });
+    }
+
     // Camera rotation is now handled directly by CameraManager's update loop
     // Clear delta if we aren't using it to prevent buildup when unlocked
     if (!document.pointerLockElement) {

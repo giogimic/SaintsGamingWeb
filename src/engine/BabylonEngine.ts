@@ -4611,6 +4611,7 @@ export class BabylonEngine {
                       loop: mapping.loop !== false,
                       speed: mapping.speed,
                       lockRootHorizontalTranslation: mapping.lockRootHorizontalTranslation ?? isLocomotionSlot,
+                      clipName: mapping.clip,
                     }
                   ).then((retargetedAg) => {
                     if (!retargetedAg) return;

@@ -89,12 +89,7 @@ export class InputManager {
   private onKeyDown = (e: KeyboardEvent) => {
     // Ignore input if focused on an input/textarea (like chat)
     const target = e.target as HTMLElement | null;
-    if (
-      target?.tagName === 'INPUT' ||
-      target?.tagName === 'TEXTAREA' ||
-      target?.tagName === 'SELECT' ||
-      target?.isContentEditable
-    ) {
+    if (target?.closest?.('input, textarea, select, [contenteditable="true"]')) {
       return;
     }
     this.keys[e.key.toLowerCase()] = true;

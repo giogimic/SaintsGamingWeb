@@ -367,10 +367,7 @@ export function ShortsViewerModal({
             videoRef.current.requestPictureInPicture().catch(() => {});
           }
         }
-      } else if (e.key === "Tab") {
-        e.preventDefault();
-        useAppStore.getState().toggleBars();
-      }
+
     };
 
     window.addEventListener("keydown", handleKeyDown);

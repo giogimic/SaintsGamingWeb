@@ -124,7 +124,7 @@ export function CreatureDefEditorPanel() {
       starterLevel: 5,
       isWildSpawn: true,
       isActive: true,
-      spriteOverworld: JSON.stringify({ worldModel: { type: '3D Model', assetId: 'brute', scale: 0.8 } }),
+      spriteOverworld: JSON.stringify({ worldModel: { type: '3D Model', assetId: '', scale: 1 } }),
     };
     setSelected(null);
     setForm(newCreature);
@@ -147,7 +147,7 @@ export function CreatureDefEditorPanel() {
       ...form,
       gameId: activeGameId,
       category: 'beast',
-      spriteOverworld: form.spriteOverworld || JSON.stringify({ worldModel: { type: '3D Model', assetId: 'brute', scale: 0.8 } }),
+      spriteOverworld: form.spriteOverworld || JSON.stringify({ worldModel: { type: '3D Model', assetId: '', scale: 1 } }),
     };
 
     const res = await upsertCreatureDef(payload);
@@ -207,7 +207,7 @@ export function CreatureDefEditorPanel() {
       const parsed = JSON.parse(form.spriteOverworld || '{}');
       if (parsed.worldModel) return parsed.worldModel;
     } catch {}
-    return { type: '3D Model', assetId: form.spriteOverworld || 'brute', scale: 0.8 };
+    return { type: '3D Model', assetId: form.spriteOverworld || '', scale: 1 };
   };
 
   const handleWorldModelChange = (val: WorldModelValue) => {

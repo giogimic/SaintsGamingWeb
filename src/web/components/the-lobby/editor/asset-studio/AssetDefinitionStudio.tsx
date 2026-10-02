@@ -562,6 +562,39 @@ export function AssetDefinitionStudio({
 
   const [animationProfileId, setAnimationProfileId] = useState<string>('');
 
+  // ── Dynamic Animation Assets ───────────────────────────────────────
+  const [dbAnimationAssets, setDbAnimationAssets] = useState<any[]>([]);
+  useEffect(() => {
+    AssetManager.searchAssets({ type: 'ANIMATION', limit: 100 })
+      .then(res => setDbAnimationAssets(res.items))
+      .catch(console.error);
+  }, []);
+
+  const dynamicProfiles = useMemo(() => {
+    return dbAnimationAssets.map(asset => {
+      const catAnims = asset.presentation?.categorizedAnimations || [];
+      const slotMap: Partial<Record<AnimationSlot, { clip: string, loop: boolean }>> = {};
+      catAnims.forEach((anim: any) => {
+         (anim.suggestedSlots || []).forEach((slot: string) => {
+            if (!slotMap[slot as AnimationSlot]) slotMap[slot as AnimationSlot] = { clip: anim.clipName, loop: true };
+         });
+      });
+      return {
+        id: `asset_${asset.id}`,
+        displayName: asset.name,
+        basePath: '', 
+        slotMap,
+        availableClips: catAnims.map((c: any) => c.clipName),
+        asset,
+      };
+    });
+  }, [dbAnimationAssets]);
+
+  const getCombinedProfile = (id: string) => {
+    if (id?.startsWith('asset_')) return dynamicProfiles.find(p => p.id === id);
+    return getAnimationProfile(id);
+  };
+
   // Model Transform
   const [modelScale, setModelScale] = useState<number>(0.8);
   const [modelRotationY, setModelRotationY] = useState<number>(0);
@@ -602,10 +635,27 @@ export function AssetDefinitionStudio({
   }, [roles, boneMap, attachments, animMap, materialConfig, additionalItems, animationProfileId]);
 
   // One browser catalog combines embedded model clips with clips referenced by every set.
-  const animationChoices = useMemo(
-    () => buildAnimationClipCatalog(parsedGLB?.animations || []),
-    [parsedGLB],
-  );
+  const animationChoices = useMemo(() => {
+    const choices = buildAnimationClipCatalog(parsedGLB?.animations || []);
+    
+    dynamicProfiles.forEach(profile => {
+      profile.asset.presentation?.categorizedAnimations?.forEach((catAnim: any) => {
+        choices.push({
+          id: animationSetChoiceId(profile.id, catAnim.clipName),
+          clip: catAnim.clipName,
+          sourceKind: 'animation-set',
+          sourceId: profile.id,
+          sourceLabel: profile.displayName,
+          sourcePath: profile.asset.sourceUrl, // The full GLB file!
+          rigFamily: profile.asset.presentation?.rigAnalysis?.family || 'unknown',
+          slots: catAnim.suggestedSlots || [],
+          loop: true,
+        });
+      });
+    });
+
+    return choices;
+  }, [parsedGLB, dynamicProfiles]);
   const animationChoiceById = useMemo(
     () => new Map(animationChoices.map((choice) => [choice.id, choice])),
     [animationChoices],
@@ -625,7 +675,7 @@ export function AssetDefinitionStudio({
   // Handle automatic prepopulation of animation map based on selected profile
   useEffect(() => {
     if (animationProfileId) {
-      const profile = getAnimationProfile(animationProfileId);
+      const profile = getCombinedProfile(animationProfileId);
       if (profile) {
         const newMap = { ...animMap };
         let changed = false;
@@ -853,7 +903,7 @@ export function AssetDefinitionStudio({
         setAnimationProfileId(recommendedProfileId);
         setActiveAnimationIndex(parsed.rawAnimations.length > 0 ? 0 : undefined);
         if (recommendedProfileId) {
-          showToast?.(`No embedded clips found. Assigned the ${getAnimationProfile(recommendedProfileId)?.displayName || 'compatible'} humanoid animation set.`);
+          showToast?.(`No embedded clips found. Assigned the ${getCombinedProfile(recommendedProfileId)?.displayName || 'compatible'} humanoid animation set.`);
         }
         
         // Auto-materials
@@ -980,7 +1030,16 @@ export function AssetDefinitionStudio({
       const formData = new FormData();
       formData.append('file', uploadFile);
       formData.append('name', assetName);
-      formData.append('type', 'MODEL');
+
+      let finalType = 'MODEL';
+      if (intentHint === 'weapon' || intentHint === 'prop') {
+        finalType = 'ITEM';
+      } else if (intentHint === 'creature' || intentHint === 'monster' || intentHint === 'creature_monster') {
+        finalType = 'CREATURE';
+      } else if (intentHint === 'complete_character' || intentHint === 'modular_base') {
+        finalType = 'CHARACTER';
+      }
+      formData.append('type', finalType);
       formData.append('createUsable', 'true');
       formData.append('visibility', visibility);
       formData.append('characterPresentationType', '3D_MODEL');
@@ -1753,7 +1812,7 @@ export function AssetDefinitionStudio({
                     value={animationProfileId} 
                     onChange={e => {
                       const nextProfileId = e.target.value;
-                      const nextProfile = getAnimationProfile(nextProfileId);
+                      const nextProfile = getCombinedProfile(nextProfileId);
                       setAnimationProfileId(nextProfileId);
                       if (!nextProfile) return;
 
@@ -1775,6 +1834,9 @@ export function AssetDefinitionStudio({
                     <option value="">Browse all sets / assign manually</option>
                     {ANIMATION_PROFILES.map(profile => (
                       <option key={profile.id} value={profile.id} disabled={!canUseHumanoidAnimationProfiles}>{profile.displayName} · Humanoid (Manny) rig</option>
+                    ))}
+                    {dynamicProfiles.map(profile => (
+                      <option key={profile.id} value={profile.id}>{profile.displayName} (Uploaded Library)</option>
                     ))}
                   </select>
                   <div className="text-[9px] text-slate-500 mt-1">
@@ -2171,7 +2233,7 @@ export function AssetDefinitionStudio({
 
                 {animationProfileId && (
                   <div className="rounded border border-sky-700/50 bg-sky-950/25 px-3 py-2 text-[10px] text-sky-200 flex flex-wrap items-center gap-2">
-                    <strong>Animation profile: {getAnimationProfile(animationProfileId)?.displayName || animationProfileId}</strong>
+                    <strong>Animation profile: {getCombinedProfile(animationProfileId)?.displayName || animationProfileId}</strong>
                     <span>· Humanoid (Manny) rig · {Object.values(animMap).filter(Boolean).length} actions assigned</span>
                   </div>
                 )}
@@ -2274,7 +2336,7 @@ export function AssetDefinitionStudio({
                 {!hasEmbeddedAnimations && (
                   <div className="rounded border border-amber-700/40 bg-amber-950/20 px-3 py-2 text-[10px] text-amber-200">
                     This model has no embedded clips. {animationProfileId
-                      ? `The compatible ${getAnimationProfile(animationProfileId)?.displayName || 'humanoid'} profile and its action slots were assigned automatically.`
+                      ? `The compatible ${getCombinedProfile(animationProfileId)?.displayName || 'humanoid'} profile and its action slots were assigned automatically.`
                       : canUseHumanoidAnimationProfiles
                         ? 'Choose a reusable Humanoid (Manny) profile below or upload companion .fbx/.glb clips.'
                         : 'No registered animation profile matches this model rig. Add clips authored for this rig type.'}

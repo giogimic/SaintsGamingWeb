@@ -35,10 +35,7 @@ function getAssetGroupNames(asset: WardrobeAsset | null, modelAssetId?: string):
   if (modelAssetId) {
     const clean = modelAssetId.toLowerCase().replace(/^.*[\\/]/, '').replace(/\.(glb|gltf|fbx|obj)$/i, '');
     names.add(clean);
-    if (clean.includes('citizen')) names.add('citizen');
-    if (clean.includes('brute')) names.add('brute');
-    if (clean.includes('adventurer')) names.add('adventurer');
-    if (clean.includes('golem')) names.add('golem');
+
   }
   if (asset) {
     const presentation = asset.presentation || asset.metadata?.presentation || {};
@@ -47,10 +44,7 @@ function getAssetGroupNames(asset: WardrobeAsset | null, modelAssetId?: string):
     if (asset.metadata?.modularSetName) names.add(asset.metadata.modularSetName.toLowerCase());
     const name = displayName(asset).toLowerCase();
     names.add(name);
-    if (name.includes('citizen')) names.add('citizen');
-    if (name.includes('brute')) names.add('brute');
-    if (name.includes('adventurer')) names.add('adventurer');
-    if (name.includes('golem')) names.add('golem');
+
   }
   return Array.from(names);
 }

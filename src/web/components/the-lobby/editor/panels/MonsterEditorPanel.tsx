@@ -122,7 +122,7 @@ export function MonsterEditorPanel() {
       combatTempo: 100,
       aggroRadius: 8,
       respawnSec: 60,
-      spriteOverworld: JSON.stringify({ worldModel: { type: '3D Model', assetId: 'brute', scale: 0.8 } }),
+      spriteOverworld: JSON.stringify({ worldModel: { type: '3D Model', assetId: '', scale: 1 } }),
     };
     setSelected(null);
     setForm(newMonster);
@@ -147,7 +147,7 @@ export function MonsterEditorPanel() {
       category: 'monster',
       tag: 'Monster',
       isWildSpawn: form.isWildSpawn ?? true,
-      spriteOverworld: form.spriteOverworld || JSON.stringify({ worldModel: { type: '3D Model', assetId: 'brute', scale: 0.8 } }),
+      spriteOverworld: form.spriteOverworld || JSON.stringify({ worldModel: { type: '3D Model', assetId: '', scale: 1 } }),
     };
 
     const res = await upsertCreatureDef(payload);
@@ -206,7 +206,7 @@ export function MonsterEditorPanel() {
       const parsed = JSON.parse(form.spriteOverworld || '{}');
       if (parsed.worldModel) return parsed.worldModel;
     } catch {}
-    return { type: '3D Model', assetId: form.spriteOverworld || 'brute', scale: 0.8 };
+    return { type: '3D Model', assetId: form.spriteOverworld || '', scale: 1 };
   };
 
   const handleWorldModelChange = (val: WorldModelValue) => {

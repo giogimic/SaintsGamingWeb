@@ -41,54 +41,7 @@ export {
   type CharacterModelProfile,
 };
 
-export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
-  shadow_golem: {
-    id: 'shadow_golem',
-    name: 'Shadow Golem',
-    modelUrl: '/game-assets/models/monsters/shadow_golem/shadow_golem.glb',
-    category: 'character',
-    skeleton: 'creature_custom',
-    defaultAnimationProfileId: 'shadow_golem_native',
-    modularParts: [],
-  },
-  brute: {
-    id: 'brute',
-    name: 'Brute',
-    modelUrl: '/game-assets/models/humanoids/brute/brute.glb',
-    category: 'character',
-    skeleton: 'manny',
-    defaultAnimationProfileId: 'GreystoneManny',
-    modularParts: CHARACTER_MODEL_PROFILES.brute.modularParts,
-  },
-  boy: {
-    id: 'boy',
-    name: 'Stylized Boy',
-    modelUrl: '/game-assets/models/humanoids/boy/boy.glb',
-    category: 'character',
-    skeleton: 'mixamo',
-    defaultAnimationProfileId: 'boy_native',
-    modularParts: [],
-  },
-  girl: {
-    id: 'girl',
-    name: 'Stylized Adventurer Girl',
-    modelUrl: '/game-assets/models/humanoids/girl/girl.glb',
-    category: 'character',
-    skeleton: 'mixamo',
-    defaultAnimationProfileId: 'girl_native',
-    modularParts: [],
-  },
-  asian_girl: {
-    id: 'asian_girl',
-    name: 'Asian Heroine (Modular)',
-    modelUrl: '/game-assets/models/humanoids/asian_girl/asian_girl.glb',
-    category: 'character',
-    skeleton: 'daz_g8f',
-    isPlayable: true,
-    defaultAnimationProfileId: 'GreystoneManny',
-    modularParts: CHARACTER_MODEL_PROFILES.asian_girl.modularParts,
-  },
-};
+export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {};
 
 export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalModelDef | undefined {
   if (!modelIdOrUrl) return undefined;
@@ -96,21 +49,6 @@ export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalMod
   const key = raw.replace(/^.*[\\/]/, '').replace(/\.(glb|gltf|fbx|obj)$/i, '');
   if (CANONICAL_BUILTIN_MODELS[key]) {
     return CANONICAL_BUILTIN_MODELS[key];
-  }
-  if (key.includes('brute')) {
-    return CANONICAL_BUILTIN_MODELS.brute;
-  }
-  if (key.includes('golem')) {
-    return CANONICAL_BUILTIN_MODELS.shadow_golem;
-  }
-  if (key.includes('boy')) {
-    return CANONICAL_BUILTIN_MODELS.boy;
-  }
-  if (key.includes('girl') && !key.includes('asian')) {
-    return CANONICAL_BUILTIN_MODELS.girl;
-  }
-  if (key.includes('asian')) {
-    return CANONICAL_BUILTIN_MODELS.asian_girl;
   }
   return undefined;
 }

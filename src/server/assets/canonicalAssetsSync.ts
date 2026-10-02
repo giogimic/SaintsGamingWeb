@@ -38,186 +38,13 @@ function getBundledFileSize(modelUrl: string, fallback: number): number {
 }
 
 export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
-  const records: CanonicalAssetSeedRecord[] = [];
-
-  // 1. Foundational Full Models
-  const modelEntries = [
-    {
-      def: CANONICAL_BUILTIN_MODELS.brute,
-      tags: ["model", "3d", "character", "manny", "humanoid", "canonical", "bundled", "brute", "warrior", "playable"],
-      categories: ["model", "character"],
-      fileSize: 14379200,
-    },
-    {
-      def: CANONICAL_BUILTIN_MODELS.boy,
-      tags: ["model", "3d", "character", "mixamo", "humanoid", "canonical", "bundled", "boy", "playable"],
-      categories: ["model", "character"],
-      fileSize: 8703180,
-    },
-    {
-      def: CANONICAL_BUILTIN_MODELS.girl,
-      tags: ["model", "3d", "character", "mixamo", "humanoid", "canonical", "bundled", "girl", "adventurer", "playable"],
-      categories: ["model", "character"],
-      fileSize: 7497318,
-    },
-    {
-      def: CANONICAL_BUILTIN_MODELS.asian_girl,
-      tags: ["model", "3d", "character", "daz_g8f", "humanoid", "canonical", "bundled", "asian_girl", "modular", "heroine", "playable"],
-      categories: ["model", "character"],
-      fileSize: 94727392,
-    },
-    {
-      def: CANONICAL_BUILTIN_MODELS.shadow_golem,
-      tags: ["model", "3d", "character", "canonical", "bundled", "shadow_golem", "monster"],
-      categories: ["model", "character", "monster"],
-      fileSize: 4200000,
-    },
-  ];
-
-  for (const { def, tags, categories, fileSize: fallbackSize } of modelEntries) {
-    if (!def) continue;
-    const fileSize = getBundledFileSize(def.modelUrl, fallbackSize);
-    const isPlayable = def.isPlayable ?? (def.category === 'character' && def.skeleton !== 'static');
-    const metadata = {
-      name: def.name,
-      anim: def.defaultAnimationProfileId || undefined,
-      profile: def.category,
-      role: def.category === "monster" ? "monster" : def.category === "prop" ? "prop" : "humanoid",
-      skeleton: def.skeleton,
-      defaultAnimationProfileId: def.defaultAnimationProfileId,
-      embeddedAnimations: def.embeddedAnimations,
-      isModularComponent: false,
-      pack: "canonical-models",
-      isPlayable,
-      showInCharacterCreation: isPlayable,
-      presentation: {
-        mode: "3D",
-        modelUrl: def.modelUrl,
-        animationProfileId: def.defaultAnimationProfileId,
-      },
-    };
-
-    records.push({
-      id: `builtin-model-${def.id}`,
-      gameId: null,
-      type: "MODEL",
-      source: def.modelUrl,
-      atlasSource: null,
-      atlasFrame: null,
-      tags: JSON.stringify(tags),
-      categories: JSON.stringify(def.category === 'prop' ? ['model', 'prop'] : categories),
-      metadata: JSON.stringify(metadata),
-      customLabels: JSON.stringify({ en: def.name, name: def.name }),
-      isActive: true,
-      usageCount: 0,
-      fileSize,
-      cdnUrl: def.modelUrl,
-    });
-  }
-
-  // 2. Modular Wardrobe Pieces
-  const modularSets = [
-    {
-      model: CANONICAL_BUILTIN_MODELS.brute,
-      pack: 'brute-armor',
-      fileSize: 14379200,
-      getSource: () => `/game-assets/models/humanoids/brute/brute.glb`,
-    },
-    {
-      model: CANONICAL_BUILTIN_MODELS.asian_girl,
-      pack: 'asian_girl_outfits',
-      fileSize: 94445640,
-      getSource: () => `/game-assets/models/humanoids/asian_girl/asian_girl.glb`,
-    },
-  ];
-
-  for (const set of modularSets) {
-    if (!set.model?.modularParts) continue;
-    const setName = set.model.id;
-    for (const part of set.model.modularParts) {
-      const partSource = set.getSource();
-      const metadata = {
-        name: part.label,
-        cat: part.category,
-        componentCategory: part.category,
-        isModularComponent: true,
-        isSubmesh: true,
-        defaultVisible: part.defaultVisible,
-        availableInCharacterCreation: true,
-        isFaceVariant: Boolean((part as any).isFaceVariant),
-        skeleton: set.model.skeleton,
-        pack: set.pack,
-        modularSetName: setName,
-        meshName: part.meshName,
-        suppressesSubmeshes: (part as any).suppressesSubmeshes,
-        replacesSubmesh: (part as any).replacesSubmesh,
-        assetDefinition: {
-          modularSetName: setName,
-          meshName: part.meshName,
-          skeleton: set.model.skeleton,
-          suppressesSubmeshes: (part as any).suppressesSubmeshes,
-        },
-        presentation: {
-          mode: '3D',
-          modelUrl: partSource,
-        },
-      };
-
-      records.push({
-        id: `builtin-piece-${part.id}`,
-        gameId: null,
-        type: 'MODEL',
-        source: partSource,
-        atlasSource: null,
-        atlasFrame: null,
-        tags: JSON.stringify(['model', '3d', 'modular', 'character-component', 'canonical', 'bundled', setName, part.category]),
-        categories: JSON.stringify(['model', 'modular', part.category]),
-        metadata: JSON.stringify(metadata),
-        customLabels: JSON.stringify({ en: `${part.label} (${set.model.name})`, name: `${part.label} (${set.model.name})` }),
-        isActive: true,
-        usageCount: 0,
-        fileSize: getBundledFileSize(partSource, set.fileSize),
-        cdnUrl: partSource,
-      });
-    }
-  }
-
-  // Standalone Katana weapon prop
-  records.push({
-    id: 'builtin-piece-katana',
-    gameId: null,
-    type: 'MODEL',
-    source: '/game-assets/models/humanoids/asian_girl/katana.glb',
-    atlasSource: null,
-    atlasFrame: null,
-    tags: JSON.stringify(['model', '3d', 'weapon', 'prop', 'katana', 'asian_girl', 'canonical']),
-    categories: JSON.stringify(['model', 'weapon', 'accessory']),
-    metadata: JSON.stringify({
-      name: 'Katana (Weapon Prop)',
-      cat: 'weapon',
-      componentCategory: 'weapon',
-      isModularComponent: true,
-      defaultVisible: false,
-      socket: 'RightHandMount',
-      presentation: {
-        mode: '3D',
-        modelUrl: '/game-assets/models/humanoids/asian_girl/katana.glb',
-      },
-    }),
-    customLabels: JSON.stringify({ en: 'Katana (Weapon Prop)', name: 'Katana (Weapon Prop)' }),
-    isActive: true,
-    usageCount: 0,
-    fileSize: getBundledFileSize('/game-assets/models/humanoids/asian_girl/katana.glb', 1051180),
-    cdnUrl: '/game-assets/models/humanoids/asian_girl/katana.glb',
-  });
-
-
-
-  return records;
+  return [];
 }
 
 export function buildCanonicalCharacterModelProfiles(): any[] {
   return [
+    /*
+
     {
       id: 'profile-brute',
       slug: 'brute',
@@ -390,6 +217,7 @@ export function buildCanonicalCharacterModelProfiles(): any[] {
       isDefault: false,
       isActive: true,
     },
+    */
   ];
 }
 

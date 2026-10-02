@@ -14,6 +14,7 @@ import { useCombatStore, type BattleState } from '../../state/useCombatStore';
 import { useSessionStore } from '../../state/useSessionStore';
 import { useToastStore } from '../../state/useToastStore';
 import { usePlayerStore } from '../../state/usePlayerStore';
+import { soundSynth } from '../../../engine/sound-synth';
 
 /**
  * Turn-based battle started.
@@ -72,6 +73,18 @@ export function onBattleUpdate(data: BattleUpdatePayload): void {
   };
 
   useCombatStore.getState().setActiveBattle(updated);
+
+  // Determine if a hit occurred (HP went down)
+  const enemyHpNew = updated.wildCreature.hp;
+  const enemyHpOld = current.wildCreature.hp;
+  const playerHpNew = updated.playerCreature.hp;
+  const playerHpOld = current.playerCreature.hp;
+
+  if (enemyHpNew < enemyHpOld || playerHpNew < playerHpOld) {
+    if (soundSynth && soundSynth.playCombatHit) {
+      soundSynth.playCombatHit();
+    }
+  }
 }
 
 /**

@@ -128,6 +128,7 @@ export class GameplayInputController {
     }
 
     if (result.type === 'WARP') {
+      soundSynth.playSelectSound();
       const gate = result.gate;
       let spawnX = targetX;
       let spawnY = targetY;
@@ -263,6 +264,7 @@ export class GameplayInputController {
             store.emitSocketEvent?.('encounter_check', { mapId: currentMapId, x: targetX, y: targetY });
             break;
           case 'OPEN_SHOP':
+            soundSynth.playUiClick();
             store.showToast('Welcome to the Shop!');
             store.setGameMode('SHOP');
             break;
@@ -273,14 +275,17 @@ export class GameplayInputController {
             store.emitSocketEvent?.('fish_attempt', { mapId: currentMapId, x: targetX, y: targetY });
             break;
           case 'BANK':
+            soundSynth.playUiClick();
             store.showToast('Bank Terminal accessed!');
             store.setGameMode('BANK');
             break;
           case 'OPEN_CRAFTING':
+            soundSynth.playUiClick();
             store.showToast('Crafting Station accessed!');
             store.setGameMode('CRAFTING');
             break;
           case 'OPEN_BASE':
+            soundSynth.playUiClick();
             store.showToast('Base Terminal online!');
             store.setGameMode('BASE');
             break;
@@ -323,24 +328,29 @@ export class GameplayInputController {
 
     if (result.type === 'LOGIC_INTERACT') {
       if (result.action === 'BANK') {
+        soundSynth.playUiClick();
         store.showToast('Bank Terminal accessed!');
         store.setGameMode('BANK');
         return;
       }
       if (result.action === 'OPEN_CRAFTING') {
+        soundSynth.playUiClick();
         store.showToast('Opened Crafting Station');
         store.setGameMode('CRAFTING');
         return;
       }
       if (result.action === 'OPEN_SHOP') {
+        soundSynth.playUiClick();
         store.showToast('Opened Shop');
         return;
       }
       if (result.action === 'HEAL') {
+        soundSynth.playSelectSound();
         store.showToast('Healed at Shrine');
         return;
       }
       if (result.action === 'OPEN_BANK') {
+        soundSynth.playUiClick();
         store.showToast('Opened Bank');
         return;
       }
@@ -362,6 +372,7 @@ export class GameplayInputController {
     }
 
     if (result.type === 'NPC_DIALOGUE') {
+      soundSynth.playSelectSound();
       const rawId = String(result.npcId || '');
       const dialogueNpcId = rawId.includes('vance') || rawId.includes('marshal') ? 'npc_marshal_vance' : rawId;
       store.emitSocketEvent?.('npc_interact', { mapId: currentMapId, targetId: dialogueNpcId });
