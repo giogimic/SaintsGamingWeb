@@ -63,7 +63,7 @@ export const ClientSettingsSchema = z.object({
 
   gameplay: z.object({
     autoRun: z.boolean().default(false),
-    clickToMove: z.boolean().default(false),
+    clickToMove: z.boolean().default(true),
     showNames: z.boolean().default(true),
     damageNumbers: z.boolean().default(true),
     showFloatingLoot: z.boolean().default(true),
@@ -124,7 +124,7 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
   },
   gameplay: {
     autoRun: false,
-    clickToMove: false,
+    clickToMove: true,
     showNames: true,
     damageNumbers: true,
     showFloatingLoot: true,

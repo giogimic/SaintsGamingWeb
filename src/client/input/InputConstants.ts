@@ -11,7 +11,7 @@ export let KEYBINDS: Record<string, string[]> = {
   INVENTORY: ['i'],
   SKILLS: ['k'],
   QUESTS: ['j'],
-  ATTACK: ['Click'],
+  ATTACK: ['Mouse0'],
   JUMP: [' '], // Space
   SPRINT: ['Shift'],
 };

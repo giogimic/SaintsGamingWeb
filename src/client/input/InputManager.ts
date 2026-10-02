@@ -88,9 +88,12 @@ export class InputManager {
 
   private onKeyDown = (e: KeyboardEvent) => {
     // Ignore input if focused on an input/textarea (like chat)
+    const target = e.target as HTMLElement | null;
     if (
-      document.activeElement instanceof HTMLInputElement ||
-      document.activeElement instanceof HTMLTextAreaElement
+      target?.tagName === 'INPUT' ||
+      target?.tagName === 'TEXTAREA' ||
+      target?.tagName === 'SELECT' ||
+      target?.isContentEditable
     ) {
       return;
     }
@@ -108,12 +111,25 @@ export class InputManager {
   };
 
   private onMouseDown = (e: MouseEvent) => {
-    // 0 = left click, 2 = right click
-    if (e.button === 0) this.mouseDown = true; 
+    if (e.button === 0) {
+      this.mouseDown = true; 
+      this.keys['mouse0'] = true;
+    } else if (e.button === 1) {
+      this.keys['mouse1'] = true;
+    } else if (e.button === 2) {
+      this.keys['mouse2'] = true;
+    }
   };
 
   private onMouseUp = (e: MouseEvent) => {
-    if (e.button === 0) this.mouseDown = false;
+    if (e.button === 0) {
+      this.mouseDown = false;
+      this.keys['mouse0'] = false;
+    } else if (e.button === 1) {
+      this.keys['mouse1'] = false;
+    } else if (e.button === 2) {
+      this.keys['mouse2'] = false;
+    }
   };
 
   private onContextMenu = (e: MouseEvent) => {

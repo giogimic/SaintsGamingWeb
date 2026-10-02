@@ -39,22 +39,10 @@ export function MainLayoutShell({
     }
   }, [isLobby, setBarsHidden]);
 
-  // Global Tab key toggle to hide/show navigation bars and interface elements
+  // Global ESC key toggle to hide/show navigation bars and interface elements in lobby
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Tab") {
-        const target = e.target as HTMLElement | null;
-        if (
-          target?.tagName === "INPUT" ||
-          target?.tagName === "TEXTAREA" ||
-          target?.tagName === "SELECT" ||
-          target?.isContentEditable
-        ) {
-          return;
-        }
-        e.preventDefault();
-        useAppStore.getState().toggleBars();
-      } else if (e.key === "Escape") {
+      if (e.key === "Escape") {
         // Only toggle bars on ESC if we are in the lobby
         if (pathname?.startsWith('/lobby')) {
            useAppStore.getState().toggleBars();
