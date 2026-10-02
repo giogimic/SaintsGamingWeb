@@ -4240,7 +4240,12 @@ export class BabylonEngine {
             if (result.animationGroups && result.animationGroups.length > 0) {
               result.animationGroups.forEach((ag) => {
                 if (ag.targetedAnimations) {
-                  ag.targetedAnimations = ag.targetedAnimations.filter(ta => ta.target !== root && ta.target.name !== '__root__');
+                  for (let i = ag.targetedAnimations.length - 1; i >= 0; i--) {
+                    const ta = ag.targetedAnimations[i];
+                    if (ta.target === root || ta.target?.name === '__root__') {
+                      ag.targetedAnimations.splice(i, 1);
+                    }
+                  }
                 }
                 if (!ag.targetedAnimations || ag.targetedAnimations.length === 0) {
                   ag.dispose();

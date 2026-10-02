@@ -786,7 +786,7 @@ export class EntityRenderer {
               if (ag.targetedAnimations) {
                 for (let i = ag.targetedAnimations.length - 1; i >= 0; i--) {
                   const ta = ag.targetedAnimations[i];
-                  if (ta.target === root || ta.target?.name === '__root__') {
+                  if (ta.target === result.meshes[0] || ta.target?.name === '__root__') {
                     ag.targetedAnimations.splice(i, 1);
                   }
                 }

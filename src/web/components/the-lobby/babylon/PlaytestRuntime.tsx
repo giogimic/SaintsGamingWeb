@@ -642,7 +642,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
             }),
             animationProfile: playerAnimationProfileRef.current as any,
             presentation: getWorldModelPresentation(freshPlayer.visualData)
-              || getWorldModelPresentation(freshPlayer.assetProfileId)
+              || getWorldModelPresentation(freshPlayer.assetProfileId),
 
             isPlayer: true,
             direction: freshPlayer.direction,
@@ -807,7 +807,7 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
               socketId,
             ) as any,
             presentation: getWorldModelPresentation((other as any).visualData)
-              || getWorldModelPresentation((other as any).assetProfileId)
+              || getWorldModelPresentation((other as any).assetProfileId),
 
             isPlayer: true,
             direction: other.direction,

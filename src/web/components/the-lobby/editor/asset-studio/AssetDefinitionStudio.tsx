@@ -565,8 +565,8 @@ export function AssetDefinitionStudio({
   // ── Dynamic Animation Assets ───────────────────────────────────────
   const [dbAnimationAssets, setDbAnimationAssets] = useState<any[]>([]);
   useEffect(() => {
-    AssetManager.searchAssets({ type: 'ANIMATION', limit: 100 })
-      .then(res => setDbAnimationAssets(res.items))
+    AssetManager.getInstance().searchAssets({ type: 'ANIMATION', limit: 100 })
+      .then((res: any) => setDbAnimationAssets(res.items))
       .catch(console.error);
   }, []);
 

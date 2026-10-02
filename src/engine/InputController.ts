@@ -248,8 +248,8 @@ public startKeyboardCameraControl() {
         if (dx !== 0 || dz !== 0) {
           this.engine.renderer.cameraTargetX += dx;
           this.engine.renderer.cameraTargetZ += dz;
-          this.engine.renderer.camera.position = new BABYLON.Vector3(this.engine.renderer.cameraTargetX, 14, this.engine.renderer.cameraTargetZ - 14);
-          this.engine.renderer.camera.setTarget(new BABYLON.Vector3(this.engine.renderer.cameraTargetX, 0, this.engine.renderer.cameraTargetZ));
+          this.engine.renderer.camera.position = new Vector3(this.engine.renderer.cameraTargetX, 14, this.engine.renderer.cameraTargetZ - 14);
+          this.engine.renderer.camera.setTarget(new Vector3(this.engine.renderer.cameraTargetX, 0, this.engine.renderer.cameraTargetZ));
           this.engine.renderer.cameraSnapped = true;
         }
       } else {
