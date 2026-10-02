@@ -89,6 +89,17 @@ describe('Animation Profiles & World Model Presentation', () => {
     expect(aurora?.slotMap?.run_bwd?.clip).toBe('Jog/Jog_Bwd');
   });
 
+  it('Mocap Mobility uses a continuous forward cycle instead of turn clips for locomotion', () => {
+    const mocap = getAnimationProfile('MocapMobility');
+    expect(mocap?.slotMap.run_fwd?.clip).toBe('01_02_006_jogging');
+    expect(mocap?.slotMap.walk_fwd?.clip).toBe('01_02_006_jogging');
+    expect(mocap?.slotMap.run_bwd).toBeUndefined();
+    expect(mocap?.slotMap.run_left).toBeUndefined();
+    expect(mocap?.slotMap.run_right).toBeUndefined();
+    expect(mocap?.slotMap.walk_left).toBeUndefined();
+    expect(mocap?.slotMap.walk_right).toBeUndefined();
+  });
+
   it('links native Boy and Girl animation profiles to their bundled companion clips', () => {
     expect(getAnimationProfile('boy_native')?.availableClips).toEqual([
       'Breathing Idle', 'Walking', 'Running', 'Sitting',
@@ -100,7 +111,7 @@ describe('Animation Profiles & World Model Presentation', () => {
     ]);
     expect(resolveAnimationUrl('girl_native', 'talk')).toBe('/game-assets/models/humanoids/girl/anims/Talking.glb');
     expect(resolveAnimationUrl('girl_native', 'sit')).toBe('/game-assets/models/humanoids/girl/anims/Sitting%20Idle.glb');
-    expect(CANONICAL_BUILTIN_MODELS.asian_girl.defaultAnimationProfileId).toBeUndefined();
+    expect(CANONICAL_BUILTIN_MODELS.asian_girl.defaultAnimationProfileId).toBe('GreystoneManny');
   });
 
   it('only applies the generic Manny profile to Manny rigs', () => {

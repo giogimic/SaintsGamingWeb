@@ -25,6 +25,7 @@ import { AssetManager } from '@/engine/assets/AssetManager';
 import { loadAndRetargetAnimation } from '@/engine/animationRetarget';
 import { getCharacterModelProfile } from '@/shared/game/characterProfiles';
 import { applyAnimationProfileFallback } from '@/shared/game/animationProfiles';
+import { selectAnimationGroup } from './animationSelection';
 import { attachModularComponent } from '@/engine/helpers/babylonAttachmentHelpers';
 import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 
@@ -811,11 +812,14 @@ export class EntityRenderer {
                   latest.animationGroups.push(ag);
 
                   // Auto-start check: if active movement state matches this slot, or no clip is running
-                  const isMoving = data.isMoving;
-                  const isRunSlot = slot.includes('run') || slot.includes('walk');
-                  const isIdleSlot = slot.includes('idle');
+                  const isMoving = data.isMoving === true;
                   const isExplicitSlot = data.animationState === slot;
-                  const shouldPlay = isExplicitSlot || (!data.animationState && ((isMoving && isRunSlot) || (!isMoving && isIdleSlot) || !latest.animationGroups.some(g => g.isPlaying)));
+                  const selectedAnimation = selectAnimationGroup(
+                    latest.animationGroups,
+                    data.animationState,
+                    isMoving,
+                  );
+                  const shouldPlay = isExplicitSlot || selectedAnimation === ag;
 
                   if (shouldPlay) {
                     latest.animationGroups.forEach(g => { if (g !== ag) g.stop(); });
@@ -836,21 +840,12 @@ export class EntityRenderer {
           }
           
           if (current.animationGroups && current.animationGroups.length > 0) {
-            const isRunClip = (name: string) => /run|walk|jog|sprint|locomotion|move|forward|fwd/i.test(name);
-            const isIdleClip = (name: string) => /idle|stand|wait|breath|rest|still|default/i.test(name);
-            const isActionClip = (name: string) => /attack|hit|punch|slash|cast|shoot|death|die|dead|hurt|damage|jump|fall|climb/i.test(name);
-
-            const targetAnimName = data.isMoving ? "run_fwd" : "idle";
-            const walkAnim = current.animationGroups.find(a => isRunClip(a.name || ''));
-            const idleAnim = current.animationGroups.find(a => isIdleClip(a.name || ''));
-            const nonAction = current.animationGroups.find(a => !isActionClip(a.name || ''));
-
-            let nextAnim = undefined;
-            if (data.isMoving) {
-              nextAnim = walkAnim || (current.animationGroups.length > 1 ? current.animationGroups[1] : nonAction || current.animationGroups[0]);
-            } else {
-              nextAnim = idleAnim || nonAction || current.animationGroups[0];
-            }
+            const targetAnimName = data.animationState || (data.isMoving ? "run_fwd" : "idle");
+            const nextAnim = selectAnimationGroup(
+              current.animationGroups,
+              data.animationState,
+              data.isMoving === true,
+            );
             
             current.animationGroups.forEach(a => a.stop());
             if (nextAnim) {
@@ -1000,24 +995,12 @@ export class EntityRenderer {
     }
     
     if (sprite.animationGroups && sprite.animationGroups.length > 0) {
-      const isRunClip = (name: string) => /run|walk|jog|sprint|locomotion|move|forward|fwd/i.test(name);
-      const isIdleClip = (name: string) => /idle|stand|wait|breath|rest|still|default/i.test(name);
-      const isActionClip = (name: string) => /attack|hit|punch|slash|cast|shoot|death|die|dead|hurt|damage|jump|fall|climb/i.test(name);
-
       const targetAnimName = data.animationState || (data.isMoving ? "run_fwd" : "idle");
-      const walkAnim = sprite.animationGroups.find(a => isRunClip(a.name || ''));
-      const idleAnim = sprite.animationGroups.find(a => isIdleClip(a.name || ''));
-      const nonAction = sprite.animationGroups.find(a => !isActionClip(a.name || ''));
-      const explicitAnim = data.animationState ? sprite.animationGroups.find(a => a.name === data.animationState) : undefined;
-
-      let nextAnim = undefined;
-      if (explicitAnim) {
-        nextAnim = explicitAnim;
-      } else {
-        nextAnim = data.isMoving 
-          ? (walkAnim || (sprite.animationGroups.length > 1 ? sprite.animationGroups[1] : nonAction || sprite.animationGroups[0])) 
-          : (idleAnim || nonAction || sprite.animationGroups[0]);
-      }
+      const nextAnim = selectAnimationGroup(
+        sprite.animationGroups,
+        data.animationState,
+        data.isMoving === true,
+      );
 
       if (sprite.currentAnimationName !== targetAnimName || (nextAnim && !nextAnim.isPlaying)) {
         sprite.animationGroups.forEach(a => {

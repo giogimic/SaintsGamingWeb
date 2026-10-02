@@ -1,3 +1,12 @@
+## [2.2.095] - 2026-10-02
+- **Animation Selection & Locomotion Improvements**:
+  - Extracted modular `selectAnimationGroup` helper into `src/client/engine/animationSelection.ts` with dedicated unit test suite.
+  - Resolved character movement animation glitch where turning/lateral clips were prioritized over forward running and walking cycles.
+  - Refined `EntityRenderer` sprite and humanoid animation group selection to properly handle forward locomotion and idle states.
+  - Updated `MocapMobility` animation profile slot mapping to continuous forward jogging cycles.
+  - Added `.db-shm` and `.db-wal` temporary SQLite files to `.gitignore`.
+- Bumped site version to 2.2.095.
+
 ## [2.2.094] - 2026-10-02
 - **Fix Ambiguous Site Definition in Caddyfile**:
   - Removed duplicate static `go.$DOMAIN` block from the base Caddyfile generation template in `saints.sh`.

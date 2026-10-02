@@ -92,6 +92,8 @@ docker_build.log
 *.db
 *.sqlite
 *.sqlite3
+*.db-shm
+*.db-wal
 
 # Archived / Offline Game Assets
 /.old-assets/

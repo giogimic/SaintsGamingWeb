@@ -110,12 +110,7 @@ export const ANIMATION_PROFILES: AnimationProfile[] = [
     slotMap: {
       idle: { clip: '01_02_001_Start jogging', loop: true }, // Using as fallback idle
       run_fwd: { clip: '01_02_006_jogging', loop: true },
-      run_bwd: { clip: '01_02_003_180 turn jogging', loop: true },
-      run_left: { clip: '01_02_004_90 turn jogging_L', loop: true },
-      run_right: { clip: '01_02_005_90 turn jogging_R', loop: true },
-      walk_fwd: { clip: '01_01_003_180 turn walk', loop: true },
-      walk_left: { clip: '01_01_006_90 turn walk_L', loop: true },
-      walk_right: { clip: '01_01_007_90 turn walk_R', loop: true },
+      walk_fwd: { clip: '01_02_006_jogging', loop: true },
       jump_start: { clip: '01_04_001_Jump', loop: false },
       jump_mid: { clip: '01_04_004_Jump_F', loop: false },
       jump_end: { clip: '01_04_005_Jump_B', loop: false },
