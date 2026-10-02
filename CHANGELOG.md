@@ -1,3 +1,8 @@
+## [2.2.091] - 2026-10-02
+- **Syntax Fix in `saints.sh`**:
+  - Removed orphaned `else` clause at line 967 in `saints.sh` cmd_setup, restoring clean bash execution.
+- Bumped site version to 2.2.091.
+
 ## [2.2.090] - 2026-10-02
 - **Admin Setup Account Creation & Docker Environment Fix**:
   - Fixed root cause where `bash saints.sh setup` failed to create the owner admin account in the database due to unexported `AUTH_SECRET` and redundant `docker-compose.yml` environment overrides blanking the container secret.

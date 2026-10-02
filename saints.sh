@@ -964,11 +964,6 @@ EOF
           echo -e "  Dev proxy:          ./scripts/dev-proxy.sh status"
       fi
       echo -e "============================================================\n"
-  else
-      echo -e "${RED}[!] Server took too long to start. It may still be running migrations.${NC}"
-      echo -e "${YELLOW}    Check: docker logs ${WEB_CONTAINER_NAME}${NC}"
-  fi
-  
 }
 
 cmd_update() {
