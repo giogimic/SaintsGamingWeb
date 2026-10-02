@@ -1,3 +1,10 @@
+## [2.2.088] - 2026-10-01
+- **Caddy Proxy & Go MMO Auto-Configuration**:
+  - Added automatic detection and repair in `saints.sh update` to ensure Caddy reverse-proxy block is generated for the Go MMO subdomain (`go.$DOMAIN -> 127.0.0.1:24011`) if missing from `/etc/caddy/Caddyfile`.
+  - Fixed CLI `saints.sh proxy add` and `remove` to automatically trigger `reload_caddy`.
+  - Ensured `saints.sh update` always runs `docker compose up -d game-server` to propagate port mappings and environment changes immediately.
+- Bumped site version to 2.2.088.
+
 ## [2.2.087] - 2026-10-01
 - **Go MMO Network Binding & Docker Environment Fix**:
   - Fixed Go MMO config to bind directly to `0.0.0.0` by default instead of falling back to system `$HOSTNAME`, preventing connection rejection when reverse proxies (Caddy) connect via `127.0.0.1:24011`.

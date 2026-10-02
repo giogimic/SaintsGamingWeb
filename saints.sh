@@ -1720,19 +1720,32 @@ NETEOF
               echo -e "${GREEN}[✓] Go container running.${NC}\n"
           fi
       else
-          # Ensure Go container is running if configured in docker-compose.yml
+          # Ensure Go container is running and updated to latest config
           if grep -q "game-server:" docker-compose.yml 2>/dev/null; then
-              if ! docker ps --format '{{.Names}}' | grep -q '^saints-gaming-mmo-go$'; then
-                  echo -e "${CYAN}[*] Ensuring Go MMO container is running...${NC}"
-                  docker compose up -d game-server 2>/dev/null || docker start saints-gaming-mmo-go 2>/dev/null || true
-              fi
+              echo -e "${CYAN}[*] Ensuring Go MMO container is running with latest config...${NC}"
+              docker compose up -d game-server 2>/dev/null || docker start saints-gaming-mmo-go 2>/dev/null || true
           fi
       fi
   
+      # Ensure Caddy reverse proxy for Go MMO subdomain if configured in .env
+      if [ -f "/etc/caddy/Caddyfile" ]; then
+          GO_URL=$(grep '^NEXT_PUBLIC_GO_MMO_URL=' .env 2>/dev/null | cut -d= -f2- | tr -d '\r"')
+          if [[ "$GO_URL" =~ ^https?://([^/:]+) ]]; then
+              GO_HOST="${BASH_REMATCH[1]}"
+              SITE_HOST=$(grep '^NEXT_PUBLIC_SITE_URL=' .env 2>/dev/null | sed -E 's|^https?://([^/:]+).*|\1|' | tr -d '\r"')
+              if [ -n "$GO_HOST" ] && [ "$GO_HOST" != "$SITE_HOST" ] && [ "$GO_HOST" != "127.0.0.1" ] && [ "$GO_HOST" != "localhost" ]; then
+                  if ! grep -qF "$GO_HOST" /etc/caddy/Caddyfile 2>/dev/null; then
+                      echo -e "${CYAN}[*] Adding Caddy proxy block for $GO_HOST -> 127.0.0.1:24011...${NC}"
+                      bash "$ROOT/saints.sh" proxy add "$GO_HOST" 127.0.0.1 24011 2>/dev/null || true
+                  fi
+              fi
+          fi
+      fi
+
       # Reload proxies
       if command -v systemctl &>/dev/null; then
           if systemctl is-active --quiet caddy; then sudo systemctl reload caddy 2>/dev/null; fi
-                fi
+      fi
   
   else
       # --- Non-Docker Fallback (PM2 / Direct Node) ---
@@ -2285,9 +2298,11 @@ EOF
         else
           add_proxy "$2" "$3" || exit 1
         fi
+        reload_caddy || true
         ;;
       remove)
         remove_proxy "${2:-}" || exit 1
+        reload_caddy || true
         ;;
       reload)
         reload_caddy || exit 1
