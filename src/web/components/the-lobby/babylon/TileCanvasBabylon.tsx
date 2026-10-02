@@ -1699,12 +1699,14 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
             return;
           }
 
-          const dist = Math.abs(c - currentPos.x) + Math.abs(r - currentPos.y);
+          const curX = Math.round(currentPos.x);
+          const curY = Math.round(currentPos.y);
+          const dist = Math.abs(c - curX) + Math.abs(r - curY);
           if (dist === 1) {
             clearAutoWalk();
             tryMovePlayerTo(c, r);
           } else {
-            const path = findPath(currentPos.x, currentPos.y, c, r, mapWidth, mapHeight, isWalkable);
+            const path = findPath(curX, curY, c, r, mapWidth, mapHeight, isWalkable);
             if (path.length > 0) {
               clearAutoWalk();
               autoWalkPathRef.current = path;
@@ -2242,6 +2244,9 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         className={`block w-full h-full outline-none touch-none ${canvasCursor}`}
         tabIndex={0}
         onClick={(e) => (e.currentTarget as HTMLCanvasElement).focus()}
+        onMouseDown={(e) => {
+          if (e.button === 1) e.preventDefault();
+        }}
         onDragOver={(e) => {
           e.preventDefault();
           e.dataTransfer.dropEffect = 'copy';

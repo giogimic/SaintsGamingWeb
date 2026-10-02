@@ -1127,14 +1127,16 @@ export const PlaytestRuntime: React.FC<PlaytestRuntimeProps> = ({
           return;
         }
 
-        const dist = Math.abs(c - currentPos.x) + Math.abs(r - currentPos.y);
+        const curX = Math.round(currentPos.x);
+        const curY = Math.round(currentPos.y);
+        const dist = Math.abs(c - curX) + Math.abs(r - curY);
         if (dist === 1) {
           clearAutoWalk();
           tryMovePlayerTo(c, r);
         } else {
           const path = findPath(
-            currentPos.x,
-            currentPos.y,
+            curX,
+            curY,
             c,
             r,
             mapWidth,

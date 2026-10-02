@@ -1,3 +1,9 @@
+## [2.2.098] - 2026-10-02
+- **Click To Move & Pointer Lock Fixes**:
+  - Fixed middle-click pointer lock failing to hide the cursor due to browser default auto-scroll overlapping it; added explicit `onMouseDown` `preventDefault()` on canvas.
+  - Fixed click-to-move pathfinding returning empty paths by parsing exact grid integer coordinates from float player positions.
+- Bumped site version to 2.2.098.
+
 ## [2.2.097] - 2026-10-02
 - **Click To Move & 3D Engine Improvements**:
   - Implemented click-to-move pathfinding and visual radar/minimap feedback.
