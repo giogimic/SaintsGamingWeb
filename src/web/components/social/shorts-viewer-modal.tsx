@@ -367,7 +367,7 @@ export function ShortsViewerModal({
             videoRef.current.requestPictureInPicture().catch(() => {});
           }
         }
-
+      }
     };
 
     window.addEventListener("keydown", handleKeyDown);
