@@ -1,3 +1,14 @@
+# 2026-10-02 (2.2.099b)
+- Separated movement and camera keybinds to allow arrow keys to control camera optionally.
+- Implemented arrow-key camera rotation functionality in CameraManager.
+- Added Arrow Keys mapping to GameOptionsMenu HUD.
+
+# 2026-10-02 (2.2.099)
+- Remove global Tab key listener that unintentionally toggled UI bars
+- Unify mouse inputs in InputManager.ts to track all mouse buttons
+- Ensure click-to-move is enabled by default in client settings schema
+- Fix issue with contenteditable focus bleeding into game keybindings
+
 ## [2.2.098] - 2026-10-02
 - **Click To Move & Pointer Lock Fixes**:
   - Fixed middle-click pointer lock failing to hide the cursor due to browser default auto-scroll overlapping it; added explicit `onMouseDown` `preventDefault()` on canvas.

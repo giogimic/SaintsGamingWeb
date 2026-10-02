@@ -2,10 +2,14 @@
  * Default Keybind Constants
  */
 export let KEYBINDS: Record<string, string[]> = {
-  MOVE_UP: ['w', 'ArrowUp'],
-  MOVE_DOWN: ['s', 'ArrowDown'],
-  MOVE_LEFT: ['a', 'ArrowLeft'],
-  MOVE_RIGHT: ['d', 'ArrowRight'],
+  MOVE_UP: ['w'],
+  MOVE_DOWN: ['s'],
+  MOVE_LEFT: ['a'],
+  MOVE_RIGHT: ['d'],
+  CAMERA_UP: ['ArrowUp'],
+  CAMERA_DOWN: ['ArrowDown'],
+  CAMERA_LEFT: ['ArrowLeft'],
+  CAMERA_RIGHT: ['ArrowRight'],
   INTERACT: ['e', 'Enter'],
   MENU: ['Escape'],
   INVENTORY: ['i'],

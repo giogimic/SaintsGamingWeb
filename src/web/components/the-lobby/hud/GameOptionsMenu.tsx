@@ -1124,6 +1124,7 @@ export default function GameOptionsMenu({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {[
                       { key: 'W, A, S, D', action: 'Move Character' },
+                      { key: 'Arrow Keys', action: 'Rotate Camera (Optional)' },
                       { key: 'Space / E', action: 'Interact / Talk with NPCs' },
                       { key: '0–9', action: 'Hotbar Slots 1–10' },
                       { key: 'Tab', action: 'Target Nearest Enemy' },

@@ -17,6 +17,7 @@ import { usePlayerStore } from '../state/usePlayerStore';
 import { useWorldStore } from '../state/useWorldStore';
 import { mapMesher } from './MapMesher';
 import { inputManager } from '../input/InputManager';
+import { KEYBINDS } from '../input/InputConstants';
 import { entityRenderer } from './EntityRenderer';
 
 export type CameraStyle = 'follow45' | 'firstperson';
@@ -340,6 +341,28 @@ export class CameraManager {
       }
     } else {
       inputManager.consumeMouseDelta(); // discard delta when not locked
+    }
+
+    // Handle Keyboard Look
+    const engine = this.scene.getEngine();
+    const dt = engine.getDeltaTime() / 1000.0;
+    
+    let kbDeltaX = 0;
+    let kbDeltaY = 0;
+    const kbSens = 120.0; // Px per second equivalent
+    
+    if (inputManager.isAnyKeyPressed(KEYBINDS.CAMERA_LEFT)) kbDeltaX -= kbSens;
+    if (inputManager.isAnyKeyPressed(KEYBINDS.CAMERA_RIGHT)) kbDeltaX += kbSens;
+    if (inputManager.isAnyKeyPressed(KEYBINDS.CAMERA_UP)) kbDeltaY -= kbSens;
+    if (inputManager.isAnyKeyPressed(KEYBINDS.CAMERA_DOWN)) kbDeltaY += kbSens;
+
+    if (kbDeltaX !== 0 || kbDeltaY !== 0) {
+      const sens = (this.settings.orbitSensitivity || 1.0) * 0.002 * dt * 60.0;
+      this.yaw += kbDeltaX * sens * (this.settings.invertOrbitX ? -1 : 1);
+      
+      this.pitch += kbDeltaY * sens * (this.settings.invertOrbitY ? 1 : -1);
+      this.pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.pitch));
+      this.profile.pitch = this.pitch;
     }
 
     // Follow local player position from store
