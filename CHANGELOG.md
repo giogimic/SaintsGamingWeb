@@ -1,3 +1,10 @@
+## [2.2.086] - 2026-10-01
+- **Go MMO Server Lifecycle & Docker Repair**:
+  - Hardened `saints.sh` update flow to automatically detect if `docker-compose.yml` is missing the `game-server` service and auto-repair it from `docker-compose.base.yml`.
+  - Fixed restart logic in `saints.sh` to target `saints-gaming-mmo-go` (instead of legacy `saints-lobby`) and ensure the container is automatically brought up via `docker compose up -d game-server`.
+  - Added safeguard ensuring that even on fast/quick updates, the Go MMO backend container is always verified to be running.
+- Bumped site version to 2.2.086.
+
 ## [2.2.085] - 2026-10-01
 - **Asset Cleanup & Refactoring**:
   - Removed all bundled citizen and static crowd models from the canonical asset registry and database sync script due to missing skeletons.

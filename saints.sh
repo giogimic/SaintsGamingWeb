@@ -1210,10 +1210,15 @@ cmd_update() {
           UP_PID=$!
           run_with_spinner "Restarting web container" "docker_build.log" "$UP_PID"
           
-          if docker ps -a --format '{{.Names}}' | grep -q '^saints-lobby$'; then
-              ( docker restart saints-lobby >> docker_build.log 2>&1 ) &
+          if docker ps -a --format '{{.Names}}' | grep -qE '^(saints-gaming-mmo-go|saints-lobby)$'; then
+              GO_CN=$(docker ps -a --format '{{.Names}}' | grep -E '^(saints-gaming-mmo-go|saints-lobby)$' | head -n 1)
+              ( docker restart "$GO_CN" >> docker_build.log 2>&1 ) &
               GO_PID=$!
               run_with_spinner "Restarting Go MMO container" "docker_build.log" "$GO_PID"
+          elif grep -q "game-server:" docker-compose.yml 2>/dev/null; then
+              ( docker compose up -d game-server >> docker_build.log 2>&1 ) &
+              GO_PID=$!
+              run_with_spinner "Starting Go MMO container" "docker_build.log" "$GO_PID"
           fi
           
           echo -e "${GREEN}[✓] Docker containers restarted.${NC}"
@@ -1437,6 +1442,9 @@ cmd_update() {
   elif grep -qE "^DATABASE_URL\s*=\s*.*@db(:3306|/)" .env 2>/dev/null && ! grep -q "image: mariadb" docker-compose.yml 2>/dev/null; then
       REBUILD_COMPOSE=1
       echo -e "${YELLOW}[!] docker-compose.yml is missing the 'db' service, but .env requires it. Injecting...${NC}"
+  elif grep -q "game-server:" docker-compose.base.yml 2>/dev/null && ! grep -q "game-server:" docker-compose.yml 2>/dev/null; then
+      REBUILD_COMPOSE=1
+      echo -e "${YELLOW}[!] docker-compose.yml is missing the 'game-server' service. Restoring from base...${NC}"
   fi
   
   if [ "$REBUILD_COMPOSE" -eq 0 ]; then
@@ -1712,11 +1720,11 @@ NETEOF
               echo -e "${GREEN}[✓] Go container running.${NC}\n"
           fi
       else
-          # Ensure Go container is running if it was stopped (e.g., during a wipe)
-          if docker ps -a --format '{{.Names}}' | grep -q '^saints-gaming-mmo-go$'; then
+          # Ensure Go container is running if configured in docker-compose.yml
+          if grep -q "game-server:" docker-compose.yml 2>/dev/null; then
               if ! docker ps --format '{{.Names}}' | grep -q '^saints-gaming-mmo-go$'; then
-                  echo -e "${CYAN}[*] Restarting Go MMO container...${NC}"
-                  docker start saints-gaming-mmo-go >/dev/null 2>&1 || true
+                  echo -e "${CYAN}[*] Ensuring Go MMO container is running...${NC}"
+                  docker compose up -d game-server 2>/dev/null || docker start saints-gaming-mmo-go 2>/dev/null || true
               fi
           fi
       fi
