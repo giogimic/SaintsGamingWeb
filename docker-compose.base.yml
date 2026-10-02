@@ -58,6 +58,8 @@ services:
     env_file:
       - .env
     environment:
+      - GO_MMO_HOST=0.0.0.0
+      - GO_MMO_PORT=24011
       - GO_MMO_DATABASE_URL=file:/app/data/dev.db
       - NEXT_JS_URL=http://web:24001
       - GO_MMO_ADMIN_SECRET=${AUTH_SECRET}

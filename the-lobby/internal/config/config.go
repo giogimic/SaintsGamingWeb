@@ -61,7 +61,10 @@ func getenvBool(key string, fallback bool) bool {
 // Load reads environment. Default listen :24011.
 func Load() Config {
 	port := getenvInt("GO_MMO_PORT", getenvInt("PORT", 24011))
-	host := getenv("GO_MMO_HOST", getenv("HOSTNAME", "0.0.0.0"))
+	host := getenv("GO_MMO_HOST", "0.0.0.0")
+	if host == "" {
+		host = "0.0.0.0"
+	}
 	aoiSize := getenvInt("GO_MMO_AOI_ZONE_SIZE", getenvInt("MMO_AOI_ZONE_SIZE", 64))
 	if aoiSize <= 0 {
 		aoiSize = 64

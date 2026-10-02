@@ -1,3 +1,9 @@
+## [2.2.087] - 2026-10-01
+- **Go MMO Network Binding & Docker Environment Fix**:
+  - Fixed Go MMO config to bind directly to `0.0.0.0` by default instead of falling back to system `$HOSTNAME`, preventing connection rejection when reverse proxies (Caddy) connect via `127.0.0.1:24011`.
+  - Added explicit `GO_MMO_HOST=0.0.0.0` and `GO_MMO_PORT=24011` to `docker-compose.base.yml` and `docker-compose.yml`.
+- Bumped site version to 2.2.087.
+
 ## [2.2.086] - 2026-10-01
 - **Go MMO Server Lifecycle & Docker Repair**:
   - Hardened `saints.sh` update flow to automatically detect if `docker-compose.yml` is missing the `game-server` service and auto-repair it from `docker-compose.base.yml`.
