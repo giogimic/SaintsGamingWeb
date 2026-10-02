@@ -32,7 +32,7 @@ export function onSyncHp(data: SyncHpPayload): void {
   const oldHp = store.player.hp;
   
   if (oldHp !== undefined && data.hp < oldHp) {
-    import('../../../engine/sound-synth').then(({ soundSynth }) => {
+    import('@/engine/sound-synth').then(({ soundSynth }) => {
       if (soundSynth && soundSynth.playCombatHit) soundSynth.playCombatHit();
     });
   }

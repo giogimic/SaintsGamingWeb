@@ -268,7 +268,7 @@ export class LocalMovementSystem {
         if (simulate3DPhysics && inputManager.isAnyKeyPressed(KEYBINDS.JUMP) && this.isGrounded) {
           this.verticalVelocity = 12.0; // Jump force
           this.isGrounded = false;
-          import('../../engine/sound-synth').then(({ soundSynth }) => {
+          import('@/engine/sound-synth').then(({ soundSynth }) => {
             if (soundSynth && soundSynth.playJumpSound) soundSynth.playJumpSound();
           });
         }
@@ -354,7 +354,7 @@ export class LocalMovementSystem {
 
       // Footstep audio cadence
       if (isMoving && (!is3D || this.isGrounded)) {
-        import('../../engine/sound-synth').then(({ soundSynth }) => {
+        import('@/engine/sound-synth').then(({ soundSynth }) => {
           if (soundSynth && soundSynth.playFootstepSound) soundSynth.playFootstepSound();
         });
       }

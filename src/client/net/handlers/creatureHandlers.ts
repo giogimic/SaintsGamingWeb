@@ -94,7 +94,7 @@ export function onCreatureHpUpdate(data: CreatureHpUpdatePayload): void {
   const store = useWorldStore.getState();
   const ent = store.mapEntities.find(e => e.id === entityId);
   if (ent && ent.hp !== undefined && hp < ent.hp) {
-    import('../../../engine/sound-synth').then(({ soundSynth }) => {
+    import('@/engine/sound-synth').then(({ soundSynth }) => {
       if (soundSynth && soundSynth.playCombatHit) soundSynth.playCombatHit();
     });
   }

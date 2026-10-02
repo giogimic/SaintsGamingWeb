@@ -36,7 +36,7 @@ export class InputController {
 
     if (inputManager.consumeKey(KEYBINDS.ATTACK)) {
       // Play Action/Combat sound locally
-      import('../../engine/sound-synth').then(({ soundSynth }) => {
+      import('@/engine/sound-synth').then(({ soundSynth }) => {
         if (soundSynth && soundSynth.playActionSound) {
           soundSynth.playActionSound();
         }

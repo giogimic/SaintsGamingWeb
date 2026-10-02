@@ -14,7 +14,7 @@ import { useCombatStore, type BattleState } from '../../state/useCombatStore';
 import { useSessionStore } from '../../state/useSessionStore';
 import { useToastStore } from '../../state/useToastStore';
 import { usePlayerStore } from '../../state/usePlayerStore';
-import { soundSynth } from '../../../engine/sound-synth';
+import { soundSynth } from '@/engine/sound-synth';
 
 /**
  * Turn-based battle started.
