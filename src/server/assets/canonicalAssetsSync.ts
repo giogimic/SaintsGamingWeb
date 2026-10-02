@@ -67,10 +67,10 @@ export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
       fileSize: 94727392,
     },
     {
-      def: CANONICAL_BUILTIN_MODELS.leoverse,
-      tags: ["model", "3d", "character", "canonical", "bundled", "leoverse", "red_runner_66", "playable"],
-      categories: ["model", "character"],
-      fileSize: 10244792,
+      def: CANONICAL_BUILTIN_MODELS.shadow_golem,
+      tags: ["model", "3d", "character", "canonical", "bundled", "shadow_golem", "monster"],
+      categories: ["model", "character", "monster"],
+      fileSize: 4200000,
     },
   ];
 
