@@ -4239,6 +4239,9 @@ export class BabylonEngine {
 
             if (result.animationGroups && result.animationGroups.length > 0) {
               result.animationGroups.forEach((ag) => {
+                if (ag.targetedAnimations) {
+                  ag.targetedAnimations = ag.targetedAnimations.filter(ta => ta.target !== root && ta.target.name !== '__root__');
+                }
                 if (!ag.targetedAnimations || ag.targetedAnimations.length === 0) {
                   ag.dispose();
                 } else {

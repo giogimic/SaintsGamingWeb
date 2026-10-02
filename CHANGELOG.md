@@ -1,3 +1,6 @@
+# 2026-10-02 (2.2.099d)
+- Fixed 3D GLTF/GLB models (e.g., Stylized Girl) facing the ground when animations play by automatically stripping root node rotations from imported animation groups.
+
 # 2026-10-02 (2.2.099c)
 - Fixed pointer lock behavior when middle clicking so it correctly captures/hides the cursor again.
 

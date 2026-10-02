@@ -782,6 +782,11 @@ export class EntityRenderer {
           }
 
           if (result.animationGroups.length > 0) {
+            result.animationGroups.forEach((ag) => {
+              if (ag.targetedAnimations) {
+                ag.targetedAnimations = ag.targetedAnimations.filter(ta => ta.target !== root && ta.target.name !== '__root__');
+              }
+            });
             current.animationGroups = result.animationGroups.filter(
               (ag) => ag.targetedAnimations && ag.targetedAnimations.length > 0
             );
