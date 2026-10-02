@@ -1,3 +1,10 @@
+## [2.2.092] - 2026-10-02
+- **Caddyfile Safety Validation & Rollback in `saints.sh`**:
+  - Implemented atomic Caddyfile installation with `caddy validate` verification before replacing `/etc/caddy/Caddyfile`.
+  - Added automatic timestamped backups (`/etc/caddy/Caddyfile.bak.<timestamp>`) and fallback rollback if Caddy fails to reload or restart.
+  - Verified bash syntax across all `saints.sh` subcommands (`setup`, `admin`, `proxy`, `update`).
+- Bumped site version to 2.2.092.
+
 ## [2.2.091] - 2026-10-02
 - **Syntax Fix in `saints.sh`**:
   - Removed orphaned `else` clause at line 967 in `saints.sh` cmd_setup, restoring clean bash execution.

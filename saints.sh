@@ -644,7 +644,8 @@ if [ "$EXISTING_CADDY_ADDITIVE" != "1" ]; then
         fi
         SSL_CHOICE="Caddy (Automatic HTTPS)"
         sudo mkdir -p /etc/caddy
-        cat <<CADDYEOF | sudo tee /etc/caddy/Caddyfile
+        TMP_CADDYFILE="$(mktemp)"
+        cat > "$TMP_CADDYFILE" <<CADDYEOF
 $DOMAIN, www.$DOMAIN {
     reverse_proxy 127.0.0.1:$WEB_PORT
 }
@@ -656,6 +657,41 @@ go.$DOMAIN {
 # SAINTS_PROXY_LIST_BEGIN
 # SAINTS_PROXY_LIST_END
 CADDYEOF
+
+        # Ensure managed markers exist in generated file.
+        if ! grep -qF "# SAINTS_PROXY_LIST_BEGIN" "$TMP_CADDYFILE" || ! grep -qF "# SAINTS_PROXY_LIST_END" "$TMP_CADDYFILE"; then
+            echo -e "\033[0;31m[!] Generated Caddyfile missing managed markers; aborting.\033[0m"
+            rm -f "$TMP_CADDYFILE"
+        else
+            # Validate config if caddy is available
+            if command -v caddy &>/dev/null; then
+                if ! sudo caddy validate --config "$TMP_CADDYFILE" >/dev/null 2>&1; then
+                    echo -e "\033[0;31m[!] Caddy config validation failed. New Caddyfile will NOT be installed.\033[0m"
+                    echo "Run: sudo caddy validate --config $TMP_CADDYFILE" >&2
+                    rm -f "$TMP_CADDYFILE"
+                else
+                    # Backup existing Caddyfile if present
+                    if [ -f /etc/caddy/Caddyfile ]; then
+                        sudo cp /etc/caddy/Caddyfile /etc/caddy/Caddyfile.bak.$(date +%Y%m%d%H%M%S) || true
+                    fi
+                    # Install new Caddyfile
+                    if sudo cp "$TMP_CADDYFILE" /etc/caddy/Caddyfile; then
+                        rm -f "$TMP_CADDYFILE"
+                    else
+                        echo -e "\033[0;31m[!] Failed to write /etc/caddy/Caddyfile.\033[0m"
+                        rm -f "$TMP_CADDYFILE"
+                    fi
+                fi
+            else
+                # No caddy binary present locally; still install the file and attempt to start the service.
+                if sudo cp "$TMP_CADDYFILE" /etc/caddy/Caddyfile; then
+                    rm -f "$TMP_CADDYFILE"
+                else
+                    echo -e "\033[0;31m[!] Failed to write /etc/caddy/Caddyfile (no caddy binary to validate).\033[0m"
+                    rm -f "$TMP_CADDYFILE"
+                fi
+            fi
+        fi
         # Configure firewall (Debian / Linux UFW)
         if command -v ufw &>/dev/null && sudo ufw status 2>/dev/null | grep -q "Status: active"; then
             echo -e "${CYAN}[*] Configuring UFW firewall rules for web & Go MMO...${NC}"
@@ -667,10 +703,18 @@ CADDYEOF
 
         sudo systemctl unmask caddy 2>/dev/null || true
         sudo systemctl enable caddy 2>/dev/null || true
-        sudo systemctl restart caddy || sudo systemctl start caddy || {
-            echo -e "\033[0;31m[!] Failed to start Caddy. Please check 'systemctl status caddy'.\033[0m"
+        if ! sudo systemctl restart caddy && ! sudo systemctl start caddy; then
+            echo -e "\033[0;31m[!] Failed to start Caddy. Attempting to restore previous Caddyfile and restart.\033[0m"
+            # Try to restore the most recent backup if available
+            latest_backup=$(ls -1t /etc/caddy/Caddyfile.bak.* 2>/dev/null | head -n1 || true)
+            if [ -n "$latest_backup" ]; then
+                echo "Restoring backup: $latest_backup"
+                sudo cp "$latest_backup" /etc/caddy/Caddyfile || true
+                sudo systemctl restart caddy || sudo systemctl start caddy || true
+            fi
+            echo -e "\033[0;31m[!] Failed to start Caddy. Please check 'systemctl status caddy' and 'journalctl -u caddy'.\033[0m"
             sleep 3
-        }
+        fi
     fi
   fi
   
