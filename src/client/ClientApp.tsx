@@ -14,6 +14,7 @@ import { gameLoop } from './loop/GameLoop';
 import { socketManager } from './net/SocketManager';
 import { registerAllHandlers } from './net/SocketEventRouter';
 import { useSession } from 'next-auth/react';
+import { useGameStore } from '@/web/components/the-lobby/store';
 
 /**
  * Root Game Client component.
@@ -56,7 +57,9 @@ export function ClientApp() {
 
   // Mount systems
   useEffect(() => {
-    inputManager.attach(null);
+    useGameStore.getState().hydrateClientSettings();
+    // The exploring canvas can initialize before this parent effect on remount.
+    inputManager.attach(inputManager.getCanvas());
     gameLoop.start();
 
     return () => {

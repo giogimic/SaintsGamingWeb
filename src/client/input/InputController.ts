@@ -9,6 +9,7 @@ import { KEYBINDS } from './InputConstants';
 import { useSessionStore } from '../state/useSessionStore';
 import { useHudStore } from '../state/useHudStore';
 import { useGameStore } from '@/web/components/the-lobby/store';
+import { isGameplayInputBlocked, releaseGameplayCursor } from './gameplayControls';
 
 export class InputController {
   public update(_deltaTime: number) {
@@ -28,10 +29,16 @@ export class InputController {
         // Fallback to legacy game store for the system menu until fully ported
         try {
           useGameStore.getState().toggleSystemMenu('keyboard');
-          (window as any).__intentionalPointerLockExit = true;
-          document.exitPointerLock?.();
+          const canvas = inputManager.getCanvas();
+          if (canvas) releaseGameplayCursor(canvas);
         } catch (e) {}
       }
+    }
+
+    if (isGameplayInputBlocked()) {
+      inputManager.consumeKey(KEYBINDS.ATTACK);
+      inputManager.consumeMouseDelta();
+      return;
     }
 
     if (inputManager.consumeKey(KEYBINDS.ATTACK)) {

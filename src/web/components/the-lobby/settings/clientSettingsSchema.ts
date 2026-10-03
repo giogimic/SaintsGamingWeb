@@ -4,8 +4,13 @@ export const DEFAULT_HOTBAR_KEYBINDS = Object.fromEntries(
   Array.from({ length: 10 }, (_, index) => [`hotbar_${index + 1}`, String(index)]),
 ) as Record<string, string>;
 
+export const DEFAULT_GAMEPLAY_KEYBINDS = {
+  ...DEFAULT_HOTBAR_KEYBINDS,
+  TOGGLE_CURSOR: 'Mouse1',
+};
+
 const keybindsSchema = z.preprocess(
-  (value) => ({ ...DEFAULT_HOTBAR_KEYBINDS, ...(value && typeof value === 'object' ? value : {}) }),
+  (value) => ({ ...DEFAULT_GAMEPLAY_KEYBINDS, ...(value && typeof value === 'object' ? value : {}) }),
   z.record(z.string()),
 );
 
@@ -16,6 +21,7 @@ export const ClientSettingsSchema = z.object({
     mobileControlMode: z.enum(['floating', 'dpad']).default('floating'),
     invertY: z.boolean().default(false),
     mouseSensitivity: z.number().min(0.1).max(5.0).default(1.0),
+    keyboardLookSensitivity: z.number().min(0.1).max(3.0).default(1.0),
     mouseLookEnabled: z.boolean().default(true),
     keybinds: keybindsSchema,
   }).default({}),
@@ -87,8 +93,9 @@ export const DEFAULT_CLIENT_SETTINGS: ClientSettings = {
     mobileControlMode: 'floating',
     invertY: false,
     mouseSensitivity: 1.0,
+    keyboardLookSensitivity: 1.0,
     mouseLookEnabled: true,
-    keybinds: DEFAULT_HOTBAR_KEYBINDS,
+    keybinds: DEFAULT_GAMEPLAY_KEYBINDS,
   },
   camera: {
     profile: 'follow45',

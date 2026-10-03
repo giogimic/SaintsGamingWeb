@@ -38,6 +38,7 @@ import { soundSynth } from '@/engine/sound-synth';
 import { canCastUnstuck } from '@/shared/game/worldSpawns';
 import { startMapTransition } from '@/shared/game/lobbyWorldJoin';
 import { DEFAULT_CLIENT_SETTINGS } from '../settings/clientSettingsSchema';
+import { CursorKeybindControl } from './CursorKeybindControl';
 
 interface GameOptionsMenuProps {
   isOpen: boolean;
@@ -218,6 +219,7 @@ export default function GameOptionsMenu({
 
   // Controls values
   const mouseSensitivity = clientSettings?.controls?.mouseSensitivity ?? 1.0;
+  const keyboardLookSensitivity = clientSettings?.controls?.keyboardLookSensitivity ?? 1.0;
   const mouseLookEnabled = clientSettings?.controls?.mouseLookEnabled ?? true;
   const invertY = clientSettings?.controls?.invertY ?? false;
   const clickToMove = clientSettings?.gameplay?.clickToMove ?? false;
@@ -1004,7 +1006,7 @@ export default function GameOptionsMenu({
                     Controls & Keybindings
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
-                    Reference gameplay keyboard mappings, mouse sensitivity, and touch/mobile controllers.
+                    Configure the cursor toggle, camera speed, and touch/mobile controllers.
                   </p>
                 </div>
 
@@ -1024,6 +1026,24 @@ export default function GameOptionsMenu({
                       onChange={(e) => patchClientSettings('controls', { mouseSensitivity: parseFloat(e.target.value) })}
                       className="w-full accent-amber-400 h-1.5 cursor-pointer"
                     />
+                  </div>
+
+                  <div className="space-y-1.5 pt-2 border-t border-white/10">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-slate-200">Arrow-Key Camera Speed</span>
+                      <span className="font-bold text-amber-300">{keyboardLookSensitivity.toFixed(1)}x</span>
+                    </div>
+                    <input
+                      type="range"
+                      aria-label="Arrow-key camera speed"
+                      min={0.1}
+                      max={3.0}
+                      step={0.1}
+                      value={keyboardLookSensitivity}
+                      onChange={(e) => patchClientSettings('controls', { keyboardLookSensitivity: parseFloat(e.target.value) })}
+                      className="w-full accent-amber-400 h-1.5 cursor-pointer"
+                    />
+                    <p className="text-[10px] text-slate-400">Adjust keyboard turning separately from mouse look.</p>
                   </div>
 
                   <label className="flex items-center justify-between text-xs text-slate-200 cursor-pointer pt-2 border-t border-white/10">
@@ -1052,6 +1072,8 @@ export default function GameOptionsMenu({
                     />
                   </label>
                 </div>
+
+                <CursorKeybindControl />
 
                 {/* Mobile / Touch Controller Switch */}
                 <div className="p-4 rounded-xl bg-[#0a1628]/60 border border-white/10 flex items-center justify-between gap-3">

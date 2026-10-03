@@ -20,6 +20,7 @@ export class InputManager {
     window.addEventListener('mousemove', this.onMouseMove);
     window.addEventListener('mousedown', this.onMouseDown);
     window.addEventListener('mouseup', this.onMouseUp);
+    window.addEventListener('blur', this.clearInput);
     
     // Prevent context menu on right click in game
     if (this.canvasElement) {
@@ -34,13 +35,13 @@ export class InputManager {
     window.removeEventListener('mousemove', this.onMouseMove);
     window.removeEventListener('mousedown', this.onMouseDown);
     window.removeEventListener('mouseup', this.onMouseUp);
+    window.removeEventListener('blur', this.clearInput);
 
     if (this.canvasElement) {
       this.canvasElement.removeEventListener('contextmenu', this.onContextMenu);
     }
     
-    this.keys = {};
-    this.mouseDown = false;
+    this.clearInput();
     this.canvasElement = null;
     this.isListening = false;
   }
@@ -86,7 +87,14 @@ export class InputManager {
 
   // --- Event Handlers ---
 
+  private clearInput = () => {
+    this.keys = {};
+    this.mouseDown = false;
+    this.mouseDelta = { x: 0, y: 0 };
+  };
+
   private onKeyDown = (e: KeyboardEvent) => {
+    if (e.defaultPrevented || e.repeat) return;
     // Ignore input if focused on an input/textarea (like chat)
     const target = e.target as HTMLElement | null;
     if (target?.closest?.('input, textarea, select, [contenteditable="true"]')) {
@@ -106,6 +114,8 @@ export class InputManager {
   };
 
   private onMouseDown = (e: MouseEvent) => {
+    if (e.defaultPrevented || !this.canvasElement) return;
+    if (e.target !== this.canvasElement && document.pointerLockElement !== this.canvasElement) return;
     if (e.button === 0) {
       this.mouseDown = true; 
       this.keys['mouse0'] = true;

@@ -1,69 +1,83 @@
 import React, { useEffect, useRef } from 'react';
 import { engineCore } from '../engine/EngineCore';
 import { useHudStore } from '../state/useHudStore';
+import { useWorldStore } from '../state/useWorldStore';
 import { useGameStore } from '@/web/components/the-lobby/store';
-import { cameraManager } from '../engine/CameraManager';
+import { inputManager } from '../input/InputManager';
+import { KEYBINDS } from '../input/InputConstants';
+import { isGameplayInputBlocked, matchesInputBinding, releaseGameplayCursor, toggleGameplayCursor } from '../input/gameplayControls';
 
 export function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    let ownedPointerLock = document.pointerLockElement === canvas;
     const handlePointerLockChange = () => {
-      if (!document.pointerLockElement) {
-        if ((window as any).__intentionalPointerLockExit) {
-          (window as any).__intentionalPointerLockExit = false;
-          return;
+      const locked = document.pointerLockElement === canvas;
+      const releasedOurLock = ownedPointerLock && !locked;
+      ownedPointerLock = locked;
+      canvas.style.cursor = locked ? 'none' : 'default';
+      inputManager.consumeMouseDelta();
+      if (locked) {
+        (window as any).__intentionalPointerLockExit = false;
+        // A menu or text field may open while an asynchronous request completes.
+        if (isGameplayInputBlocked()) releaseGameplayCursor(canvas);
+      } else if (releasedOurLock) {
+        const intentional = (window as any).__intentionalPointerLockExit;
+        (window as any).__intentionalPointerLockExit = false;
+        if (!intentional && !useGameStore.getState().isSystemMenuOpen) {
+          useGameStore.getState().openSystemMenu('keyboard');
         }
-        try {
-          if (!useGameStore.getState().isSystemMenuOpen) {
-            useGameStore.getState().openSystemMenu('keyboard');
-          }
-        } catch (_e) {}
       }
     };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat) return;
+      // Handle Escape before the browser unlock and frame-polled menu toggle race.
+      if (event.key === 'Escape' && document.pointerLockElement === canvas) {
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        releaseGameplayCursor(canvas);
+        useGameStore.getState().openSystemMenu('keyboard');
+        return;
+      }
+      if (event.ctrlKey || event.altKey || event.metaKey || isGameplayInputBlocked()) return;
+      if (!KEYBINDS.TOGGLE_CURSOR.some((binding) => matchesInputBinding(event, binding))) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      toggleGameplayCursor(canvas);
+    };
+    const handlePointerDown = (event: PointerEvent) => {
+      if (event.defaultPrevented || !KEYBINDS.TOGGLE_CURSOR.some((binding) => matchesInputBinding(event, binding))) return;
+      event.preventDefault(); // Prevent middle-button browser autoscroll.
+      event.stopImmediatePropagation();
+      toggleGameplayCursor(canvas);
+    };
+    const releaseForUi = () => {
+      if (document.pointerLockElement === canvas && isGameplayInputBlocked()) releaseGameplayCursor(canvas);
+    };
     document.addEventListener('pointerlockchange', handlePointerLockChange);
+    document.addEventListener('focusin', releaseForUi);
+    window.addEventListener('keydown', handleKeyDown, true);
+    canvas.addEventListener('pointerdown', handlePointerDown, true);
+    const unsubscribeGame = useGameStore.subscribe(releaseForUi);
+    const unsubscribeHud = useHudStore.subscribe(releaseForUi);
+    const unsubscribeWorld = useWorldStore.subscribe(releaseForUi);
+    engineCore.initialize(canvas);
 
-    if (canvasRef.current) {
-      engineCore.initialize(canvasRef.current);
-    }
     return () => {
+      unsubscribeGame();
+      unsubscribeHud();
+      unsubscribeWorld();
+      releaseGameplayCursor(canvas);
       document.removeEventListener('pointerlockchange', handlePointerLockChange);
+      document.removeEventListener('focusin', releaseForUi);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      canvas.removeEventListener('pointerdown', handlePointerDown, true);
       engineCore.dispose();
     };
   }, []);
-
-  const handleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-    if (event.button !== 0) return;
-    if (!canvasRef.current) return;
-    const isHudMenuOpen = useHudStore.getState().openWindows.length > 0;
-    
-    // Check legacy system menu state
-    let isSystemMenuOpen = false;
-    try {
-      isSystemMenuOpen = useGameStore.getState().isSystemMenuOpen;
-    } catch (e) {}
-
-    if (!isHudMenuOpen && !isSystemMenuOpen) {
-      let isFirstPersonOrThirdPerson = false;
-      try {
-        const style = cameraManager.settings.playerCameraStyle;
-        const currentZoom = cameraManager.currentZoom;
-        const mouseLookEnabled = useGameStore.getState().clientSettings.controls.mouseLookEnabled;
-        
-        isFirstPersonOrThirdPerson = mouseLookEnabled && (
-          style === 'firstperson' || 
-          style === 'follow45' || 
-          style === 'free' || 
-          (style === 'dynamic' && currentZoom < 12.0)
-        );
-      } catch (e) {}
-
-      if (isFirstPersonOrThirdPerson) {
-        // Pointer lock is now toggled via middle mouse click in the engine
-      }
-    }
-  };
-
 
   return (
     <canvas
@@ -71,7 +85,7 @@ export function GameCanvas() {
       className="absolute inset-0 w-full h-full block focus:outline-none"
       style={{ width: '100%', height: '100%', minWidth: 0, minHeight: 0, touchAction: 'none' }}
       id="game-canvas"
-      onClick={handleClick}
+      tabIndex={0}
     />
   );
 }

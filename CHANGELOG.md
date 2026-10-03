@@ -1,3 +1,9 @@
+# 2026-10-03 (2.2.109)
+- **Gameplay Cursor & Camera Controls**:
+  - Wired the active game client's cursor toggle to middle mouse by default and added a saved, rebindable Show / Hide Cursor action in the in-game Controls menu.
+  - Reduced arrow-key camera rotation to a consistent 60 degrees per second at default speed and added an independent Arrow-Key Camera Speed slider.
+  - Connected mouse sensitivity and vertical inversion to the active camera, restored saved controls at startup, and paused camera input while using menus or typing.
+
 # 2026-10-03 (2.2.108)
 - **Quaternius Character, Wardrobe & Animation Integration**:
   - Prepared the supplied male/female base characters into independently hideable skinned body regions so outfit meshes cover the body while preserving the head, face, eyes, and rig.

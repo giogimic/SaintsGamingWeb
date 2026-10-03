@@ -19,12 +19,16 @@ import { mapMesher } from './MapMesher';
 import { inputManager } from '../input/InputManager';
 import { KEYBINDS } from '../input/InputConstants';
 import { entityRenderer } from './EntityRenderer';
+import { isGameplayInputBlocked } from '../input/gameplayControls';
+import { useGameStore } from '@/web/components/the-lobby/store';
+import type { ClientSettings } from '@/web/components/the-lobby/settings/clientSettingsSchema';
 
 export type CameraStyle = 'follow45' | 'firstperson';
 
 export interface CameraSettings {
   fov: number;
   orbitSensitivity: number;
+  keyboardLookSensitivity: number;
   panSensitivity: number;
   damping: number;
   invertOrbitX: boolean;
@@ -43,6 +47,7 @@ export interface CameraSettings {
 const DEFAULT_CAMERA_SETTINGS: CameraSettings = {
   fov: 0.8,
   orbitSensitivity: 1.0,
+  keyboardLookSensitivity: 1.0,
   panSensitivity: 1.0,
   damping: 0.90,
   invertOrbitX: false,
@@ -88,6 +93,7 @@ export class CameraManager {
 
   // Settings
   public settings: CameraSettings = { ...DEFAULT_CAMERA_SETTINGS };
+  private configuredThirdPersonDistance: number | undefined;
 
   // ── Lifecycle ──────────────────────────────────────────────────────────────
 
@@ -97,6 +103,8 @@ export class CameraManager {
 
     // Load persisted camera settings from localStorage
     this.loadSettingsFromStorage();
+    this.currentFov = this.settings.fov;
+    this.configuredThirdPersonDistance = undefined;
 
     // Create camera at default position
     this.camera = new BABYLON.FreeCamera('mainCamera', new BABYLON.Vector3(0, 50, -20), scene);
@@ -106,6 +114,8 @@ export class CameraManager {
 
     // Apply the initial style
     this.applyStyle(this.settings.playerCameraStyle);
+    // The unified settings may have been hydrated before this scene mounted.
+    this.applyUnifiedSettings(useGameStore.getState().clientSettings);
 
     // Register before-render to follow player
     scene.onBeforeRenderObservable.add(this.update);
@@ -121,24 +131,40 @@ export class CameraManager {
   }
 
   private onUnifiedSettingsUpdated = (e: Event) => {
-    const customEvent = e as CustomEvent;
-    const settings = customEvent.detail;
-    if (settings && settings.camera) {
-       this.setCameraSettings({
-         fov: settings.camera.fov !== undefined ? settings.camera.fov * (Math.PI / 180) : this.settings.fov,
-         playerCameraStyle: settings.camera.profile === 'firstperson' ? 'firstperson' : 'follow45',
-         playerFollowSmoothing: settings.camera.smoothing ?? this.settings.playerFollowSmoothing,
-         borderClamping: settings.camera.borderClamping ?? this.settings.borderClamping,
-         vignetteEnabled: settings.camera.vignetteEnabled ?? this.settings.vignetteEnabled
-       });
-       if (typeof settings.controls?.mouseLookEnabled === 'boolean') {
-         this.settings.mouseLookEnabled = settings.controls.mouseLookEnabled;
-       }
-       if (settings.camera.thirdPersonDistance && this.settings.playerCameraStyle === 'follow45') {
-          this.profile.distance = settings.camera.thirdPersonDistance;
-       }
-    }
+    const settings = (e as CustomEvent<Partial<ClientSettings>>).detail;
+    if (settings) this.applyUnifiedSettings(settings);
   };
+
+  private applyUnifiedSettings(settings: Partial<ClientSettings>) {
+    const partial: Partial<CameraSettings> = {};
+    const camera = settings.camera;
+    const controls = settings.controls;
+    const style = camera?.profile === undefined
+      ? this.settings.playerCameraStyle
+      : camera.profile === 'firstperson' ? 'firstperson' : 'follow45';
+    const styleChanged = style !== this.settings.playerCameraStyle;
+
+    if (styleChanged) partial.playerCameraStyle = style;
+    if (camera?.fov !== undefined) partial.fov = camera.fov * (Math.PI / 180);
+    if (camera?.smoothing !== undefined) partial.playerFollowSmoothing = camera.smoothing;
+    if (camera?.borderClamping !== undefined) partial.borderClamping = camera.borderClamping;
+    if (camera?.vignetteEnabled !== undefined) partial.vignetteEnabled = camera.vignetteEnabled;
+    if (controls?.mouseSensitivity !== undefined) partial.orbitSensitivity = controls.mouseSensitivity;
+    if (controls?.keyboardLookSensitivity !== undefined) partial.keyboardLookSensitivity = controls.keyboardLookSensitivity;
+    if (controls?.invertY !== undefined) partial.invertOrbitY = controls.invertY;
+    if (controls?.mouseLookEnabled !== undefined) partial.mouseLookEnabled = controls.mouseLookEnabled;
+
+    if (Object.keys(partial).length > 0) this.setCameraSettings(partial);
+
+    // A controls update carries the full settings object. Preserve wheel zoom
+    // unless the configured distance or camera perspective actually changed.
+    if (camera?.thirdPersonDistance !== undefined) {
+      if (style === 'follow45' && (styleChanged || camera.thirdPersonDistance !== this.configuredThirdPersonDistance)) {
+        this.profile.distance = camera.thirdPersonDistance;
+      }
+      this.configuredThirdPersonDistance = camera.thirdPersonDistance;
+    }
+  }
 
   public dispose() {
     if (this.scene) {
@@ -187,8 +213,9 @@ export class CameraManager {
   public setCameraSettings(partial: Partial<CameraSettings>) {
     this.settings = { ...this.settings, ...partial };
 
-    if (partial.fov !== undefined && this.camera) {
-      this.camera.fov = partial.fov;
+    if (partial.fov !== undefined) {
+      this.currentFov = partial.fov;
+      if (this.camera) this.camera.fov = partial.fov;
     }
     if (partial.playerFollowSmoothing !== undefined) {
       this.profile.lerpFactor = partial.playerFollowSmoothing;
@@ -226,6 +253,7 @@ export class CameraManager {
       this.profile.pitch = Math.PI / 6;
     }
 
+    this.pitch = this.profile.pitch;
     if (snap) {
       this.snapCameraTo(this.targetX, this.targetZ, this.targetY);
     }
@@ -328,36 +356,39 @@ export class CameraManager {
   private update = () => {
     if (!this.camera || !this.scene) return;
 
+    const inputBlocked = isGameplayInputBlocked();
+    // Always consume movement so menus and unlocked cursors cannot build up
+    // mouse deltas that would be applied when gameplay look resumes.
+    const delta = inputManager.consumeMouseDelta();
+
     // Handle Mouse Look
-    if (this.settings.mouseLookEnabled && this.canvas && document.pointerLockElement === this.canvas) {
-      const delta = inputManager.consumeMouseDelta();
+    if (!inputBlocked && this.settings.mouseLookEnabled && this.canvas && document.pointerLockElement === this.canvas) {
       if (delta.x !== 0 || delta.y !== 0) {
-        const sens = (this.settings.orbitSensitivity || 1.0) * 0.002;
+        const sens = (this.settings.orbitSensitivity ?? 1.0) * 0.002;
         this.yaw += delta.x * sens * (this.settings.invertOrbitX ? -1 : 1);
         
         this.pitch += delta.y * sens * (this.settings.invertOrbitY ? 1 : -1);
         this.pitch = Math.max(-Math.PI / 2 + 0.1, Math.min(Math.PI / 2 - 0.1, this.pitch));
         this.profile.pitch = this.pitch;
       }
-    } else {
-      inputManager.consumeMouseDelta(); // discard delta when not locked
     }
 
     // Handle Keyboard Look
     const engine = this.scene.getEngine();
-    const dt = engine.getDeltaTime() / 1000.0;
+    const dt = Math.max(0, Math.min(0.1, engine.getDeltaTime() / 1000.0));
     
     let kbDeltaX = 0;
     let kbDeltaY = 0;
-    const kbSens = 120.0; // Px per second equivalent
-    
-    if (inputManager.isAnyKeyPressed(KEYBINDS.CAMERA_LEFT)) kbDeltaX -= kbSens;
-    if (inputManager.isAnyKeyPressed(KEYBINDS.CAMERA_RIGHT)) kbDeltaX += kbSens;
-    if (inputManager.isAnyKeyPressed(KEYBINDS.CAMERA_UP)) kbDeltaY -= kbSens;
-    if (inputManager.isAnyKeyPressed(KEYBINDS.CAMERA_DOWN)) kbDeltaY += kbSens;
+    if (!inputBlocked) {
+      if (inputManager.isAnyKeyPressed(KEYBINDS.CAMERA_LEFT)) kbDeltaX -= 1;
+      if (inputManager.isAnyKeyPressed(KEYBINDS.CAMERA_RIGHT)) kbDeltaX += 1;
+      if (inputManager.isAnyKeyPressed(KEYBINDS.CAMERA_UP)) kbDeltaY -= 1;
+      if (inputManager.isAnyKeyPressed(KEYBINDS.CAMERA_DOWN)) kbDeltaY += 1;
+    }
 
     if (kbDeltaX !== 0 || kbDeltaY !== 0) {
-      const sens = (this.settings.orbitSensitivity || 1.0) * 0.002 * dt * 60.0;
+      // 60 degrees per second at 1x, independent of mouse sensitivity and FPS.
+      const sens = (Math.PI / 3) * dt * (this.settings.keyboardLookSensitivity ?? 1.0);
       this.yaw += kbDeltaX * sens * (this.settings.invertOrbitX ? -1 : 1);
       
       this.pitch += kbDeltaY * sens * (this.settings.invertOrbitY ? 1 : -1);

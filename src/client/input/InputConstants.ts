@@ -10,6 +10,7 @@ export let KEYBINDS: Record<string, string[]> = {
   CAMERA_DOWN: ['ArrowDown'],
   CAMERA_LEFT: ['ArrowLeft'],
   CAMERA_RIGHT: ['ArrowRight'],
+  TOGGLE_CURSOR: ['Mouse1'],
   INTERACT: ['e', 'Enter'],
   MENU: ['Escape'],
   INVENTORY: ['i'],
