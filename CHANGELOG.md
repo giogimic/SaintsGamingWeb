@@ -1,3 +1,14 @@
+# 2026-10-03 (2.2.105-update.0)
+- **Electron Client Synchronization & Modernization (`saints-app`)**:
+  - Bumped `saints-app` version from `2.1.777` to match portal release `2.2.105-update.0`.
+  - Updated Electron main process (`saints-app/electron/main.cjs`):
+    - Added automatic dev server detection for port `24001` (primary Saints Web dev port) alongside port `3000` fallback so running `npm run dev:app` correctly binds to the local dev environment instead of falling back to live production.
+    - Implemented missing IPC bridges for `launch-native-studio` and `get-native-auth-token` exposed by `preload.cjs`.
+  - Modernized Studio download and update manifest API routes:
+    - Updated `app/api/studio/download/latest/route.ts` with dynamic detection of real `.exe` installers in `public/downloads/` and modernized fallback to `Saints Gaming Setup ${version}.exe`.
+    - Updated `app/api/studio/update/[target]/latest.json/route.ts` to reference the authoritative NSIS installer name with dynamic disk discovery and cleaned fallback version.
+- Bumped site version to 2.2.105-update.0.
+
 # 2026-10-03 (2.2.104-update.1)
 - **Quaternius Asset Pipeline & Ingestion Alignment**:
   - Completed asset pack audit for Quaternius Universal Base Characters, Universal Animation Library 1 & 2, Modular Character Outfits, Ultimate RPG Pack, and Bestiary Dungeon Monsters Kit.

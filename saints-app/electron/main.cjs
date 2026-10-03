@@ -219,17 +219,23 @@ function createWindow() {
       console.log(`[Electron] Custom server ${customServer} unreachable. Falling back...`);
     }
 
-    // 2. Check local dev server first (for Studio development)
-    const localUrl = 'http://localhost:3000';
-    const localCheck = await checkUrlReachable(localUrl, 1000);
-    if (localCheck.ok) {
-      console.log('[Electron] Connected to local development server:', localUrl);
-      mainWindow.loadURL(localUrl);
-      return;
+    // 2. Check local dev server (port 24001 for Saints Web custom server, port 3000 fallback)
+    const localPorts = [
+      process.env.PORT ? parseInt(process.env.PORT, 10) : 24001,
+      3000,
+    ];
+    for (const port of localPorts) {
+      const localUrl = `http://localhost:${port}`;
+      const localCheck = await checkUrlReachable(localUrl, 1000);
+      if (localCheck.ok) {
+        console.log('[Electron] Connected to local development server:', localUrl);
+        mainWindow.loadURL(localUrl);
+        return;
+      }
     }
 
     // 3. Default to Production Server
-    const prodUrl = 'https://saintsgaming.net';
+    const prodUrl = process.env.SAINTS_SERVER_URL || 'https://saintsgaming.net';
     const prodCheck = await checkUrlReachable(prodUrl, 3000);
     if (prodCheck.ok) {
       console.log('[Electron] Connected to production Saints Gaming:', prodUrl);
@@ -289,6 +295,14 @@ ipcMain.on('window-toggle-maximize', () => {
 ipcMain.on('window-close', () => mainWindow?.close());
 ipcMain.on('open-external', (_event, url) => {
   if (url) shell.openExternal(url);
+});
+
+// Native Studio Bridges
+ipcMain.on('launch-native-studio', (_event, token, user) => {
+  console.log('[Electron] launch-native-studio invoked for user:', user?.username || 'anonymous');
+});
+ipcMain.handle('get-native-auth-token', async () => {
+  return null;
 });
 
 // FBX to GLB conversion
