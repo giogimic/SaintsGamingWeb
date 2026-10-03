@@ -18,6 +18,14 @@ export interface WorldModelValue {
   assetId: string;
   modelUrl?: string | null;
   source?: string | null;
+  /** Import-time scale from the asset; `scale` remains the per-actor override. */
+  modelScale?: number;
+  animationProfileId?: string;
+  animations?: any;
+  rigAnalysis?: any;
+  categorizedAnimations?: any[];
+  skeletonRequirements?: any;
+  materials?: any;
   /** Per-actor scale override; the shared asset remains unchanged. */
   scale?: number;
   isModular?: boolean;
@@ -187,8 +195,25 @@ export function WorldModelSelector({
                     filterType: assetPickerFilterType,
                     categoryFilter: assetPickerCategoryFilter as any,
                     title: 'Select Base 3D Model',
-                    onSelect: (selectedId) => {
-                      onChange({ ...value, assetId: selectedId });
+                    onSelect: (selectedId, asset) => {
+                      const assetPresentation = asset?.presentation || asset?.metadata?.presentation || {};
+                      const assetDefinition = assetPresentation.assetDefinition || asset?.metadata?.assetDefinition || {};
+                      const modelUrl = asset?.source || asset?.cdnUrl || selectedId;
+
+                      onChange({
+                        ...value,
+                        // Keep the stable database identity while preserving the actual model URL.
+                        assetId: typeof asset?.id === 'string' && asset.id ? asset.id : selectedId,
+                        modelUrl,
+                        source: modelUrl,
+                        modelScale: assetPresentation.modelScale ?? assetDefinition.transform?.scale,
+                        animationProfileId: assetPresentation.animationProfileId ?? assetDefinition.animationProfileId,
+                        animations: assetPresentation.animations ?? assetDefinition.animations,
+                        rigAnalysis: assetPresentation.rigAnalysis ?? assetDefinition.rigAnalysis ?? asset?.metadata?.rigAnalysis,
+                        categorizedAnimations: assetPresentation.categorizedAnimations ?? assetDefinition.categorizedAnimations,
+                        skeletonRequirements: assetPresentation.skeletonRequirements ?? assetDefinition.skeletonRequirements,
+                        materials: assetPresentation.materials ?? assetDefinition.materials,
+                      });
                     },
                   });
                 }}

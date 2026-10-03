@@ -13,6 +13,8 @@
  * falls back to a generic default.
  */
 
+import { areRigBoneNamesEquivalent } from './modelRigTaxonomy';
+
 /** Standard animation action slots used by the Saints engine */
 export type AnimationSlot =
   | 'idle'
@@ -57,6 +59,18 @@ export interface AnimationClipMapping {
   speed?: number;
 }
 
+/** Bone names parsed from the bundled 65-joint Universal Base Character rig. */
+export const QUATERNIUS_UNIVERSAL_BONE_NAMES = [
+  'root', 'pelvis', 'spine_01', 'spine_02', 'spine_03', 'neck_01', 'Head',
+  'clavicle_l', 'upperarm_l', 'lowerarm_l', 'hand_l', 'index_01_l', 'index_02_l', 'index_03_l', 'index_04_leaf_l',
+  'middle_01_l', 'middle_02_l', 'middle_03_l', 'middle_04_leaf_l', 'pinky_01_l', 'pinky_02_l', 'pinky_03_l', 'pinky_04_leaf_l',
+  'ring_01_l', 'ring_02_l', 'ring_03_l', 'ring_04_leaf_l', 'thumb_01_l', 'thumb_02_l', 'thumb_03_l', 'thumb_04_leaf_l',
+  'clavicle_r', 'upperarm_r', 'lowerarm_r', 'hand_r', 'index_01_r', 'index_02_r', 'index_03_r', 'index_04_leaf_r',
+  'middle_01_r', 'middle_02_r', 'middle_03_r', 'middle_04_leaf_r', 'pinky_01_r', 'pinky_02_r', 'pinky_03_r', 'pinky_04_leaf_r',
+  'ring_01_r', 'ring_02_r', 'ring_03_r', 'ring_04_leaf_r', 'thumb_01_r', 'thumb_02_r', 'thumb_03_r', 'thumb_04_leaf_r',
+  'thigh_l', 'calf_l', 'foot_l', 'ball_l', 'ball_leaf_l', 'thigh_r', 'calf_r', 'foot_r', 'ball_r', 'ball_leaf_r',
+];
+
 export interface AnimationProfile {
   id: string;
   displayName: string;
@@ -66,6 +80,9 @@ export interface AnimationProfile {
   slotMap: Partial<Record<AnimationSlot, AnimationClipMapping>>;
   /** All raw clip names available in this profile (for Studio browsing) */
   availableClips: string[];
+  /** A known source rig signature. Profiles with this set are shown only after bone compatibility is measured. */
+  targetSkeleton?: string;
+  targetBoneNames?: string[];
 }
 
 /**
@@ -464,6 +481,8 @@ export const ANIMATION_PROFILES: AnimationProfile[] = [
     id: 'quaternius_native',
     displayName: 'Quaternius Native',
     basePath: '/models/quaternius/ual1_standard.glb',
+    targetSkeleton: 'quaternius_universal',
+    targetBoneNames: QUATERNIUS_UNIVERSAL_BONE_NAMES,
     slotMap: {
       idle: { clip: 'Idle_Loop', loop: true },
       idle_combat: { clip: 'Sword_Idle', loop: true },
@@ -489,11 +508,65 @@ export const ANIMATION_PROFILES: AnimationProfile[] = [
     },
     availableClips: ['A_TPose', 'Crouch_Fwd_Loop', 'Crouch_Idle_Loop', 'Dance_Loop', 'Death01', 'Driving_Loop', 'Fixing_Kneeling', 'Hit_Chest', 'Hit_Head', 'Idle_Loop', 'Idle_Talking_Loop', 'Idle_Torch_Loop', 'Interact', 'Jog_Fwd_Loop', 'Jump_Land', 'Jump_Loop', 'Jump_Start', 'PickUp_Table', 'Pistol_Aim_Down', 'Pistol_Aim_Neutral', 'Pistol_Aim_Up', 'Pistol_Idle_Loop', 'Pistol_Reload', 'Pistol_Shoot', 'Punch_Cross', 'Punch_Jab', 'Push_Loop', 'Roll', 'Sitting_Enter', 'Sitting_Exit', 'Sitting_Idle_Loop', 'Sitting_Talking_Loop', 'Spell_Simple_Enter', 'Spell_Simple_Exit', 'Spell_Simple_Idle_Loop', 'Spell_Simple_Shoot', 'Sprint_Loop', 'Swim_Fwd_Loop', 'Swim_Idle_Loop', 'Sword_Attack', 'Sword_Idle', 'Walk_Formal_Loop', 'Walk_Loop']
   },
+  {
+    id: 'quaternius_2_native',
+    displayName: 'Quaternius Universal Animation Library 2',
+    basePath: '/models/quaternius/ual2_standard.glb',
+    targetSkeleton: 'quaternius_universal',
+    targetBoneNames: QUATERNIUS_UNIVERSAL_BONE_NAMES,
+    slotMap: {
+      idle: { clip: 'Idle_FoldArms_Loop', loop: true },
+      idle_combat: { clip: 'Idle_Shield_Loop', loop: true },
+      walk_fwd: { clip: 'Walk_Carry_Loop', loop: true },
+      jump_start: { clip: 'NinjaJump_Start', loop: false },
+      jump_mid: { clip: 'NinjaJump_Idle_Loop', loop: true },
+      jump_end: { clip: 'NinjaJump_Land', loop: false },
+      hit_react_front: { clip: 'Hit_Knockback', loop: false },
+      hit_react_back: { clip: 'Hit_Knockback', loop: false },
+      attack_light: { clip: 'Melee_Hook', loop: false },
+      attack_heavy: { clip: 'Sword_Heavy_Combo', loop: false },
+      emote: { clip: 'Yes', loop: false },
+    },
+    availableClips: ['A_TPose', 'Chest_Open', 'ClimbUp_1m', 'Consume', 'Farm_Harvest', 'Farm_PlantSeed', 'Farm_Watering', 'Hit_Knockback', 'Idle_FoldArms_Loop', 'Idle_Lantern_Loop', 'Idle_No_Loop', 'Idle_Rail_Call', 'Idle_Rail_Loop', 'Idle_Shield_Break', 'Idle_Shield_Loop', 'Idle_TalkingPhone_Loop', 'LayToIdle', 'Melee_Hook', 'Melee_Hook_Rec', 'NinjaJump_Idle_Loop', 'NinjaJump_Land', 'NinjaJump_Start', 'OverhandThrow', 'Shield_Dash', 'Shield_OneShot', 'Slide_Exit', 'Slide_Loop', 'Slide_Start', 'Sword_Block', 'Sword_Dash', 'Sword_Heavy_Combo', 'Sword_Regular_A', 'Sword_Regular_A_Rec', 'Sword_Regular_B', 'Sword_Regular_B_Rec', 'Sword_Regular_C', 'Sword_Regular_Combo', 'TreeChopping_Loop', 'Walk_Carry_Loop', 'Yes', 'Zombie_Idle_Loop', 'Zombie_Scratch', 'Zombie_Walk_Fwd_Loop']
+  },
 ];
+
+// Root-motion exports contain the same named clips with root translation preserved.
+for (const [sourceId, id, displayName, basePath] of [
+  ['quaternius_native', 'quaternius_native_rm', 'Quaternius Universal Animation Library 1 (Root Motion)', '/models/quaternius/ual1_standard_rm.glb'],
+  ['quaternius_2_native', 'quaternius_2_native_rm', 'Quaternius Universal Animation Library 2 (Root Motion)', '/models/quaternius/ual2_standard_rm.glb'],
+] as const) {
+  const source = ANIMATION_PROFILES.find((profile) => profile.id === sourceId);
+  if (source) {
+    ANIMATION_PROFILES.push({ ...source, id, displayName, basePath, slotMap: { ...source.slotMap }, availableClips: [...source.availableClips] });
+  }
+}
 
 /** Look up a profile by its ID */
 export function getAnimationProfile(profileId: string): AnimationProfile | undefined {
   return ANIMATION_PROFILES.find(p => p.id === profileId);
+}
+
+export function isAnimationProfileCompatible(
+  profile: AnimationProfile | string | undefined,
+  rigFamily: string | undefined,
+  modelBoneNames: string[] = [],
+  minimumMatchRatio = 0.7,
+): boolean {
+  const resolved = typeof profile === 'string' ? getAnimationProfile(profile) : profile;
+  if (!resolved || rigFamily !== 'HUMANOID_BIPED') return false;
+  if (!resolved.targetBoneNames?.length) return true;
+  if (modelBoneNames.length === 0) return false;
+
+  const matched = resolved.targetBoneNames.filter((sourceBone) =>
+    modelBoneNames.some((modelBone) => areRigBoneNamesEquivalent(sourceBone, modelBone)),
+  );
+  const ratio = matched.length / resolved.targetBoneNames.length;
+  const required = ['pelvis', 'spine_01', 'Head', 'upperarm_l', 'upperarm_r', 'thigh_l', 'thigh_r'];
+  const hasCoreRig = required.every((sourceBone) =>
+    modelBoneNames.some((modelBone) => areRigBoneNamesEquivalent(sourceBone, modelBone)),
+  );
+  return hasCoreRig && ratio >= minimumMatchRatio;
 }
 
 export function resolveAnimationProfileId(

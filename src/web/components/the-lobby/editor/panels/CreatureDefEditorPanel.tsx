@@ -775,6 +775,8 @@ export function CreatureDefEditorPanel() {
                 onChange={handleWorldModelChange}
                 label="Overworld Creature Representation"
                 allowSocketConfig={true}
+                assetPickerFilterType="CREATURE"
+                assetPickerCategoryFilter="CREATURES"
               />
 
               {getWorldModel().type === '3D Model' && (

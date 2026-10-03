@@ -722,8 +722,8 @@ export function MonsterEditorPanel() {
                 onChange={handleWorldModelChange}
                 label="Monster World Model"
                 allowSocketConfig={true}
-                assetPickerFilterType=""
-                assetPickerCategoryFilter="ALL"
+                assetPickerFilterType="CREATURE"
+                assetPickerCategoryFilter="CREATURES"
               />
 
               {getWorldModel().type === '3D Model' && (

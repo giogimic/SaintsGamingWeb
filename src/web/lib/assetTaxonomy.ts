@@ -2,6 +2,7 @@ import { ModelDimensions } from '../components/the-lobby/editor/asset-studio/glb
 import { RigAnalysisResult } from '@/shared/game/modelRigTaxonomy';
 
 export type DetectedAssetCategory =
+  | 'animation_pack'
   | 'complete_character'
   | 'modular_base'
   | 'modular_piece'
@@ -65,7 +66,17 @@ export function detectAssetTaxonomy(
   }
 
   // If the user explicitly clicked an upload intent button, honor it directly
-  if (intentHint === 'modular_base') {
+  if (intentHint === 'animation_pack') {
+    return {
+      category: 'animation_pack',
+      structure: 'Complete',
+      label: 'Animation Bank',
+      suggestedRoles: ['Animation'],
+      confidence: 'high',
+      reason: 'User selected Universal Animation Library upload mode.',
+      scaleSuggestion: { recommendedScale: 1, scaleType: 'STANDARD_METERS', explanation: 'Animation banks do not change model scale.', detectedHeight: height, normalizedHeight: height },
+    };
+  } else if (intentHint === 'modular_base') {
     return {
       category: 'modular_base',
       structure: 'Modular',

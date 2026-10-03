@@ -15,6 +15,7 @@ import {
   getCharacterModelProfile,
   isWardrobeItemCompatibleWithProfile,
 } from '@/shared/game/characterProfiles';
+import { getQuaterniusOutfitTextureVariants } from '@/shared/game/quaterniusOutfitTextures';
 
 interface ModelWardrobeEditorProps {
   modelAssetId: string;
@@ -25,6 +26,34 @@ interface ModelWardrobeEditorProps {
 }
 
 type WardrobeAsset = GameAssetItem & { name?: string; slug?: string };
+
+function getQuaterniusTextureVariant(item: Record<string, unknown>) {
+  const metadata = item.metadata && typeof item.metadata === 'object'
+    ? item.metadata as Record<string, unknown>
+    : {};
+  const names = [item.assetId, item.id, item.modelUrl, item.source, item.label, item.name]
+    .filter((value): value is string => typeof value === 'string');
+  const identity = names.join(' ').toLowerCase();
+  const tags = Array.isArray(item.tags) ? item.tags.filter((tag): tag is string => typeof tag === 'string') : [];
+  const isQuaternius = names.some((value) => value.toLowerCase().startsWith('quat-'))
+    || identity.includes('/models/quaternius/')
+    || tags.some((tag) => tag.toLowerCase() === 'quaternius');
+  if (!isQuaternius) return null;
+
+  const family = String(item.variantFamily || metadata.variantFamily || metadata.variant || '').toLowerCase();
+  const normalizedFamily = family === 'peasant' || family === 'ranger'
+    ? family
+    : /(^|[^a-z])peasant([^a-z]|$)/.test(identity)
+      ? 'peasant'
+      : /(^|[^a-z])ranger([^a-z]|$)/.test(identity)
+        ? 'ranger'
+        : undefined;
+  return getQuaterniusOutfitTextureVariants(normalizedFamily).find((variant) => variant.textureVariantUrl) || null;
+}
+
+function getTextureVariantUrl(item: ModelWardrobeItem | undefined): string {
+  return typeof item?.textureVariantUrl === 'string' ? item.textureVariantUrl : '';
+}
 
 function displayName(asset: WardrobeAsset): string {
   return asset.name || asset.metadata?.name || asset.customLabels?.name || asset.source.split('/').pop()?.replace(/\.[^.]+$/, '') || asset.id;
@@ -120,7 +149,13 @@ export function ModelWardrobeEditor({
           const modularSetName = asset.metadata?.modularSetName || asset.metadata?.assetDefinition?.modularSetName || '';
           const skeleton = asset.metadata?.skeleton || asset.metadata?.assetDefinition?.skeleton || '';
           const tags = (asset.tags || []).map((t) => t.toLowerCase());
-          return isWardrobeItemCompatibleWithProfile(profile, { pack, modularSetName, skeleton, tags });
+          return isWardrobeItemCompatibleWithProfile(profile, {
+            pack,
+            modularSetName,
+            skeleton,
+            baseBodyType: asset.baseBodyType || asset.metadata?.baseBodyType || asset.metadata?.body,
+            tags,
+          });
         }
         const fallbackGroupNames = [
           modelAssetId.toLowerCase(),
@@ -150,6 +185,8 @@ export function ModelWardrobeEditor({
         ? modelItems.filter((asset) => {
             const assetSkeleton = asset.metadata?.skeleton || asset.metadata?.assetDefinition?.skeleton;
             if (assetSkeleton && assetSkeleton !== profile.skeleton) return false;
+            const assetBodyType = String(asset.baseBodyType || asset.metadata?.baseBodyType || asset.metadata?.body || '').toLowerCase();
+            if (assetBodyType && assetBodyType !== 'unspecified' && profile.bodyType && assetBodyType !== profile.bodyType) return false;
             // Never allow monster-exclusive parts on humanoids; allow modular outfits on creatures/monsters if equipped
             const isMonsterItem = asset.categories?.some((c) => c.toLowerCase() === 'monster' || c.toLowerCase() === 'creature');
             if (profile.category === 'character' && isMonsterItem) return false;
@@ -299,6 +336,16 @@ export function ModelWardrobeEditor({
 
   const updateItem = (assetId: string, patch: Partial<ModelWardrobeItem>) => {
     onChange(value.map((item) => item.assetId === assetId ? { ...item, ...patch } : item));
+  };
+
+  const updateTextureVariant = (assetId: string, textureVariantUrl: string) => {
+    onChange(value.map((item) => {
+      if (item.assetId !== assetId) return item;
+      const next = { ...item };
+      if (textureVariantUrl) next.textureVariantUrl = textureVariantUrl;
+      else delete next.textureVariantUrl;
+      return next;
+    }));
   };
 
   const addAllMatching = () => {
@@ -527,6 +574,7 @@ export function ModelWardrobeEditor({
           {filteredCatalog.map((asset) => {
             const configured = configuredById.get(asset.id);
             const label = displayName(asset);
+            const textureVariant = getQuaterniusTextureVariant({ ...asset, assetId: asset.id });
             return (
               <div key={asset.id} className="rounded border border-slate-800 bg-black/25 p-2">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -551,6 +599,20 @@ export function ModelWardrobeEditor({
                     )}
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      {textureVariant && (
+                        <label className="flex items-center gap-1.5 text-[9px] text-slate-300">
+                          <span className="text-[8px] uppercase tracking-wider text-slate-500">Colors</span>
+                          <select
+                            aria-label={`Colors for ${label}`}
+                            value={getTextureVariantUrl(configured) === textureVariant.textureVariantUrl ? textureVariant.textureVariantUrl : ''}
+                            onChange={(event) => updateTextureVariant(asset.id, event.target.value)}
+                            className="rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-[9px] text-slate-200"
+                          >
+                            <option value="">Default colors</option>
+                            <option value={textureVariant.textureVariantUrl}>{textureVariant.label}</option>
+                          </select>
+                        </label>
+                      )}
                       <label className="flex items-center gap-1.5 text-[9px] text-slate-300">
                         <span className="text-[8px] uppercase tracking-wider text-slate-500">Slot</span>
                         <select
@@ -607,7 +669,9 @@ export function ModelWardrobeEditor({
               </div>
             );
           })}
-          {orphanedItems.map((item) => (
+          {orphanedItems.map((item) => {
+            const textureVariant = getQuaterniusTextureVariant(item);
+            return (
             <div key={item.assetId} className="rounded border border-slate-800 bg-black/25 p-2">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input type="checkbox" checked onChange={() => onChange(value.filter((current) => current.assetId !== item.assetId))} className="rounded border-slate-600 bg-black text-primary focus:ring-0" />
@@ -615,6 +679,20 @@ export function ModelWardrobeEditor({
                 <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[8px] uppercase text-slate-400">{item.category || 'item'}</span>
               </label>
               <div className="ml-6 mt-1.5 flex flex-wrap gap-x-4 gap-y-1.5">
+                {textureVariant && (
+                  <label className="flex items-center gap-1.5 text-[9px] text-slate-300">
+                    <span className="text-[8px] uppercase tracking-wider text-slate-500">Colors</span>
+                    <select
+                      aria-label={`Colors for ${item.label || item.assetId}`}
+                      value={getTextureVariantUrl(item) === textureVariant.textureVariantUrl ? textureVariant.textureVariantUrl : ''}
+                      onChange={(event) => updateTextureVariant(item.assetId, event.target.value)}
+                      className="rounded border border-slate-700 bg-slate-950 px-1.5 py-1 text-[9px] text-slate-200"
+                    >
+                      <option value="">Default colors</option>
+                      <option value={textureVariant.textureVariantUrl}>{textureVariant.label}</option>
+                    </select>
+                  </label>
+                )}
                 <label className="flex items-center gap-1.5 text-[9px] text-slate-300">
                   <input type="checkbox" checked={item.defaultVisible !== false} onChange={(event) => updateItem(item.assetId, { defaultVisible: event.target.checked })} className="rounded border-slate-600 bg-black text-primary focus:ring-0" />
                   Show by default
@@ -680,7 +758,8 @@ export function ModelWardrobeEditor({
                 )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
         </>
       )}

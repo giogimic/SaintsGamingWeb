@@ -27,7 +27,8 @@ export interface CharacterModelProfile {
   id: string;
   name: string;
   category: 'character' | 'creature' | 'monster';
-  skeleton: 'manny' | 'creature_custom' | 'mixamo' | 'daz_g8f' | 'static';
+  skeleton: string;
+  bodyType?: 'male' | 'female' | 'unspecified';
   modelUrl: string;
   baseNakedMeshes?: string[];
   defaultFaceId?: string;
@@ -45,8 +46,10 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
     id: 'quaternius_base_male',
     name: 'Quaternius Base Male',
     category: 'character',
-    skeleton: 'mixamo',
-    modelUrl: '/game-assets/models/humanoids/superheroes/Superhero_Male_FullBody.glb',
+    skeleton: 'quaternius_universal',
+    bodyType: 'male',
+    modelUrl: '/models/quaternius/quaternius_base_male.glb',
+    defaultAnimationProfileId: 'quaternius_native',
     compatibleWardrobePack: 'quaternius',
     modularParts: [],
   },
@@ -54,8 +57,10 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
     id: 'quaternius_base_female',
     name: 'Quaternius Base Female',
     category: 'character',
-    skeleton: 'mixamo',
-    modelUrl: '/game-assets/models/humanoids/superheroes/Superhero_Female_FullBody.glb',
+    skeleton: 'quaternius_universal',
+    bodyType: 'female',
+    modelUrl: '/models/quaternius/quaternius_base_female.glb',
+    defaultAnimationProfileId: 'quaternius_native',
     compatibleWardrobePack: 'quaternius',
     modularParts: [],
   },
@@ -63,8 +68,10 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
     id: 'superhero_male_fullbody',
     name: 'Quaternius Base Male',
     category: 'character',
-    skeleton: 'mixamo',
-    modelUrl: '/game-assets/models/humanoids/superheroes/Superhero_Male_FullBody.glb',
+    skeleton: 'quaternius_universal',
+    bodyType: 'male',
+    modelUrl: '/models/quaternius/quaternius_base_male.glb',
+    defaultAnimationProfileId: 'quaternius_native',
     compatibleWardrobePack: 'quaternius',
     modularParts: [],
   },
@@ -72,8 +79,10 @@ export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
     id: 'superhero_female_fullbody',
     name: 'Quaternius Base Female',
     category: 'character',
-    skeleton: 'mixamo',
-    modelUrl: '/game-assets/models/humanoids/superheroes/Superhero_Female_FullBody.glb',
+    skeleton: 'quaternius_universal',
+    bodyType: 'female',
+    modelUrl: '/models/quaternius/quaternius_base_female.glb',
+    defaultAnimationProfileId: 'quaternius_native',
     compatibleWardrobePack: 'quaternius',
     modularParts: [],
   },
@@ -86,20 +95,23 @@ export function getCharacterModelProfile(modelIdOrUrl?: string | null): Characte
   
   const baseKey = raw.replace(/^.*[\\/]/, '').replace(/\.(glb|gltf|fbx|obj)$/i, '');
 
-  if (CHARACTER_MODEL_PROFILES[baseKey]) {
-    return CHARACTER_MODEL_PROFILES[baseKey];
-  }
-  return undefined;
+  const profileKey = baseKey.startsWith('quat-') ? baseKey.slice('quat-'.length) : baseKey;
+  return CHARACTER_MODEL_PROFILES[profileKey];
 }
 
 /** Check strict compatibility between a model profile and a wardrobe item/pack. */
 export function isWardrobeItemCompatibleWithProfile(
   profileOrId: CharacterModelProfile | string | null | undefined,
-  item: { pack?: string; modularSetName?: string; skeleton?: string; tags?: string[] },
+  item: { pack?: string; modularSetName?: string; skeleton?: string; baseBodyType?: string; tags?: string[] },
 ): boolean {
   if (!profileOrId) return false;
   const profile = typeof profileOrId === 'string' ? getCharacterModelProfile(profileOrId) : profileOrId;
   if (!profile) return false;
+
+  const itemBodyType = item.baseBodyType?.trim().toLowerCase();
+  if (itemBodyType && itemBodyType !== 'unspecified' && profile.bodyType && itemBodyType !== profile.bodyType) {
+    return false;
+  }
 
   // Skeletons must match if specified
   if (item.skeleton && item.skeleton !== profile.skeleton) {
@@ -107,7 +119,7 @@ export function isWardrobeItemCompatibleWithProfile(
   }
 
   // Pack must match
-  if (item.pack && item.pack === profile.compatibleWardrobePack) {
+  if (item.pack && item.pack.toLowerCase() === profile.compatibleWardrobePack.toLowerCase()) {
     return true;
   }
   if (item.modularSetName && item.modularSetName.toLowerCase() === profile.id.toLowerCase()) {

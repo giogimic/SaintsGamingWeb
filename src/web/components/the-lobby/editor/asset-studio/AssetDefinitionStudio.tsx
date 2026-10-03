@@ -32,7 +32,7 @@ import {
   CharacterBaseBodyType,
 } from '@/shared/game/assetImportProfiles';
 import { getModelWardrobeCategory } from '@/shared/game/modelWardrobe';
-import { ANIMATION_PROFILES, getAnimationProfile, type AnimationSlot } from '@/shared/game/animationProfiles';
+import { ANIMATION_PROFILES, getAnimationProfile, isAnimationProfileCompatible, type AnimationSlot } from '@/shared/game/animationProfiles';
 import {
   ANIMATION_ACTIONS,
   animationSetChoiceId,
@@ -571,24 +571,34 @@ export function AssetDefinitionStudio({
   }, []);
 
   const dynamicProfiles = useMemo(() => {
+    const modelBoneNames = (parsedGLB?.bones || []).map((bone: any) => bone.name).filter(Boolean);
     return dbAnimationAssets.map(asset => {
-      const catAnims = asset.presentation?.categorizedAnimations || [];
+      const presentation = asset.presentation || asset.metadata?.presentation || {};
+      const bank = presentation.animations || {};
+      const targetBoneNames = bank.boneNames || bank.rigBoneNames || presentation.rigAnalysis?.boneNames || [];
+      const catAnims = presentation.categorizedAnimations || [];
       const slotMap: Partial<Record<AnimationSlot, { clip: string, loop: boolean }>> = {};
       catAnims.forEach((anim: any) => {
          (anim.suggestedSlots || []).forEach((slot: string) => {
             if (!slotMap[slot as AnimationSlot]) slotMap[slot as AnimationSlot] = { clip: anim.clipName, loop: true };
          });
       });
-      return {
+      const profile = {
         id: `asset_${asset.id}`,
         displayName: asset.name,
-        basePath: '', 
+        basePath: asset.source || asset.cdnUrl || '',
         slotMap,
         availableClips: catAnims.map((c: any) => c.clipName),
+        targetSkeleton: bank.targetSkeleton,
+        targetBoneNames,
         asset,
       };
-    });
-  }, [dbAnimationAssets]);
+      return {
+        ...profile,
+        compatible: isAnimationProfileCompatible(profile, parsedGLB?.rigAnalysis?.family, modelBoneNames),
+      };
+    }).filter(profile => profile.compatible);
+  }, [dbAnimationAssets, parsedGLB]);
 
   const getCombinedProfile = (id: string) => {
     if (id?.startsWith('asset_')) return dynamicProfiles.find(p => p.id === id);
@@ -646,7 +656,7 @@ export function AssetDefinitionStudio({
           sourceKind: 'animation-set',
           sourceId: profile.id,
           sourceLabel: profile.displayName,
-          sourcePath: profile.asset.sourceUrl, // The full GLB file!
+          sourcePath: profile.asset.source || profile.asset.cdnUrl, // The full GLB file; clipName selects a bank entry.
           rigFamily: profile.asset.presentation?.rigAnalysis?.family || 'unknown',
           slots: catAnim.suggestedSlots || [],
           loop: true,
@@ -661,7 +671,8 @@ export function AssetDefinitionStudio({
     [animationChoices],
   );
   const hasEmbeddedAnimations = (parsedGLB?.animations.length || 0) > 0;
-  const canUseHumanoidAnimationProfiles = parsedGLB?.rigAnalysis.family === 'HUMANOID_BIPED' || !!parsedGLB?.rigAnalysis.isHumanoid;
+  const modelBoneNames = (parsedGLB?.bones || []).map((bone: any) => bone.name).filter(Boolean);
+  const canUseHumanoidAnimationProfiles = parsedGLB?.rigAnalysis.family === 'HUMANOID_BIPED';
 
   useEffect(() => {
     const clipCount = parsedGLB?.rawAnimations.length || 0;
@@ -873,23 +884,27 @@ export function AssetDefinitionStudio({
         }
 
         const isActorModel = taxonomy.suggestedRoles.some(role => ['Archetype', 'Character', 'NPC', 'Monster', 'Enemy', 'Player', 'Creature'].includes(role));
-        const isHumanoidRig = parsed.rigAnalysis.family === 'HUMANOID_BIPED' || parsed.rigAnalysis.isHumanoid;
+        const isHumanoidRig = parsed.rigAnalysis.family === 'HUMANOID_BIPED';
         let recommendedProfileId = '';
         if (parsed.animations.length === 0 && isActorModel && isHumanoidRig) {
+          const modelBoneNames = parsed.bones.map((bone) => bone.name);
           const normalizedModelName = file.name.toLowerCase().replace(/[^a-z0-9]/g, '');
           const namedProfile = ANIMATION_PROFILES.find(profile =>
+            isAnimationProfileCompatible(profile, parsed.rigAnalysis.family, modelBoneNames) &&
             normalizedModelName.includes(profile.id.toLowerCase().replace(/manny$/i, '').replace(/[^a-z0-9]/g, ''))
+          );
+          const compatibleUniversalProfile = ANIMATION_PROFILES.find((profile) =>
+            profile.targetSkeleton === 'quaternius_universal' &&
+            isAnimationProfileCompatible(profile, parsed.rigAnalysis.family, modelBoneNames),
           );
           const isMannySkeleton = (
             parsed.rigAnalysis.label?.toLowerCase().includes('manny') ||
-            Boolean(parsed.rigAnalysis.detectedStandardBones?.pelvis) ||
-            parsed.bones.some((b) => /^(pelvis|spine_0[1-5]|upperarm_l|thigh_l)$/i.test(b.name)) ||
-            !parsed.bones.some((b) => /mixamorig/i.test(b.name))
+            parsed.bones.some((b) => /^(pelvis|spine_0[1-5]|upperarm_l|thigh_l)$/i.test(b.name))
           );
           const defaultProfile = isMannySkeleton
             ? (getAnimationProfile('GreystoneManny') || getAnimationProfile('MocapMobility'))
             : (getAnimationProfile('MocapMobility') || getAnimationProfile('GreystoneManny'));
-          const profile = namedProfile || defaultProfile;
+          const profile = namedProfile || compatibleUniversalProfile || defaultProfile;
           if (profile) {
             recommendedProfileId = profile.id;
             for (const slot of Object.keys(profile.slotMap) as AnimationSlot[]) {
@@ -1032,7 +1047,9 @@ export function AssetDefinitionStudio({
       formData.append('name', assetName);
 
       let finalType = 'MODEL';
-      if (intentHint === 'weapon' || intentHint === 'prop') {
+      if (intentHint === 'animation_pack') {
+        finalType = 'ANIMATION';
+      } else if (intentHint === 'weapon' || intentHint === 'prop') {
         finalType = 'ITEM';
       } else if (intentHint === 'creature' || intentHint === 'monster' || intentHint === 'creature_monster') {
         finalType = 'CREATURE';
@@ -1054,6 +1071,7 @@ export function AssetDefinitionStudio({
       const tagList = tagsInput.split(',').map((t) => t.trim()).filter(Boolean);
       tagList.push(...finalRoles.map(r => r.toLowerCase()));
       if (finalStructure === 'Modular') tagList.push('modular');
+      if (intentHint === 'animation_pack') tagList.push('animation', 'animation-bank', 'humanoid');
       formData.append('tags', JSON.stringify(tagList));
 
       if (finalStructure === 'Modular') {
@@ -1832,17 +1850,22 @@ export function AssetDefinitionStudio({
                     className="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1.5 text-white cursor-pointer focus:border-amber-600/60 focus:outline-none transition-colors"
                   >
                     <option value="">Browse all sets / assign manually</option>
-                    {ANIMATION_PROFILES.map(profile => (
-                      <option key={profile.id} value={profile.id} disabled={!canUseHumanoidAnimationProfiles}>{profile.displayName} · Humanoid (Manny) rig</option>
-                    ))}
+                    {ANIMATION_PROFILES.map(profile => {
+                      const compatible = isAnimationProfileCompatible(profile, parsedGLB.rigAnalysis.family, modelBoneNames);
+                      return (
+                        <option key={profile.id} value={profile.id} disabled={!compatible}>
+                          {profile.displayName} · {profile.targetSkeleton ? 'verified rig match' : 'Humanoid rig'}
+                        </option>
+                      );
+                    })}
                     {dynamicProfiles.map(profile => (
                       <option key={profile.id} value={profile.id}>{profile.displayName} (Uploaded Library)</option>
                     ))}
                   </select>
                   <div className="text-[9px] text-slate-500 mt-1">
                     {canUseHumanoidAnimationProfiles
-                      ? 'Humanoid profiles provide reusable clips for this rig. A compatible set was assigned automatically when the model had no embedded clips.'
-                      : `This model is ${parsedGLB.rigAnalysis.label}; the registered animation sets require a humanoid (Manny) rig.`}
+                      ? 'Only profiles with a measured compatible rig are enabled. Compatible Quaternius clips are assigned automatically when the model has no embedded clips.'
+                      : `This model is ${parsedGLB.rigAnalysis.label}; universal humanoid profiles require a compatible biped rig.`}
                   </div>
                 </div>
               </div>
@@ -2338,13 +2361,13 @@ export function AssetDefinitionStudio({
                     This model has no embedded clips. {animationProfileId
                       ? `The compatible ${getCombinedProfile(animationProfileId)?.displayName || 'humanoid'} profile and its action slots were assigned automatically.`
                       : canUseHumanoidAnimationProfiles
-                        ? 'Choose a reusable Humanoid (Manny) profile below or upload companion .fbx/.glb clips.'
+                      ? 'Choose a rig-compatible humanoid profile below or upload companion .fbx/.glb clips.'
                         : 'No registered animation profile matches this model rig. Add clips authored for this rig type.'}
                   </div>
                 )}
                 {Object.values(animMap).some((choiceId) => choiceId && animationChoiceById.get(choiceId)?.sourceKind === 'animation-set') && (
                   <div className="rounded border border-slate-700 bg-slate-900/60 px-3 py-2 text-[10px] text-slate-300">
-                    Animation Set assignments are saved with their source and clip path. External clip loading and playback still need to be connected to the live character renderer.
+                    Animation Set assignments are saved with the bank source and exact clip name, then loaded by both character renderers.
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-2">

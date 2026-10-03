@@ -49,13 +49,13 @@ export const MonsterSpawnerPanel: React.FC = () => {
   const activeGameId = useEditorStore((state) => state.activeGameId);
   const [spawnX, setSpawnX] = useState(10);
   const [spawnY, setSpawnY] = useState(10);
-  const [creatures, setCreatures] = useState<Array<{ slug: string; name: string; sprite: string }>>([]);
+  const [creatures, setCreatures] = useState<Array<{ slug: string; name: string; spriteOverworld: string }>>([]);
 
   useEffect(() => {
     void (async () => {
       const res = await getAllCreatureDefs(activeGameId);
       if (res.success && res.data && res.data.length > 0) {
-        setCreatures(res.data.map((c) => ({ slug: c.slug, name: c.name, sprite: c.spriteOverworld })));
+        setCreatures(res.data.map((c) => ({ slug: c.slug, name: c.name, spriteOverworld: c.spriteOverworld })));
       } else {
         setCreatures([]);
       }
@@ -309,6 +309,7 @@ export const MonsterSpawnerPanel: React.FC = () => {
           onClick={() => {
             if (!mapId) return;
             const pool = String(entityProps.monsterPool || 'slime');
+            const creature = creatures.find((entry) => entry.slug === pool);
             const pop = parseInt(String(entityProps.maxPopulation || 3), 10);
             
             showToast(`Live testing ${pop}x ${pool} spawner...`);
@@ -318,10 +319,12 @@ export const MonsterSpawnerPanel: React.FC = () => {
               const dy = (Math.random() - 0.5) * 4;
               const payload = {
                 id: `test_spawn_${Date.now()}_${i}`,
-                name: pool,
+                name: creature?.name || pool,
                 x: spawnX + dx,
                 y: spawnY + dy,
-                sprite: pool
+                // Preserve the configured world-model JSON so the normal renderer can
+                // exercise model URL, wardrobe, rig, and animation profile data.
+                sprite: creature?.spriteOverworld || pool,
               };
               useGameStore.getState().emitSocketEvent?.('studio_spawn_npc', {
                 mapId,

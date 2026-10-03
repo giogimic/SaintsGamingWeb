@@ -29,6 +29,7 @@ import { selectAnimationGroup } from '@/engine/animationSelection';
 import { getCameraFacingAngle } from '@/shared/game/cameraFacing';
 import { isMovingBackward } from '@/shared/game/locomotionDirection';
 import { attachModularComponent } from '@/engine/helpers/babylonAttachmentHelpers';
+import { getHiddenWardrobeAttachmentIndexes, getQuaterniusBodyRegionFromMeshName, getQuaterniusBodyRegionsToHide } from '@/shared/game/quaterniusCharacter';
 import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 
 // Player is 2 blocks tall (like a classic voxel game character)
@@ -219,6 +220,7 @@ export class EntityRenderer {
           attachOffset: att.attachOffset,
           scale: att.scale,
           hidesComponents: att.hidesComponents,
+          textureVariantUrl: att.textureVariantUrl,
         })),
       });
 
@@ -565,15 +567,16 @@ export class EntityRenderer {
             baseSkeleton.useTextureToStoreBoneMatrices = true;
           }
 
+          const modularAttachments = data.modularAttachments || [];
           // Attach modular components (clothing, armor, hats, weapons, etc.)
-          if (data.modularAttachments && data.modularAttachments.length > 0) {
+          if (modularAttachments.length > 0) {
             current.attachmentAnimationGroups = current.attachmentAnimationGroups || [];
             current.attachmentSkeletons = current.attachmentSkeletons || [];
 
             const normBase = (data.modelUrl || '').trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.(glb|gltf)$/i, '');
 
-            for (let attIdx = 0; attIdx < data.modularAttachments.length; attIdx++) {
-              const att = data.modularAttachments[attIdx];
+            for (let attIdx = 0; attIdx < modularAttachments.length; attIdx++) {
+              const att = modularAttachments[attIdx];
               // Never import a duplicate GLB if this is an internal submesh or canonical built-in piece
               if (att.isSubmesh) continue;
               if (typeof att.assetId === 'string' && att.assetId.startsWith('builtin-piece-')) continue;
@@ -629,6 +632,24 @@ export class EntityRenderer {
                 console.warn(`[EntityRenderer] Failed to load modular attachment: ${attUrl}`, attErr);
               }
             }
+          }
+          const hiddenBodyRegions = new Set(getQuaterniusBodyRegionsToHide(modularAttachments));
+          modelWrapper.getChildMeshes(false).forEach((bodyMesh) => {
+            const region = getQuaterniusBodyRegionFromMeshName(bodyMesh.name);
+            if (region && hiddenBodyRegions.has(region)) bodyMesh.setEnabled(false);
+          });
+          const hiddenAttachmentIndexes = getHiddenWardrobeAttachmentIndexes(modularAttachments);
+          const hiddenAttachmentIds = new Set(
+            hiddenAttachmentIndexes
+              .map((index) => String(modularAttachments[index]?.assetId || ''))
+              .filter(Boolean),
+          );
+          if (hiddenAttachmentIds.size > 0) {
+            modelWrapper.getChildMeshes(false).forEach((attachedMesh: any) => {
+              if (hiddenAttachmentIds.has(String(attachedMesh.metadata?.wardrobeAttachmentAssetId || ''))) {
+                attachedMesh.setEnabled(false);
+              }
+            });
           }
           const allMeshes = modelWrapper.getChildMeshes(false);
           
@@ -820,6 +841,7 @@ export class EntityRenderer {
                     loop: mapping.loop !== false,
                     speed: mapping.speed,
                     lockRootHorizontalTranslation: mapping.lockRootHorizontalTranslation ?? isLocomotionSlot,
+                    clipName: mapping.clip,
                   }
                 ).then((ag) => {
                   if (!ag) return;

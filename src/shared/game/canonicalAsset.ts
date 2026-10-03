@@ -70,6 +70,8 @@ export interface ModularAttachmentDef {
   defaultVisible?: boolean;
   category?: string;
   tint?: string;
+  /** Optional external base-color map selected for this wardrobe item. */
+  textureVariantUrl?: string;
 }
 
 export interface PresentationDefinition {
@@ -121,6 +123,7 @@ export interface CanonicalAssetInput {
   width?: number;
   height?: number;
   sourceUrl: string;
+  skeleton?: string | null;
   atlasSource?: string | null;
   atlasFrame?: { x: number; y: number; width?: number; height?: number; w?: number; h?: number } | null;
   sourceRegion?: { x: number; y: number; w: number; h: number } | null;
@@ -144,6 +147,7 @@ export interface CanonicalAssetInput {
   animationState?: string | null;
   animationFrames?: number;
   frameDurationMs?: number;
+  textureVariants?: { id: string; label: string; textureVariantUrl?: string }[];
   showInCharacterCreation?: boolean;
   isPlayable?: boolean;
   fileSize?: number;
@@ -380,6 +384,7 @@ export function buildCanonicalAssetData(input: CanonicalAssetInput): CanonicalNo
     variant: variantFamily || undefined,
     z: zOrderHint ?? undefined,
     body: baseBodyType || undefined,
+    skeleton: input.skeleton || undefined,
     isModularComponent: isModularComponent || undefined,
     componentCategory: componentCategory || undefined,
     componentLayer: componentLayer || undefined,
@@ -396,6 +401,7 @@ export function buildCanonicalAssetData(input: CanonicalAssetInput): CanonicalNo
     animationState: input.animationState || undefined,
     animationFrames: input.animationFrames || undefined,
     frameDurationMs: input.frameDurationMs || undefined,
+    textureVariants: input.textureVariants?.length ? input.textureVariants : undefined,
     showInCharacterCreation,
     isPlayable,
     sourceAssetId: input.sourceAssetId || undefined,

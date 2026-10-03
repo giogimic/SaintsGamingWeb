@@ -159,6 +159,8 @@ export interface RetargetOptions {
   speed?: number;
   lockRootHorizontalTranslation?: boolean;
   clipName?: string;
+  /** Reject clips that map too few of their authored target tracks onto the selected rig. */
+  minimumBoneMatchRatio?: number;
 }
 
 export interface RetargetResult {
@@ -263,7 +265,8 @@ export function retargetAnimationGroup(
     }
   }
 
-  if (matchedBones === 0) {
+  const matchRatio = totalBones > 0 ? matchedBones / totalBones : 0;
+  if (matchedBones === 0 || matchRatio < (options?.minimumBoneMatchRatio ?? 0.3)) {
     console.warn(`[AnimationRetarget] 0 of ${totalBones} bones matched for slot '${slotName}'. Source: ${sourceAg.name}`);
     newAg.dispose();
     return null;
@@ -279,6 +282,15 @@ export function retargetAnimationGroup(
     matchedBones,
     totalBones,
   };
+}
+
+export function selectAnimationGroupByName<T extends { name: string }>(
+  groups: T[] | null | undefined,
+  clipName?: string,
+): T | null {
+  if (!groups || groups.length === 0) return null;
+  if (!clipName) return groups[0] || null;
+  return groups.find((group) => group.name === clipName) || null;
 }
 
 /**
@@ -308,12 +320,11 @@ export async function loadAndRetargetAnimation(
       return null;
     }
 
-    let sourceAg = container.animationGroups[0];
-    if (options?.clipName) {
-      const found = container.animationGroups.find(ag => ag.name === options.clipName);
-      if (found) {
-        sourceAg = found;
-      }
+    const sourceAg = selectAnimationGroupByName(container.animationGroups, options?.clipName);
+    if (!sourceAg) {
+      container.dispose();
+      console.warn(`[AnimationRetarget] Clip '${options?.clipName}' not found in ${sourcePath}`);
+      return null;
     }
     const retargetResult = retargetAnimationGroup(sourceAg, slotName, targetNodes, scene, options);
 

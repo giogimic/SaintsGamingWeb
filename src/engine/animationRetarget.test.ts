@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeBoneName, findAllMatchingTargetNodes } from './animationRetarget';
+import { normalizeBoneName, findAllMatchingTargetNodes, selectAnimationGroupByName } from './animationRetarget';
 
 describe('animationRetarget', () => {
   it('normalizes bone names correctly across namespaces and prefixes', () => {
@@ -67,5 +67,12 @@ describe('animationRetarget', () => {
     expect(findAllMatchingTargetNodes('lowerarm_l', mixamoNodes)[0]?.name).toBe('mixamorig:LeftForeArm');
     expect(findAllMatchingTargetNodes('hand_l', mixamoNodes)[0]?.name).toBe('mixamorig:LeftHand');
     expect(findAllMatchingTargetNodes('thigh_r', mixamoNodes)[0]?.name).toBe('mixamorig:RightUpLeg');
+  });
+
+  it('selects the requested embedded bank clip and does not silently use the first clip for a bad name', () => {
+    const groups = [{ name: 'A_TPose' }, { name: 'Idle_Loop' }, { name: 'Walk_Loop' }];
+    expect(selectAnimationGroupByName(groups, 'Walk_Loop')?.name).toBe('Walk_Loop');
+    expect(selectAnimationGroupByName(groups, 'Missing_Clip')).toBeNull();
+    expect(selectAnimationGroupByName(groups)?.name).toBe('A_TPose');
   });
 });

@@ -22,7 +22,7 @@ export interface CanonicalModelDef {
   name: string;
   modelUrl: string;
   category: 'character' | 'creature' | 'monster' | 'prop';
-  skeleton: 'manny' | 'creature_custom' | 'mixamo' | 'daz_g8f' | 'static';
+  skeleton: string;
   isPlayable?: boolean;
   defaultAnimationProfileId?: string;
   modularParts?: CanonicalModelPartDef[];
@@ -45,9 +45,9 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
   quaternius_base_male: {
     id: 'quaternius_base_male',
     name: 'Quaternius Base Male',
-    modelUrl: '/game-assets/models/humanoids/superheroes/Superhero_Male_FullBody.glb',
+    modelUrl: '/models/quaternius/quaternius_base_male.glb',
     category: 'character',
-    skeleton: 'mixamo',
+    skeleton: 'quaternius_universal',
     isPlayable: true,
     defaultAnimationProfileId: 'quaternius_native',
     modularParts: [],
@@ -55,9 +55,9 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
   quaternius_base_female: {
     id: 'quaternius_base_female',
     name: 'Quaternius Base Female',
-    modelUrl: '/game-assets/models/humanoids/superheroes/Superhero_Female_FullBody.glb',
+    modelUrl: '/models/quaternius/quaternius_base_female.glb',
     category: 'character',
-    skeleton: 'mixamo',
+    skeleton: 'quaternius_universal',
     isPlayable: true,
     defaultAnimationProfileId: 'quaternius_native',
     modularParts: [],
@@ -65,9 +65,9 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
   superhero_male_fullbody: {
     id: 'superhero_male_fullbody',
     name: 'Quaternius Base Male',
-    modelUrl: '/game-assets/models/humanoids/superheroes/Superhero_Male_FullBody.glb',
+    modelUrl: '/models/quaternius/quaternius_base_male.glb',
     category: 'character',
-    skeleton: 'mixamo',
+    skeleton: 'quaternius_universal',
     isPlayable: true,
     defaultAnimationProfileId: 'quaternius_native',
     modularParts: [],
@@ -75,9 +75,9 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
   superhero_female_fullbody: {
     id: 'superhero_female_fullbody',
     name: 'Quaternius Base Female',
-    modelUrl: '/game-assets/models/humanoids/superheroes/Superhero_Female_FullBody.glb',
+    modelUrl: '/models/quaternius/quaternius_base_female.glb',
     category: 'character',
-    skeleton: 'mixamo',
+    skeleton: 'quaternius_universal',
     isPlayable: true,
     defaultAnimationProfileId: 'quaternius_native',
     modularParts: [],
@@ -85,7 +85,7 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
   imp: {
     id: 'imp',
     name: 'Imp',
-    modelUrl: '/uploads/Imp.glb',
+    modelUrl: '/models/quaternius/imp.glb',
     category: 'monster',
     skeleton: 'creature_custom',
     isPlayable: false,
@@ -94,7 +94,7 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
   puglin: {
     id: 'puglin',
     name: 'Puglin',
-    modelUrl: '/uploads/Puglin.glb',
+    modelUrl: '/models/quaternius/puglin.glb',
     category: 'monster',
     skeleton: 'creature_custom',
     isPlayable: false,
@@ -144,22 +144,28 @@ export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalMod
   if (!modelIdOrUrl) return undefined;
   const raw = modelIdOrUrl.trim().toLowerCase();
   const key = raw.replace(/^.*[\\/]/, '').replace(/\.(glb|gltf|fbx|obj)$/i, '');
-  if (CANONICAL_BUILTIN_MODELS[key]) {
-    return CANONICAL_BUILTIN_MODELS[key];
-  }
-  if (key.includes('superhero_male') || (key.includes('male') && key.includes('quaternius'))) {
-    return CANONICAL_BUILTIN_MODELS.quaternius_base_male;
-  }
-  if (key.includes('superhero_female') || (key.includes('female') && key.includes('quaternius'))) {
-    return CANONICAL_BUILTIN_MODELS.quaternius_base_female;
-  }
-  if (key.includes('imp')) return CANONICAL_BUILTIN_MODELS.imp;
-  if (key.includes('puglin')) return CANONICAL_BUILTIN_MODELS.puglin;
-  if (key.includes('brute')) return CANONICAL_BUILTIN_MODELS.brute;
-  if (key.includes('asian')) return CANONICAL_BUILTIN_MODELS.asian_girl;
-  if (key.includes('boy')) return CANONICAL_BUILTIN_MODELS.boy;
-  if (key.includes('girl')) return CANONICAL_BUILTIN_MODELS.girl;
-  return undefined;
+  const exactAliases: Record<string, string> = {
+    'quat-quaternius_base_male': 'quaternius_base_male',
+    'quat-quaternius_base_female': 'quaternius_base_female',
+    'builtin-model-quaternius-base-male': 'quaternius_base_male',
+    'builtin-model-quaternius-base-female': 'quaternius_base_female',
+    'builtin-model-brute': 'brute',
+    'builtin-model-asian-girl': 'asian_girl',
+    'builtin-model-boy': 'boy',
+    'builtin-model-girl': 'girl',
+    'builtin-model-imp': 'imp',
+    'builtin-model-puglin': 'puglin',
+    superhero_male_fullbody: 'superhero_male_fullbody',
+    superhero_female_fullbody: 'superhero_female_fullbody',
+    imp: 'imp',
+    puglin: 'puglin',
+    brute: 'brute',
+    asian_girl: 'asian_girl',
+    boy: 'boy',
+    girl: 'girl',
+  };
+  const canonicalKey = exactAliases[key] || key;
+  return CANONICAL_BUILTIN_MODELS[canonicalKey];
 }
 
 export function getModelModularComponents(modelIdOrUrl?: string | null): CanonicalModelPartDef[] {
@@ -187,10 +193,10 @@ export function resolveModelAssetUrl(raw?: string | null): string | undefined {
     return trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
   }
 
-  // Canonical built-in model aliases - match on bare id or file basename
-  const canonical = getCanonicalModelDef(trimmed);
-  if (canonical) {
-    return canonical.modelUrl;
+  // Preserve explicit paths such as `/models/quaternius/imp.glb` before
+  // considering bare canonical aliases with the same basename.
+  if (trimmed.startsWith('/') && !/\.(png|jpg|jpeg|webp|gif|svg)$/i.test(trimmed)) {
+    return trimmed;
   }
 
   // Upload identifiers
@@ -200,6 +206,11 @@ export function resolveModelAssetUrl(raw?: string | null): string | undefined {
     }
     return `/uploads/${trimmed}.glb`;
   }
+
+  // Canonical bare model names may include an extension in saved records.
+  // Resolve those through the registry before the generic extension fallback.
+  const canonical = getCanonicalModelDef(trimmed);
+  if (canonical) return canonical.modelUrl;
 
   // Explicit model file extensions
   if (/\.(glb|gltf|fbx|obj)$/i.test(trimmed)) {
@@ -287,6 +298,7 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
           meshName: att?.meshName || att?.assetDefinition?.meshName || att?.metadata?.meshName,
           defaultVisible: att?.defaultVisible ?? att?.metadata?.defaultVisible,
           category: att?.category || att?.metadata?.category,
+          textureVariantUrl: att?.textureVariantUrl || att?.metadata?.textureVariantUrl,
         };
       })
       .filter((a: ModularAttachmentDef | undefined): a is ModularAttachmentDef => !!a);
@@ -304,8 +316,7 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
 
   const canonicalDef = canonicalLookup
     || (rawId && getCanonicalModelDef(String(rawId)))
-    || (model.assetId && getCanonicalModelDef(String(model.assetId)))
-    || CANONICAL_BUILTIN_MODELS.brute;
+    || (model.assetId && getCanonicalModelDef(String(model.assetId)));
 
   const profile = getCharacterModelProfile(rawId)
     || getCharacterModelProfile(model.assetId)
@@ -319,7 +330,7 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
 
   return {
     mode: '3D',
-    assetId: model.assetId || canonicalDef?.id || 'builtin-model-brute',
+    assetId: model.assetId || canonicalDef?.id || String(rawId ?? modelUrl),
     animationProfileId: model.animationProfileId ?? data.animationProfileId ?? data.assetDefinition?.animationProfileId ?? canonicalDef?.defaultAnimationProfileId ?? profile?.defaultAnimationProfileId ?? (canonicalDef?.skeleton === 'manny' ? 'GreystoneManny' : undefined),
     modelUrl,
     modularModelUrls,

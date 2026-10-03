@@ -137,6 +137,20 @@ describe('modelRigTaxonomy', () => {
     expect(inferExpandedAnimationSlots('Level_Start_Intro')).toContain('level_start');
   });
 
+  it('does not infer idle from the word Standard and recognizes Quaternius reaction names', () => {
+    expect(inferExpandedAnimationSlots('A_TPose', 'UAL1_Standard.glb')).not.toContain('idle');
+    expect(inferExpandedAnimationSlots('Death01')).toContain('death');
+    expect(inferExpandedAnimationSlots('Hit_Chest')).toContain('hit_react_front');
+    expect(inferExpandedAnimationSlots('Hit_Knockback')).toContain('hit_react_front');
+  });
+
+  it('recognizes the UAL2 weapon combo naming convention as combat actions', () => {
+    expect(inferExpandedAnimationSlots('Melee_Hook')).toContain('attack_light');
+    expect(inferExpandedAnimationSlots('Sword_Heavy_Combo')).toContain('attack_heavy');
+    expect(inferExpandedAnimationSlots('Sword_Regular_A')).toContain('attack_light');
+    expect(inferExpandedAnimationSlots('Sword_Idle_Loop')).not.toContain('attack_light');
+  });
+
   it('correctly validates animation filenames with isAnimationFileName', () => {
     expect(isAnimationFileName('Jump_Melee.FBX')).toBe(true);
     expect(isAnimationFileName('Attack_A_Fast.FBX')).toBe(true);

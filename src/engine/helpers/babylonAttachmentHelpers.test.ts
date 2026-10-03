@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findBabylonBone, attachModularComponent } from "./babylonAttachmentHelpers";
+import { findBabylonBone, attachModularComponent, isWardrobeSkeletonCompatible } from "./babylonAttachmentHelpers";
 import * as BABYLON from "@babylonjs/core";
 import { NullEngine } from "@babylonjs/core/Engines/nullEngine";
 
@@ -45,7 +45,25 @@ describe("findBabylonBone", () => {
   });
 });
 
+describe('wardrobe rig compatibility', () => {
+  it('accepts a head-only source rig for hair but rejects it as a full clothing rig', () => {
+    const baseBones = ['pelvis', 'spine_01', 'Head', 'upperarm_l', 'upperarm_r', 'thigh_l', 'thigh_r'];
+    expect(isWardrobeSkeletonCompatible(['Head'], baseBones, 0.7, 'hair')).toBe(true);
+    expect(isWardrobeSkeletonCompatible(['Head'], baseBones, 0.7, 'clothing')).toBe(false);
+  });
+});
+
 describe("attachModularComponent", () => {
+  it("requires essential limb and torso matches before accepting skinned clothing", () => {
+    const quaterniusBones = ['pelvis', 'spine_01', 'Head', 'upperarm_l', 'upperarm_r', 'thigh_l', 'thigh_r', 'hand_l'];
+    expect(isWardrobeSkeletonCompatible(quaterniusBones, quaterniusBones)).toBe(true);
+    expect(isWardrobeSkeletonCompatible(
+      ['pelvis', 'spine_01', 'Head', 'hand_l'],
+      quaterniusBones,
+    )).toBe(false);
+    expect(isWardrobeSkeletonCompatible(quaterniusBones, [])).toBe(false);
+  });
+
   it("hides matching base components when hidesComponents is specified", () => {
     const disabledNames: string[] = [];
     const baseChildMeshes = [

@@ -1,3 +1,11 @@
+# 2026-10-03 (2.2.108)
+- **Quaternius Character, Wardrobe & Animation Integration**:
+  - Prepared the supplied male/female base characters into independently hideable skinned body regions so outfit meshes cover the body while preserving the head, face, eyes, and rig.
+  - Registered the supplied modular outfit, headwear, hair/face accessories, verified color maps, Imp/Puglin models, and UAL1/UAL2 animation banks with measured rig and clip metadata.
+  - Added strict wardrobe body/rig checks, selectable verified outfit colors, exact embedded animation clip selection, root-motion profile variants, and compatibility checks for uploaded humanoid rigs.
+  - Fixed creature/monster model selection and preview/spawn metadata so stable asset identity and compatible animation information follow selected models.
+  - Added repeatable Quaternius import/catalog tooling and a detailed source coverage and handoff note.
+
 # 2026-10-03 (2.2.107)
 - **Modular Characters & Animation Pipeline**:
   - Registered `quaternius_native` in `animationProfiles.ts` to properly link the engine's action slots to the embedded clips inside `ual1_standard.glb`. Modular characters now animate properly in the Character Creator and game view.

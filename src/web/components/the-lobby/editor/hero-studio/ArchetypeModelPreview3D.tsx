@@ -11,11 +11,78 @@ import { getDefaultModelWardrobeAttachmentMode, getDefaultModelWardrobeSocket } 
 import { normalizeBoneName } from '@/engine/animationRetarget';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { getCharacterModelProfile } from '@/shared/game/characterProfiles';
+import { getHiddenWardrobeAttachmentIndexes, getQuaterniusBodyRegionFromMeshName, getQuaterniusBodyRegionsToHide } from '@/shared/game/quaterniusCharacter';
 import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 import { WorldModelValue, STANDARD_SOCKET_OPTIONS } from '../components/WorldModelSelector';
 import { Play, Pause, RotateCw, Bone, Layers, EyeOff, Shield } from 'lucide-react';
 
-export type ArchetypePreviewAttachment = (WorldModelValue | ModularAttachmentDef) & { tint?: string };
+export type ArchetypePreviewAttachment = (WorldModelValue | ModularAttachmentDef) & {
+  tint?: string;
+  textureVariantUrl?: string;
+};
+
+const QUATERNIUS_TEXTURE_VARIANT_FAMILIES = {
+  '/models/quaternius/textures/T_Peasant_2_BaseColor.png': 'peasant',
+  '/models/quaternius/textures/T_Ranger_3_BaseColor.png': 'ranger',
+} as const;
+
+type QuaterniusOutfitFamily = (typeof QUATERNIUS_TEXTURE_VARIANT_FAMILIES)[keyof typeof QUATERNIUS_TEXTURE_VARIANT_FAMILIES];
+
+function materialMatchesQuaterniusFamily(material: THREE.Material, family: QuaterniusOutfitFamily): boolean {
+  const materialName = material.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  if (materialName.includes(family)) return true;
+
+  const map = (material as THREE.MeshStandardMaterial).map;
+  const image = map?.image as { currentSrc?: string; src?: string } | undefined;
+  const textureName = [map?.name, image?.currentSrc, image?.src].filter(Boolean).join(' ').toLowerCase();
+  return textureName.includes(`t_${family}_basecolor`) || textureName.includes(`${family}_basecolor`);
+}
+
+/** Applies one verified Quaternius outfit color map without mutating the loaded source materials. */
+export function applyQuaterniusTextureVariant(
+  scene: THREE.Object3D,
+  texture: THREE.Texture,
+  family: QuaterniusOutfitFamily,
+): () => void {
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.flipY = false;
+  texture.needsUpdate = true;
+
+  const originalMaterials = new Map<THREE.Mesh, THREE.Material | THREE.Material[]>();
+  const variantMaterials: THREE.Material[] = [];
+  scene.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh) return;
+
+    const original = mesh.material;
+    const sourceMaterials = Array.isArray(original) ? original : [original];
+    let changed = false;
+    const replacements = sourceMaterials.map((material) => {
+      if (!('map' in material) || !materialMatchesQuaterniusFamily(material, family)) return material;
+      const clone = material.clone() as THREE.MeshStandardMaterial;
+      clone.map = texture;
+      clone.needsUpdate = true;
+      variantMaterials.push(clone);
+      changed = true;
+      return clone;
+    });
+
+    if (changed) {
+      originalMaterials.set(mesh, original);
+      mesh.material = Array.isArray(original) ? replacements : replacements[0];
+    }
+  });
+
+  let cleaned = false;
+  return () => {
+    if (cleaned) return;
+    cleaned = true;
+    originalMaterials.forEach((material, mesh) => {
+      mesh.material = material;
+    });
+    variantMaterials.forEach((material) => material.dispose());
+  };
+}
 
 interface ArchetypeModelPreview3DProps {
   baseAssetId?: string;
@@ -204,6 +271,50 @@ function CompositeCharacter({
     };
   }, [modularAttachments]);
 
+  // Apply only alternate maps that are confirmed in the user's supplied Standard archive.
+  useEffect(() => {
+    const variants = loadedAttachments.flatMap(({ scene, attachment }) => {
+      const url = typeof attachment.textureVariantUrl === 'string' ? attachment.textureVariantUrl : '';
+      const family = QUATERNIUS_TEXTURE_VARIANT_FAMILIES[url as keyof typeof QUATERNIUS_TEXTURE_VARIANT_FAMILIES];
+      return family ? [{ scene, url, family }] : [];
+    });
+    if (variants.length === 0) return;
+
+    let isCancelled = false;
+    const loader = new THREE.TextureLoader();
+    const textures = new Map<string, THREE.Texture>();
+    const restoreMaterials: Array<() => void> = [];
+
+    for (const url of new Set(variants.map((variant) => variant.url))) {
+      const texture = loader.load(
+        url,
+        (loadedTexture) => {
+          if (isCancelled) {
+            loadedTexture.dispose();
+            return;
+          }
+          loadedTexture.colorSpace = THREE.SRGBColorSpace;
+          loadedTexture.flipY = false;
+          loadedTexture.needsUpdate = true;
+          variants
+            .filter((variant) => variant.url === url)
+            .forEach((variant) => {
+              restoreMaterials.push(applyQuaterniusTextureVariant(variant.scene, loadedTexture, variant.family));
+            });
+        },
+        undefined,
+        (error) => console.warn('[ArchetypeModelPreview3D] Failed to load Quaternius color variant:', url, error),
+      );
+      textures.set(url, texture);
+    }
+
+    return () => {
+      isCancelled = true;
+      restoreMaterials.reverse().forEach((restore) => restore());
+      textures.forEach((texture) => texture.dispose());
+    };
+  }, [loadedAttachments]);
+
   // Animation Mixer
   useEffect(() => {
     if (!baseScene || animations.length === 0) return;
@@ -355,12 +466,23 @@ function CompositeCharacter({
 
     activeAttachments.forEach((att: any) => {
       (att.hidesComponents || []).forEach((c: string) => hiddenKeywords.add(c.toLowerCase()));
-      
-      // If a major modular body piece is equipped, hide the monolithic base meshes
-      if (att.category && ['clothing', 'arms', 'legs', 'shoes'].includes(att.category)) {
-        hiddenKeywords.add('superhero_male');
-        hiddenKeywords.add('superhero_female');
-      }
+    });
+
+    const hiddenBodyRegions = new Set(getQuaterniusBodyRegionsToHide(activeAttachments));
+    const hiddenAttachmentIndexes = getHiddenWardrobeAttachmentIndexes(activeAttachments);
+    const hiddenAttachmentIds = new Set(
+      hiddenAttachmentIndexes
+        .map((index) => String(activeAttachments[index]?.assetId || ''))
+        .filter(Boolean),
+    );
+    baseScene.traverse((child) => {
+      if (!(child as THREE.Mesh).isMesh) return;
+      const region = getQuaterniusBodyRegionFromMeshName(child.name);
+      if (region && hiddenBodyRegions.has(region)) child.visible = false;
+    });
+    loadedAttachments.forEach(({ scene: attachmentScene, attachment }) => {
+      const assetId = String(attachment.assetId || '');
+      if (assetId && hiddenAttachmentIds.has(assetId)) attachmentScene.visible = false;
     });
 
     if (hiddenKeywords.size > 0) {
@@ -369,6 +491,7 @@ function CompositeCharacter({
           const meshName = child.name.toLowerCase();
           const normMesh = norm(child.name);
           for (const kw of hiddenKeywords) {
+            if (['hair', 'beard', 'hat', 'head_accessory'].includes(kw)) continue;
             const normKw = norm(kw);
             if (meshName.includes(kw) || normMesh.includes(normKw)) {
               child.visible = false;

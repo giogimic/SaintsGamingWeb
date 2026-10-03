@@ -8,6 +8,46 @@ import { resolveSpriteDefinition } from "./spriteDefinitions";
 import { getStandardSlices } from "./modularSpritePackage";
 
 describe("Canonical Asset Convergence (Bible 35)", () => {
+  it('preserves compatible rig and creator metadata for a modular model asset', () => {
+    const canonical = buildCanonicalAssetData({
+      sourceUrl: '/models/quaternius/male_peasant_body.glb',
+      type: 'MODEL',
+      pack: 'quaternius',
+      skeleton: 'quaternius_universal',
+      isModularComponent: true,
+      componentCategory: 'clothing',
+      baseBodyType: 'male',
+      showInCharacterCreation: true,
+      presentation: { mode: '3D' },
+    });
+
+    expect(canonical.metadata.pack).toBe('quaternius');
+    expect(canonical.metadata.skeleton).toBe('quaternius_universal');
+    expect(canonical.metadata.showInCharacterCreation).toBe(true);
+    expect(canonical.metadata.presentation).toEqual({ mode: '3D' });
+  });
+
+  it('preserves verified wardrobe texture choices in canonical asset metadata', () => {
+    const textureVariants = [
+      { id: 'default', label: 'Original colors' },
+      {
+        id: 'peasant-2',
+        label: 'Color variation 2',
+        textureVariantUrl: '/models/quaternius/textures/T_Peasant_2_BaseColor.png',
+      },
+    ];
+    const canonical = buildCanonicalAssetData({
+      sourceUrl: '/models/quaternius/male_peasant_body.glb',
+      type: 'MODEL',
+      pack: 'quaternius',
+      skeleton: 'quaternius_universal',
+      textureVariants,
+      presentation: { mode: '3D' },
+    });
+
+    expect(canonical.metadata.textureVariants).toEqual(textureVariants);
+  });
+
   it("generates deterministic GameAsset and UsableAsset records for sliced spritesheets", () => {
     const canonical = buildCanonicalAssetData({
       userId: "user_123",

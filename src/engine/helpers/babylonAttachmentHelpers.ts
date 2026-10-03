@@ -1,5 +1,6 @@
 import * as BABYLON from '@babylonjs/core';
 import { normalizeBoneName } from '../animationRetarget';
+import { areRigBoneNamesEquivalent } from '@/shared/game/modelRigTaxonomy';
 import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 import { getDefaultModelWardrobeSocket } from '@/shared/game/modelWardrobe';
 
@@ -56,6 +57,50 @@ export interface AttachModularComponentResult {
   socketWrapper?: BABYLON.TransformNode;
 }
 
+const ESSENTIAL_WARDROBE_BONE_GROUPS: RegExp[] = [
+  /(pelvis|hips)/,
+  /spine/,
+  /head/,
+  /(leftarm|upperarml|arml)/,
+  /(rightarm|upperarmr|armr)/,
+  /(leftupleg|thighl|legl)/,
+  /(rightupleg|thighr|legr)/,
+];
+
+const HEAD_ONLY_WARDROBE_CATEGORIES = new Set([
+  'beard',
+  'face',
+  'hair',
+  'hat',
+  'head_accessory',
+  'mask',
+]);
+
+export function isWardrobeSkeletonCompatible(
+  attachmentBoneNames: string[],
+  baseBoneNames: string[],
+  minimumMatchRatio = 0.7,
+  category?: string,
+): boolean {
+  if (attachmentBoneNames.length === 0 || baseBoneNames.length === 0) return false;
+
+  if (category && HEAD_ONLY_WARDROBE_CATEGORIES.has(category.trim().toLowerCase())) {
+    return attachmentBoneNames.some((bone) => areRigBoneNamesEquivalent(bone, 'Head'))
+      && baseBoneNames.some((bone) => areRigBoneNamesEquivalent(bone, 'Head'));
+  }
+
+  const matched = attachmentBoneNames.filter((attachmentBone) =>
+    baseBoneNames.some((baseBone) => areRigBoneNamesEquivalent(attachmentBone, baseBone)),
+  ).length;
+  const matchRatio = matched / attachmentBoneNames.length;
+  const attachment = attachmentBoneNames.map(normalizeBoneName);
+  const base = baseBoneNames.map(normalizeBoneName);
+  const requiredGroupsFound = ESSENTIAL_WARDROBE_BONE_GROUPS.every((pattern) =>
+    attachment.some((bone) => pattern.test(bone)) && base.some((bone) => pattern.test(bone)),
+  );
+  return requiredGroupsFound && matchRatio >= minimumMatchRatio;
+}
+
 /**
  * Attaches an imported modular GLB/model onto a character base model.
  * Handles both skinned mesh retargeting (clothing/armor/outfits) and rigid socket parenting (hats/weapons/props).
@@ -73,6 +118,11 @@ export function attachModularComponent({
   // Never block cursor selection or camera raycasts
   importedResult.meshes.forEach((m) => {
     m.isPickable = false;
+    m.metadata = {
+      ...(m.metadata || {}),
+      wardrobeAttachmentAssetId: attachment.assetId,
+      wardrobeCategory: attachment.category,
+    };
   });
 
   if (attachment.isSubmesh && attachment.meshName) {
@@ -112,6 +162,20 @@ export function attachModularComponent({
   let socketWrapper: BABYLON.TransformNode | undefined;
 
   if (isSkinned && baseSkeleton) {
+    const incompatibleSkeleton = clothingSkeletons.some((clothingSkeleton) =>
+      !isWardrobeSkeletonCompatible(
+        clothingSkeleton.bones.map((bone: any) => bone.name || ''),
+        baseSkeleton.bones.map((bone: any) => bone.name || ''),
+        0.7,
+        attachment.category,
+      ),
+    );
+    if (incompatibleSkeleton) {
+      console.warn(`[Attachment] Skipped '${attachment.assetId || attachment.modelUrl || id}': clothing rig does not match the character skeleton.`);
+      importedResult.meshes.forEach((mesh) => mesh.setEnabled(false));
+      return { rootNodes: targetRoots, isSkinned: false };
+    }
+
     // 1. Skinned Wearable Attachment: Sync clothing bones to base skeleton transform nodes
     targetRoots.forEach((r) => {
       r.parent = modelWrapper;
@@ -221,6 +285,57 @@ export function attachModularComponent({
   }
 
   // 4. Apply Tint if provided
+  const textureVariantUrl = attachment.textureVariantUrl;
+  if (textureVariantUrl) {
+    const visitedMaterials = new Set<BABYLON.Material>();
+    let replacedTextureCount = 0;
+    importedResult.meshes.forEach((mesh) => {
+      const material = mesh.material as (BABYLON.Material & { subMaterials?: BABYLON.Material[] }) | null;
+      if (!material) return;
+      const materials = material.subMaterials || [material];
+      materials.forEach((candidate) => {
+        if (!candidate || visitedMaterials.has(candidate)) return;
+        visitedMaterials.add(candidate);
+        const variantMaterial = candidate as BABYLON.PBRMaterial | BABYLON.StandardMaterial;
+        const isPbrMaterial = variantMaterial instanceof BABYLON.PBRMaterial;
+        const isStandardMaterial = variantMaterial instanceof BABYLON.StandardMaterial;
+        if (!isPbrMaterial && !isStandardMaterial) return;
+
+        const originalTexture = isPbrMaterial
+          ? variantMaterial.albedoTexture
+          : variantMaterial.diffuseTexture;
+        const replacement = new BABYLON.Texture(
+          textureVariantUrl,
+          scene,
+          false,
+          false,
+          BABYLON.Texture.TRILINEAR_SAMPLINGMODE,
+        );
+        replacement.gammaSpace = true;
+        if (originalTexture) {
+          const sourceTexture = originalTexture as BABYLON.Texture;
+          replacement.coordinatesIndex = sourceTexture.coordinatesIndex;
+          replacement.uScale = sourceTexture.uScale;
+          replacement.vScale = sourceTexture.vScale;
+          replacement.uOffset = sourceTexture.uOffset;
+          replacement.vOffset = sourceTexture.vOffset;
+          replacement.uAng = sourceTexture.uAng;
+          replacement.vAng = sourceTexture.vAng;
+          replacement.wAng = sourceTexture.wAng;
+          replacement.wrapU = sourceTexture.wrapU;
+          replacement.wrapV = sourceTexture.wrapV;
+        }
+        if (isPbrMaterial) variantMaterial.albedoTexture = replacement;
+        else variantMaterial.diffuseTexture = replacement;
+        replacedTextureCount++;
+      });
+    });
+    if (replacedTextureCount === 0) {
+      console.warn(`[Attachment] '${attachment.assetId || attachment.modelUrl || id}' has a texture variant but no compatible color material.`);
+    }
+  }
+
+  // 5. Apply Tint if provided
   if (attachment.tint) {
     importedResult.meshes.forEach((mesh: any) => {
       if (mesh.material) {

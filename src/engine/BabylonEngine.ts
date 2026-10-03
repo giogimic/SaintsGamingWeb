@@ -100,6 +100,7 @@ import { AssetManager } from './assets/AssetManager';
 import { applyAnimationProfileFallback, resolveAnimationProfileId } from '../shared/game/animationProfiles';
 import { getDefaultModelWardrobeSocket } from '../shared/game/modelWardrobe';
 import { attachModularComponent, findBabylonBone } from './helpers/babylonAttachmentHelpers';
+import { getHiddenWardrobeAttachmentIndexes, getQuaterniusBodyRegionFromMeshName, getQuaterniusBodyRegionsToHide } from '../shared/game/quaterniusCharacter';
 import { resolveModelAssetUrl, CANONICAL_BUILTIN_MODELS, getModelModularComponents, getCanonicalModelDef } from '../shared/game/worldModelPresentation';
 import type { ModularAttachmentDef } from '../shared/game/canonicalAsset';
 
@@ -4114,6 +4115,7 @@ export class BabylonEngine {
         attachOffset: attachment.attachOffset,
         scale: attachment.scale,
         hidesComponents: attachment.hidesComponents,
+        textureVariantUrl: attachment.textureVariantUrl,
         suppressesSubmeshes: (attachment as any).suppressesSubmeshes,
       })),
     });
@@ -4266,15 +4268,6 @@ export class BabylonEngine {
               return self.findIndex(a => a.category === att.category) === index;
             }).reverse();
 
-            // Auto-hide base monolithic meshes if a major modular body piece is equipped
-            modularAttachments.forEach((att) => {
-              if (att.category && ['clothing', 'arms', 'legs', 'shoes'].includes(att.category)) {
-                if (!att.hidesComponents) att.hidesComponents = [];
-                att.hidesComponents.push('superhero_male');
-                att.hidesComponents.push('superhero_female');
-              }
-            });
-
             if (modularAttachments.length > 0) {
               const normBase = (baseModelUrl || '').trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.(glb|gltf)$/i, '');
 
@@ -4343,6 +4336,25 @@ export class BabylonEngine {
                   console.warn(`[BabylonEngine] Failed to load modular attachment: ${attUrl}`, attErr);
                 }
               }
+            }
+
+            const hiddenBodyRegions = new Set(getQuaterniusBodyRegionsToHide(modularAttachments));
+            baseModelWrapper.getChildMeshes(false).forEach((bodyMesh) => {
+              const region = getQuaterniusBodyRegionFromMeshName(bodyMesh.name);
+              if (region && hiddenBodyRegions.has(region)) bodyMesh.setEnabled(false);
+            });
+            const hiddenAttachmentIndexes = getHiddenWardrobeAttachmentIndexes(modularAttachments);
+            const hiddenAttachmentIds = new Set(
+              hiddenAttachmentIndexes
+                .map((index) => String(modularAttachments[index]?.assetId || ''))
+                .filter(Boolean),
+            );
+            if (hiddenAttachmentIds.size > 0) {
+              baseModelWrapper.getChildMeshes(false).forEach((attachedMesh: any) => {
+                if (hiddenAttachmentIds.has(String(attachedMesh.metadata?.wardrobeAttachmentAssetId || ''))) {
+                  attachedMesh.setEnabled(false);
+                }
+              });
             }
 
             currentMesh.metadata.attachmentAnimationGroups = attachmentAnimationGroups;

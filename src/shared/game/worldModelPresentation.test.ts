@@ -59,6 +59,7 @@ describe('worldModelPresentation', () => {
               defaultVisible: true,
               isSubmesh: true,
               meshName: 'ChestMesh',
+              textureVariantUrl: '/models/quaternius/textures/T_Peasant_2_BaseColor.png',
             },
             {
               assetId: 'hidden_cape',
@@ -88,6 +89,7 @@ describe('worldModelPresentation', () => {
       expect(attachments[0].attachmentMode).toBe('SKINNED');
       expect(attachments[0].isSubmesh).toBe(true);
       expect(attachments[0].meshName).toBe('ChestMesh');
+      expect(attachments[0].textureVariantUrl).toBe('/models/quaternius/textures/T_Peasant_2_BaseColor.png');
       expect(attachments[1]).toMatchObject({ assetId: 'hidden_cape', defaultVisible: false });
       expect(result?.modularModelUrls).toEqual(['/uploads/iron_chestplate.glb', '/uploads/hidden_cape.glb']);
     });
@@ -104,12 +106,12 @@ describe('worldModelPresentation', () => {
       const male = getCanonicalModelDef('quaternius_base_male');
       expect(male).toBeDefined();
       expect(male?.isPlayable).toBe(true);
-      expect(male?.modelUrl).toBe('/game-assets/models/humanoids/superheroes/Superhero_Male_FullBody.glb');
+      expect(male?.modelUrl).toBe('/models/quaternius/quaternius_base_male.glb');
 
       const female = getCanonicalModelDef('quaternius_base_female');
       expect(female).toBeDefined();
       expect(female?.isPlayable).toBe(true);
-      expect(female?.modelUrl).toBe('/game-assets/models/humanoids/superheroes/Superhero_Female_FullBody.glb');
+      expect(female?.modelUrl).toBe('/models/quaternius/quaternius_base_female.glb');
 
       const superheroMale = getCanonicalModelDef('superhero_male_fullbody');
       expect(superheroMale).toBeDefined();
@@ -137,11 +139,29 @@ describe('worldModelPresentation', () => {
       expect(imp).toBeDefined();
       expect(imp?.category).toBe('monster');
       expect(imp?.isPlayable).toBe(false);
+      expect(imp?.modelUrl).toBe('/models/quaternius/imp.glb');
 
       const puglin = getCanonicalModelDef('puglin');
       expect(puglin).toBeDefined();
       expect(puglin?.category).toBe('monster');
       expect(puglin?.isPlayable).toBe(false);
+      expect(puglin?.modelUrl).toBe('/models/quaternius/puglin.glb');
+    });
+
+    it('preserves explicit Quaternius model paths instead of resolving them as stale aliases', () => {
+      expect(resolveModelAssetUrl('/models/quaternius/imp.glb')).toBe('/models/quaternius/imp.glb');
+      expect(resolveModelAssetUrl('/models/quaternius/puglin.glb')).toBe('/models/quaternius/puglin.glb');
+    });
+
+    it('does not assign Brute identity or animation defaults to an unknown explicit model', () => {
+      const presentation = getWorldModelPresentation({
+        type: '3D Model',
+        assetId: 'custom_biped_upload',
+        modelUrl: '/uploads/custom_biped_upload.glb',
+      });
+      expect(presentation?.modelUrl).toBe('/uploads/custom_biped_upload.glb');
+      expect(presentation?.assetId).toBe('custom_biped_upload');
+      expect(presentation?.animationProfileId).toBeUndefined();
     });
   });
 });

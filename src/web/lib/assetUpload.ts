@@ -37,6 +37,11 @@ export interface AssetIngestOptions {
   importProfile?: string;
   slotRole?: string;
   animationProfile?: string;
+  pack?: string;
+  skeleton?: string;
+  showInCharacterCreation?: boolean;
+  isPlayable?: boolean;
+  textureVariants?: { id: string; label: string; textureVariantUrl?: string }[];
   componentCategory?: string;
   componentLayer?: string;
   variantFamily?: string;
@@ -155,6 +160,8 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
       importProfile: importProfile || undefined,
       slotRole: slotRole || undefined,
       animationProfile: options.animationProfile,
+      pack: options.pack,
+      skeleton: options.skeleton,
       componentCategory,
       componentLayer,
       variantFamily,
@@ -162,6 +169,9 @@ export async function ingestAsset(options: AssetIngestOptions): Promise<AssetIng
       zOrderHint: zOrderHint ?? undefined,
       baseBodyType: baseBodyType ?? undefined,
       hidesComponents,
+      showInCharacterCreation: options.showInCharacterCreation,
+      isPlayable: options.isPlayable,
+      textureVariants: options.textureVariants,
       credits: options.credits,
       bundleId: options.bundleId,
       visibility: options.visibility,

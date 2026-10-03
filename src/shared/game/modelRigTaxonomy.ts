@@ -270,6 +270,16 @@ function getBoneAliases(name: string): string[] {
     .map(([alias]) => alias);
 }
 
+export function areRigBoneNamesEquivalent(left: string, right: string): boolean {
+  const normalize = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const leftName = normalize(left);
+  const rightName = normalize(right);
+  if (leftName && leftName === rightName) return true;
+  const leftAliases = getBoneAliases(left);
+  const rightAliases = getBoneAliases(right);
+  return leftAliases.some((alias) => rightAliases.includes(alias));
+}
+
 export interface RigAnalysisResult {
   family: ModelRigFamily;
   label: string;
@@ -446,7 +456,7 @@ export function inferExpandedAnimationSlots(
         : 'fwd';
 
   // Locomotion
-  if (has(/(^|_)idle(_|$)/) || has(/stand/)) {
+  if (has(/(^|_)idle(_|$)/) || has(/(^|_)(stand|standing)(_|$)/)) {
     slots.add(has(/combat|battle|weapon/) ? 'idle_combat' : 'idle');
   }
   if (has(/(^|_)walk|walking|trot|crawl/)) {
@@ -477,7 +487,9 @@ export function inferExpandedAnimationSlots(
   }
 
   // Combat (Humanoid + Creature/Monster abilities)
-  if (has(/(^|_)(attack|atk|strike|slash|punch|kick|hit_enemy|bite|claw|tail_whip|pounce|horn|sting|deflect|block|parry)(_|$)/)) {
+  const namedAttack = has(/(^|_)(attack|atk|strike|slash|punch|kick|hit_enemy|bite|claw|scratch|tail_whip|pounce|horn|sting|deflect|block|parry)(_|$)/);
+  const weaponAttack = has(/(^|_)(melee|sword)(_|$)/) && !has(/(^|_)(idle|block|dash)(_|$)/);
+  if (namedAttack || weaponAttack) {
     if (has(/heavy|strong|combo|slam|special|ult/)) {
       slots.add('attack_heavy');
     } else {
@@ -489,11 +501,11 @@ export function inferExpandedAnimationSlots(
   }
 
   // Reactions
-  if (has(/(^|_)(death|die|dead|faint|collapse)(_|$)/)) {
+  if (has(/(^|_)(death|die|dead|faint|collapse)[0-9]*(_|$)/)) {
     slots.add('death');
   }
-  if (has(/hit.?react|hurt|damage|take_hit|impact|stumble/)) {
-    slots.add(has(/back|rear|bwd/) ? 'hit_react_back' : 'hit_react_front');
+  if (has(/hit.?react|(^|_)hit(_|$)|hurt|damage|take_hit|impact|stumble|knockback/)) {
+    slots.add(has(/(^|_)(back|rear|bwd)(_|$)/) ? 'hit_react_back' : 'hit_react_front');
   }
   if (has(/stun|daze|freeze|sleep|sleep_idle/)) {
     slots.add('stun');
@@ -503,7 +515,7 @@ export function inferExpandedAnimationSlots(
   if (has(/emote|dance|taunt|wave|bow|cheer|laugh|flex|roar/)) {
     slots.add('emote');
   }
-  if (has(/recall|teleport|tp/)) {
+  if (has(/recall|teleport|(^|_)tp(_|$)/)) {
     slots.add('recall');
   }
   if (has(/select|hero_select|menu/)) {

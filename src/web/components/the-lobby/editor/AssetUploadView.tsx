@@ -296,7 +296,7 @@ export function AssetUploadView({
         fileInputRef.current.click();
       }
     } else if (intent === 'animation_pack') {
-      setIntentHint('complete_character');
+      setIntentHint('animation_pack');
       if (fileInputRef.current) {
         fileInputRef.current.accept = '.fbx,.glb,.gltf';
         fileInputRef.current.click();
