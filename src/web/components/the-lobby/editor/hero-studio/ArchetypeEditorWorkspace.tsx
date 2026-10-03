@@ -566,6 +566,8 @@ export function ArchetypeEditorWorkspace() {
                         type: attachment.type === '3D Sprite' ? '3D Model' : attachment.type || '3D Model',
                       }))}
                     className="h-80"
+                    disableBackground={true}
+                    hideToolbar={true}
                   />
                 </div>
               )}

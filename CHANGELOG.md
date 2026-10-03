@@ -1,3 +1,7 @@
+# 2026-10-02 (2.2.102)
+- Added Biome, FoliageDef, and BiomeFoliage database schemas to support the new Biome and Foliage Studios.
+- Added Biome Studio to the World Studio toolset (via StudioMenuBar and editor state).
+
 # 2026-10-02 (2.2.101)
 - Fixed UI asset browser bug where modular armors/clothing items incorrectly appeared in the Playable Characters list.
 - Implemented `scripts/ingest-quaternius-packs.ts` to natively convert FBX/glTF files to GLB and ingest 150+ Quaternius Universal Animation, Modular Outfits, Base Characters, Bestiary Monsters, and Ultimate RPG items into the asset database with corresponding thumbnails and tags.

@@ -711,6 +711,8 @@ export function MonsterEditorPanel() {
                         type: attachment.type === '3D Sprite' ? '3D Model' : attachment.type || '3D Model',
                       }))}
                     className="h-80"
+                    disableBackground={true}
+                    hideToolbar={true}
                   />
                 </div>
               )}
@@ -720,6 +722,8 @@ export function MonsterEditorPanel() {
                 onChange={handleWorldModelChange}
                 label="Monster World Model"
                 allowSocketConfig={true}
+                assetPickerFilterType=""
+                assetPickerCategoryFilter="ALL"
               />
 
               {getWorldModel().type === '3D Model' && (

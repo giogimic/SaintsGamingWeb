@@ -359,6 +359,7 @@ export function CharacterDetailPreview({
                 modularAttachments={modelPresentation.modularAttachments}
                 modelScale={modelPresentation.modelScale || 0.8}
                 hideToolbar
+                disableBackground
                 autoRotateDefault
                 className="h-full w-full border-0"
               />

@@ -292,6 +292,8 @@ export function CharacterWardrobeSlots({
               modularAttachments={wardrobePreviewAttachments}
               modelScale={modelScale}
               className="h-[440px]"
+              hideToolbar
+              disableBackground
             />
           </div>
         </div>

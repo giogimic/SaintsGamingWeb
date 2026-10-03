@@ -758,6 +758,8 @@ export function NpcEditorPanel() {
                         type: attachment.type === '3D Sprite' ? '3D Model' : attachment.type || '3D Model',
                       }))}
                     className="h-80"
+                    disableBackground={true}
+                    hideToolbar={true}
                   />
                 </div>
               )}
@@ -767,6 +769,8 @@ export function NpcEditorPanel() {
                 onChange={handleWorldModelChange}
                 label="NPC World Model"
                 allowSocketConfig={true}
+                assetPickerFilterType=""
+                assetPickerCategoryFilter="ALL"
               />
 
               {getWorldModel().type === '3D Model' && (

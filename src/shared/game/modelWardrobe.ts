@@ -153,6 +153,8 @@ const CATEGORY_ALIASES: Record<string, CharacterComponentCategory> = {
   gauntlet: 'gloves',
   bracers: 'gloves',
   hands: 'gloves',
+  arms: 'gloves',
+  arm: 'gloves',
   cape: 'back',
   backpack: 'back',
   wings: 'back',

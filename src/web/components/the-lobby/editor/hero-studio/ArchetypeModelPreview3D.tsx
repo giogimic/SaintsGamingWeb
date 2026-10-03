@@ -26,6 +26,7 @@ interface ArchetypeModelPreview3DProps {
   hideToolbar?: boolean;
   autoRotateDefault?: boolean;
   showHint?: boolean;
+  disableBackground?: boolean;
 }
 
 interface LoadedSubModel {
@@ -452,6 +453,7 @@ export function ArchetypeModelPreview3D({
   hideToolbar = false,
   autoRotateDefault = false,
   showHint = false,
+  disableBackground = false,
 }: ArchetypeModelPreview3DProps) {
   const [animations, setAnimations] = useState<{ name: string; duration: number }[]>([]);
   const [activeAnimIndex, setActiveAnimIndex] = useState(0);
@@ -510,7 +512,7 @@ export function ArchetypeModelPreview3D({
   }
 
   return (
-    <div className={`w-full ${className} bg-[#050b14] border border-primary/30 rounded-2xl overflow-hidden relative shadow-2xl flex flex-col`}>
+    <div className={`w-full ${className} ${disableBackground ? '' : 'bg-[#050b14] border border-primary/30'} rounded-2xl overflow-hidden relative ${disableBackground ? '' : 'shadow-2xl'} flex flex-col`}>
       {/* Top Header Controls */}
       {!hideToolbar && (
         <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
@@ -596,7 +598,7 @@ export function ArchetypeModelPreview3D({
           />
 
           <OrbitControls makeDefault target={[0, 0.9 * effectiveScale, 0]} maxPolarAngle={Math.PI / 2 + 0.1} />
-          <Grid infiniteGrid sectionColor="#eab308" cellColor="#1e293b" fadeDistance={12} />
+          {!disableBackground && <Grid infiniteGrid sectionColor="#eab308" cellColor="#1e293b" fadeDistance={12} />}
         </Canvas>
       </div>
 

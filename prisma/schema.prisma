@@ -2264,3 +2264,69 @@ model WorldBootstrapRevisionRegion {
 
   @@unique([revisionId, regionX, regionZ])
 }
+
+model Biome {
+  id              String         @id @default(uuid())
+  name            String
+  slug            String         @unique @default("new_biome")
+  description     String?
+  temperature     Float?
+  moisture        Float?
+  colorHex        String?        @default("#348C31")
+
+  // Fractal Terrain
+  seed            Int            @default(12345)
+  baseHeight      Float          @default(12)
+  amplitude       Float          @default(8)
+  frequency       Float          @default(0.02)
+  octaves         Int            @default(3)
+  persistence     Float          @default(0.5)
+  lacunarity      Float          @default(2.0)
+
+  // Strata Materials
+  surfaceMaterial    Int         @default(1)
+  subsurfaceMaterial Int         @default(2)
+  subsurfaceDepth    Int         @default(3)
+  mantleMaterial     Int         @default(3)
+  bedrockMaterial    Int         @default(4)
+
+  // Environment
+  skyColorHex        String      @default("#050b14")
+  ambientColorHex    String      @default("#ffffff")
+
+  foliageItems    BiomeFoliage[]
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model FoliageDef {
+  id              String         @id @default(uuid())
+  name            String
+  description     String?
+  category        String         @default("Tree") // Tree, Rock, Bush, Plant
+  
+  isInvincible    Boolean        @default(true)
+  health          Int?
+  respawnRate     Int?           // In seconds
+  
+  visualData      String?        @default("{}") // JSON for 3D/2D model refs
+
+  biomes          BiomeFoliage[]
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model BiomeFoliage {
+  id              String         @id @default(uuid())
+  biomeId         String
+  foliageId       String
+  spawnWeight     Float          @default(1.0)
+  
+  biome           Biome          @relation(fields: [biomeId], references: [id], onDelete: Cascade)
+  foliage         FoliageDef     @relation(fields: [foliageId], references: [id], onDelete: Cascade)
+
+  @@unique([biomeId, foliageId])
+}
+

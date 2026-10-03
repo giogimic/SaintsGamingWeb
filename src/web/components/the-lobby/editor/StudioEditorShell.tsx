@@ -98,6 +98,7 @@ const MapTabPanel = lazy(() => import('./panels/MapTabPanel').then((m) => ({ def
 const MapEditorPanel = lazy(() => import('./panels/MapEditorPanel').then((m) => ({ default: m.MapEditorPanel })));
 const NewTileMapPanel = lazy(() => import('./panels/NewTileMapPanel').then((m) => ({ default: m.NewTileMapPanel })));
 const NewVoxelMapPanel = lazy(() => import('./panels/NewVoxelMapPanel').then((m) => ({ default: m.NewVoxelMapPanel })));
+const FoliageStudioPanel = lazy(() => import('./panels/FoliageStudioPanel').then((m) => ({ default: m.FoliageStudioPanel })));
 const NewFractalMapPanel = lazy(() => import('./panels/NewFractalMapPanel').then((m) => ({ default: m.NewFractalMapPanel })));
 const InterfaceEditorPanel = lazy(() => import('./panels/InterfaceEditorPanel').then((m) => ({ default: m.InterfaceEditorPanel })));
 const CameraSettingsPanel = lazy(() => import('./panels/CameraSettingsPanel').then((m) => ({ default: m.CameraSettingsPanel })));
@@ -583,6 +584,12 @@ export const StudioEditorShell: React.FC = () => {
           {canUseStudioDock(permissionLevel, 'atlas') && (
             <DraggablePanel id="biome" icon={<Sparkles className="w-4 h-4 text-emerald-400" />} title="Biome Configurator">
               <Suspense fallback={<div>Loading...</div>}><BiomeConfiguratorPanel /></Suspense>
+            </DraggablePanel>
+          )}
+
+          {canUseStudioDock(permissionLevel, 'atlas') && (
+            <DraggablePanel id="foliage" icon={<Sparkles className="w-4 h-4 text-emerald-400" />} title="Foliage Studio">
+              <Suspense fallback={<div>Loading...</div>}><FoliageStudioPanel /></Suspense>
             </DraggablePanel>
           )}
 

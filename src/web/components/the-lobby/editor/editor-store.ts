@@ -1302,6 +1302,17 @@ const DEFAULT_PANELS = {
     height: 680,
     zIndex: 10,
   },
+  foliage: {
+    id: 'foliage',
+    title: 'Foliage Studio',
+    isOpen: false,
+    isCollapsed: false,
+    x: 350,
+    y: 100,
+    width: 800,
+    height: 600,
+    zIndex: 10,
+  },
   assetBrowserSelector: {
     id: 'assetBrowserSelector',
     title: 'Asset Selector',

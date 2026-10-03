@@ -66,6 +66,7 @@ export type StudioDockId =
   | 'interface'
   | 'camera'
   | 'biome'
+  | 'foliage'
   | 'versionManager'
   | 'procedural'
   | 'hierarchy'
@@ -359,6 +360,10 @@ export const STUDIO_DOCK_META: Record<StudioDockId, { label: string; blurb: stri
   biome: {
     label: 'Biome Configurator',
     blurb: 'Configure procedural fractal noise, strata layers, and environment.',
+  },
+  foliage: {
+    label: 'Foliage Studio',
+    blurb: 'Configure environment items, trees, rocks, and harvestable nodes.',
   },
   hierarchy: {
     label: 'World Hierarchy',

@@ -130,6 +130,8 @@ export function AppearanceCustomizer({
                 baseAssetId={modelAssetId}
                 modularAttachments={wardrobePreviewAttachments}
                 className="h-56"
+                hideToolbar
+                disableBackground
               />
             </div>
           ) : (

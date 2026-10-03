@@ -898,7 +898,7 @@ export function CharacterCreator({
 
                 {is3DModel && modelAssetId ? (
                   <div className="w-full my-3 overflow-hidden rounded-2xl border border-primary/50 shadow-[0_0_25px_rgba(234,179,8,0.2)]">
-                    <ArchetypeModelPreview3D baseAssetId={modelAssetId} modularAttachments={wardrobePreviewAttachments} className="h-56" />
+                    <ArchetypeModelPreview3D baseAssetId={modelAssetId} modularAttachments={wardrobePreviewAttachments} className="h-56" hideToolbar disableBackground />
                   </div>
                 ) : (
                   <div className="w-32 h-32 rounded-2xl bg-black/80 border-2 border-primary/60 flex items-center justify-center my-3 shadow-[0_0_25px_rgba(234,179,8,0.2)] overflow-hidden">
@@ -1345,6 +1345,8 @@ export function CharacterCreator({
                     baseAssetId={modelAssetId}
                     modularAttachments={wardrobePreviewAttachments}
                     className="h-44 w-36 shrink-0"
+                    hideToolbar
+                    disableBackground
                   />
                 ) : (
                   <div className="w-20 h-20 rounded-2xl bg-black/80 border border-primary/50 flex items-center justify-center shrink-0 shadow-inner overflow-hidden">

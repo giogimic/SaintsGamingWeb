@@ -65,6 +65,8 @@ interface WorldModelSelectorProps {
   description?: string;
   allowSocketConfig?: boolean;
   allowModularConfig?: boolean;
+  assetPickerFilterType?: string;
+  assetPickerCategoryFilter?: string;
 }
 
 const MODEL_OPTIONS: { id: WorldModelType; label: string; icon: any; isImplemented: boolean }[] = [
@@ -79,6 +81,8 @@ export function WorldModelSelector({
   description = "How this actor is represented in the physical game world.",
   allowSocketConfig = false,
   allowModularConfig = false,
+  assetPickerFilterType = 'CHARACTER',
+  assetPickerCategoryFilter = 'CHARACTERS',
 }: WorldModelSelectorProps) {
   const [mounted, setMounted] = useState(false);
   const [scaleInput, setScaleInput] = useState(String(value.scale ?? 1));
@@ -180,9 +184,9 @@ export function WorldModelSelector({
                 type="button"
                 onClick={() => {
                   useEditorStore.getState().openAssetPicker({
-                    filterType: 'CHARACTER',
-                    categoryFilter: 'CHARACTERS',
-                    title: 'Select Base Playable Character',
+                    filterType: assetPickerFilterType,
+                    categoryFilter: assetPickerCategoryFilter as any,
+                    title: 'Select Base 3D Model',
                     onSelect: (selectedId) => {
                       onChange({ ...value, assetId: selectedId });
                     },
