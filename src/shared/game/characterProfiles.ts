@@ -40,7 +40,44 @@ export interface CharacterModelProfile {
   modularParts: ProfileModularPartDef[];
 }
 
-export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {};
+export const CHARACTER_MODEL_PROFILES: Record<string, CharacterModelProfile> = {
+  quaternius_base_male: {
+    id: 'quaternius_base_male',
+    name: 'Quaternius Base Male',
+    category: 'character',
+    skeleton: 'mixamo',
+    modelUrl: '/uploads/Superhero_Male_FullBody.glb',
+    compatibleWardrobePack: 'quaternius',
+    modularParts: [],
+  },
+  quaternius_base_female: {
+    id: 'quaternius_base_female',
+    name: 'Quaternius Base Female',
+    category: 'character',
+    skeleton: 'mixamo',
+    modelUrl: '/uploads/Superhero_Female_FullBody.glb',
+    compatibleWardrobePack: 'quaternius',
+    modularParts: [],
+  },
+  superhero_male_fullbody: {
+    id: 'superhero_male_fullbody',
+    name: 'Quaternius Base Male',
+    category: 'character',
+    skeleton: 'mixamo',
+    modelUrl: '/uploads/Superhero_Male_FullBody.glb',
+    compatibleWardrobePack: 'quaternius',
+    modularParts: [],
+  },
+  superhero_female_fullbody: {
+    id: 'superhero_female_fullbody',
+    name: 'Quaternius Base Female',
+    category: 'character',
+    skeleton: 'mixamo',
+    modelUrl: '/uploads/Superhero_Female_FullBody.glb',
+    compatibleWardrobePack: 'quaternius',
+    modularParts: [],
+  },
+};
 
 /** Normalize string key to find matching profile. */
 export function getCharacterModelProfile(modelIdOrUrl?: string | null): CharacterModelProfile | undefined {

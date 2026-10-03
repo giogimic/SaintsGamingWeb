@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { DEMO_LOGIC_TILES } from '../src/shared/game/setup/logicTilesSeed';
 import { syncCanonicalGameAssets } from '../src/server/assets/canonicalAssetsSync';
+import { syncCanonicalEnvironment } from '../src/server/environment/canonicalEnvironmentSync';
 
 const prisma = new PrismaClient();
 
@@ -835,6 +836,9 @@ async function main() {
 
   await syncCanonicalGameAssets(prisma);
   console.log("Seeded Canonical 3D Models and Modular Pieces.");
+
+  await syncCanonicalEnvironment(prisma);
+  console.log("Seeded Canonical Biomes and Foliage.");
 }
 
 main()

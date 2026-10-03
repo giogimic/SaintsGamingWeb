@@ -14,8 +14,8 @@ import {
   VOXEL_MAT_ICE,
   VOXEL_MAT_WOOD,
 } from '@/shared/game/voxel/VoxelWord';
-import { Sliders, Mountain, Layers, Eye, RefreshCw, Check, Sparkles, Plus, Trash2, TreePine, Save } from 'lucide-react';
-import { listBiomes, upsertBiome, listFoliageDefs, upsertBiomeFoliage, deleteBiomeFoliage } from '@/app/actions/studio/environment';
+import { Sliders, Mountain, Layers, Eye, RefreshCw, Check, Sparkles, Plus, Trash2, TreePine, Save, RotateCcw } from 'lucide-react';
+import { listBiomes, upsertBiome, deleteBiome, listFoliageDefs, upsertBiomeFoliage, deleteBiomeFoliage, resetCanonicalEnvironment } from '@/app/actions/studio/environment';
 
 const MATERIAL_OPTIONS = [
   { id: VOXEL_MAT_GRASS, name: 'Lush Grass', color: '#10b981' },
@@ -99,6 +99,31 @@ export const BiomeConfiguratorPanel: React.FC = () => {
       }
     } else {
       showToast(`Error: ${res.error}`);
+    }
+  };
+
+  const handleDeleteBiome = async () => {
+    if (!activeBiome || !activeBiome.id) return;
+    if (!confirm(`Are you sure you want to delete biome "${activeBiome.name}"?`)) return;
+    const res = await deleteBiome(activeBiome.id);
+    if (res.success) {
+      showToast('Biome deleted successfully.');
+      setActiveBiome(null);
+      setSelectedBiomeId('');
+      await fetchAll();
+    } else {
+      showToast(`Error deleting biome: ${res.error}`);
+    }
+  };
+
+  const handleResetCanonical = async () => {
+    if (!confirm('Reset canonical biomes and foliage to default presets?')) return;
+    const res = await resetCanonicalEnvironment();
+    if (res.success) {
+      showToast('Canonical environment restored.');
+      await fetchAll();
+    } else {
+      showToast(`Error resetting: ${res.error}`);
     }
   };
 
@@ -233,14 +258,32 @@ export const BiomeConfiguratorPanel: React.FC = () => {
             ))}
             <option value="new">+ Create New Biome</option>
           </select>
+          <button
+            onClick={handleResetCanonical}
+            title="Restore Canonical Biomes & Foliage Defaults"
+            className="p-1 rounded hover:bg-card/80 text-muted-foreground hover:text-foreground transition-colors border border-border/40"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+          </button>
           {activeBiome && (
-            <button
-              onClick={handleSaveBiome}
-              className="flex items-center gap-1.5 px-3 py-1 bg-primary text-primary-foreground font-medium rounded hover:bg-primary/90 transition-colors shadow-sm"
-            >
-              <Save className="w-3.5 h-3.5" />
-              Save
-            </button>
+            <>
+              {activeBiome.id && (
+                <button
+                  onClick={handleDeleteBiome}
+                  className="flex items-center gap-1 px-2.5 py-1 bg-red-900/30 text-red-400 border border-red-800/40 font-medium rounded hover:bg-red-900/50 transition-colors shadow-sm"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Delete
+                </button>
+              )}
+              <button
+                onClick={handleSaveBiome}
+                className="flex items-center gap-1.5 px-3 py-1 bg-primary text-primary-foreground font-medium rounded hover:bg-primary/90 transition-colors shadow-sm"
+              >
+                <Save className="w-3.5 h-3.5" />
+                Save
+              </button>
+            </>
           )}
         </div>
       </div>

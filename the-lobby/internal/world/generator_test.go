@@ -38,7 +38,7 @@ func TestGoToTSCompatibility(t *testing.T) {
 		},
 	}
 
-	generator := NewProceduralVoxelGenerator(biome.Seed)
+	generator := NewProceduralVoxelGenerator(biome.Seed, nil)
 	placer := &FeaturePlacer{}
 
 	// Test chunk (0,0,0)
@@ -58,3 +58,25 @@ func TestGoToTSCompatibility(t *testing.T) {
 	hash1 := sha256.Sum256(bin1)
 	fmt.Printf("Go Chunk (1,0,1) SHA256: %s\n", hex.EncodeToString(hash1[:]))
 }
+
+func TestPlaceFeaturesWithResolver(t *testing.T) {
+	generator := NewProceduralVoxelGenerator(uint32(12345), nil)
+	placer := &FeaturePlacer{}
+	chunk := generator.PopulateChunk(0, 0, 0)
+	placer.PlaceFeaturesWithResolver(chunk, 12345, generator.Resolver(), generator.Context())
+
+	nonAirCount := 0
+	for ly := 0; ly < ChunkSizeY; ly++ {
+		for lz := 0; lz < ChunkSizeZ; lz++ {
+			for lx := 0; lx < ChunkSizeX; lx++ {
+				if !IsVoxelAir(chunk.Get(lx, ly, lz)) {
+					nonAirCount++
+				}
+			}
+		}
+	}
+	if nonAirCount == 0 {
+		t.Fatalf("Expected non-empty chunk after generation and feature placement")
+	}
+}
+

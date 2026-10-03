@@ -381,6 +381,9 @@ func (h *Hub) handleAdminReloadContent(accountID string, datas []any) {
 	// For Phase B: re-init the registry from the DB.
 	// In production, we'd only do this for Admins, but any staff auth is enough right now.
 	h.deps.Registry.ReloadAll()
+	if h.deps.World != nil {
+		h.deps.World.Biomes = h.deps.Registry.GetAllBiomes()
+	}
 	if p := h.eng.Players().GetByAccount(accountID); p != nil {
 		h.EmitToSocket(p.SocketID, protocol.EvShowToast, map[string]string{"message": "Registry reloaded from DB"})
 	}

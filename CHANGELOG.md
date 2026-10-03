@@ -1,3 +1,34 @@
+# 2026-10-03 (2.2.104-update.1)
+- **Quaternius Asset Pipeline & Ingestion Alignment**:
+  - Completed asset pack audit for Quaternius Universal Base Characters, Universal Animation Library 1 & 2, Modular Character Outfits, Ultimate RPG Pack, and Bestiary Dungeon Monsters Kit.
+  - Enabled all 6 pack processors in `scripts/ingest-quaternius-packs.ts`, including automatic glTF-to-GLB conversion for 8 modular hairstyles and facial hair accessories (`hair`, `face`, `beard`).
+  - Modular outfits tagged with `playable_outfit`, `npc_outfit`, and `creature_outfit` to support equipping across Archetypes, NPCs, Monsters, and Creatures.
+- **Character Creation & Archetype 3D Preview Streamlining (`ArchetypeModelPreview3D.tsx`)**:
+  - Simplified character creation preview: disabled debug animation dropdowns, skeleton helpers, and playback toolbar by default (`hideToolbar = true`).
+  - Removed infinite CAD yellow grid backdrop by default (`disableBackground = true`), replacing it with a clean ground contact shadow under character feet.
+  - Clamped OrbitControls (no panning off-center, clamped zoom distance and polar angle) for a clean, focused turntable preview.
+- **Studio Model Wardrobe Assembly Across Roles (`ModelWardrobeEditor.tsx`, `CreatureDefEditorPanel.tsx`)**:
+  - Updated category compatibility filter in `ModelWardrobeEditor.tsx` so modular fantasy outfits and universal equipment can be assembled on monsters and creatures in Studio.
+  - Added `ModelWardrobeEditor` to `CreatureDefEditorPanel.tsx` for 3D creature definitions.
+- **Saints Gaming Brand Alignment (`ArchetypePicker.tsx`, `ensure-starter-heroes.ts`)**:
+  - Replaced legacy cyan styling on 3D archetype badges with authoritative Saints Gaming warm gold/amber accents and subtle amber glow.
+  - Seeded default 3D starter heroes `champion_3d` and `vanguard_3d` with Quaternius male and female base models and starter outfits.
+- Bumped site version to 2.2.104-update.1.
+
+# 2026-10-03 (2.2.104-update.0)
+- **Biome & Foliage Studio Full Stack Implementation**:
+  - Implemented `FoliageStudioPanel` for authoring environment foliage definitions (trees, rocks, bushes, plants) with health, respawn rates, and model references.
+  - Implemented `BiomeConfiguratorPanel` with real-time 2D strata cross-section rendering, Simplex fBm noise tuning, geological layers, climate properties, and biome foliage weighting.
+  - Created `src/server/environment/canonicalEnvironmentSync.ts` to define and seed canonical biomes (Emerald Plains, Golden Dunes, Glacial Peaks, Obsidian Crags) and foliage definitions into SQLite/database.
+  - Wired `syncCanonicalEnvironment` into `prisma/seed.ts` and added on-demand restore functionality in `app/actions/studio/environment.ts`.
+  - Updated Go MMO server (`the-lobby`):
+    - Added `AreaFlora` model to `atlas.FractalArea` in `the-lobby/internal/world/atlas/resolver.go`.
+    - Enhanced `the-lobby/internal/registry/registry.go` to load `BiomeFoliage` and `FoliageDef` from the database into the registry.
+    - Updated `the-lobby/internal/world/feature_placer.go` with `PlaceFeaturesWithResolver` to generate authentic procedural oak trees, pine trees, cacti, wildflowers, tall grass, harvestable berry bushes, and granite boulders across chunk columns.
+    - Integrated continuous biome feature placement into socket `serveChunk` and background `WorkerPool`.
+    - Added unit test `TestPlaceFeaturesWithResolver` validating procedural voxel generation and flora placement.
+- Bumped site version to 2.2.104-update.0.
+
 # 2026-10-02 (2.2.102)
 - Added Biome, FoliageDef, and BiomeFoliage database schemas to support the new Biome and Foliage Studios.
 - Added Biome Studio to the World Studio toolset (via StudioMenuBar and editor state).

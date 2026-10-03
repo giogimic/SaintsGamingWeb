@@ -108,8 +108,8 @@ func main() {
 	}
 	pm := player.NewManager(cfg.AOIZoneSize, sqlDB)
 	cm := creature.NewManager()
-
 	reg := registry.NewManager(sqlDB)
+	wm.Biomes = reg.GetAllBiomes()
 
 	deps := mmsocket.Deps{
 		Parties:    party.NewManager(),
@@ -123,6 +123,7 @@ func main() {
 		Skills:     skill.NewManager(sqlDB),
 		Loot:       world.NewLootManager(),
 		Registry:   reg,
+		World:      wm,
 		SaveMap: func(id, name, grid string) error {
 			return httpapi.PersistMap(sqlDB, wm, id, name, grid, "{}")
 		},

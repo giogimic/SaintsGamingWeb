@@ -52,11 +52,19 @@ type ProceduralVoxelGenerator struct {
 	resolver *atlas.AtlasRegionResolver
 }
 
-func NewProceduralVoxelGenerator(seed interface{}) *ProceduralVoxelGenerator {
+func NewProceduralVoxelGenerator(seed interface{}, areas []atlas.FractalArea) *ProceduralVoxelGenerator {
 	return &ProceduralVoxelGenerator{
 		context:  atlas.BuildAtlasWorld(seed),
-		resolver: atlas.NewAtlasRegionResolver(nil),
+		resolver: atlas.NewAtlasRegionResolver(areas),
 	}
+}
+
+func (g *ProceduralVoxelGenerator) Resolver() *atlas.AtlasRegionResolver {
+	return g.resolver
+}
+
+func (g *ProceduralVoxelGenerator) Context() *atlas.AtlasWorldContext {
+	return g.context
 }
 
 // PopulateChunk generates volumetric voxel data for a 32x32x32 chunk according to biome strata rules.

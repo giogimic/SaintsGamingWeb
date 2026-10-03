@@ -43,6 +43,7 @@ type Deps struct {
 	Skills     *skill.Manager
 	Loot       *world.LootManager
 	Registry   *registry.Manager
+	World      *world.Manager
 	SaveMap    func(id, name, grid string) error
 }
 
@@ -1238,11 +1239,11 @@ func (h *Hub) serveChunk(client *socket.Socket, accountID string, cx, cy, cz int
 			seed = voxelWorld.ProceduralSeed
 		}
 
-		generator := world.NewProceduralVoxelGenerator(seed)
+		generator := world.NewProceduralVoxelGenerator(seed, h.deps.Registry.GetAllBiomes())
 		chunk = generator.PopulateChunk(cx, cy, cz)
 
 		placer := &world.FeaturePlacer{}
-		placer.PlaceFeatures(chunk, seed, biome)
+		placer.PlaceFeaturesWithResolver(chunk, seed, generator.Resolver(), generator.Context())
 
 		if voxelWorld != nil {
 			voxelWorld.SetChunk(cx, cy, cz, chunk)

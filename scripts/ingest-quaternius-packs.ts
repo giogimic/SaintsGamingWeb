@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { prisma } from '../src/web/lib/prisma';
 import { ingestAsset } from '../src/web/lib/assetUpload';
 import { uploadFile } from '../src/web/lib/upload';
 import { NodeIO } from '@gltf-transform/core';
@@ -7,19 +8,56 @@ import { ALL_EXTENSIONS } from '@gltf-transform/extensions';
 const convert = require('fbx2gltf');
 
 const SG_ANIMS = 'C:\\Users\\Matth\\OneDrive\\Desktop\\sg anims';
-const SYSTEM_USER_ID = 'cmumje6070000502oprqotr0s';
+let activeUserId = 'system-quaternius';
+
+async function getOrCreateSystemUserId(): Promise<string> {
+  const existing = await prisma.user.findFirst({
+    where: {
+      OR: [
+        { id: 'system-quaternius' },
+        { username: 'quaternius_system' },
+        { permissionLevel: { gte: 100 } }
+      ]
+    },
+    select: { id: true }
+  });
+  if (existing) return existing.id;
+  const created = await prisma.user.create({
+    data: {
+      id: 'system-quaternius',
+      displayName: 'Quaternius (System)',
+      username: 'quaternius_system',
+      email: 'quaternius@saintsgaming.net',
+      permissionLevel: 100,
+    }
+  });
+  return created.id;
+}
 
 // Configure glTF-transform IO
 const io = new NodeIO().registerExtensions(ALL_EXTENSIONS);
 
 async function main() {
   console.log('Starting Quaternius ingestion...');
+  activeUserId = await getOrCreateSystemUserId();
 
-  // 2. Base Characters
-  // await processBaseCharacters();
+  // 1. Base Characters (Quaternius Male & Female Base for Playable Archetypes)
+  await processBaseCharacters();
 
-  // 3. Ultimate RPG Pack
+  // 2. Hairstyles & Eyebrows (Modular Face/Hair components)
+  await processHairstyles();
+
+  // 3. Modular Outfits (Playable & NPC/Monster compatible)
+  await processModularOutfits();
+
+  // 4. Ultimate RPG Pack (Items & Icons)
   await processUltimateRPG();
+
+  // 5. Bestiary Dungeon Monsters (Imp, Puglin)
+  await processBestiary();
+
+  // 6. Universal Animations (Vol. 1 & Vol. 2)
+  await processAnimationLibrary();
 
   console.log('Done!');
 }
@@ -36,7 +74,7 @@ async function ingest(filePath: string, name: string, options: any) {
   console.log(`Ingesting: ${name}...`);
   try {
     const res = await ingestAsset({
-      userId: SYSTEM_USER_ID,
+      userId: activeUserId,
       file,
       gameId: 'saints',
       name,
@@ -155,13 +193,55 @@ async function processModularOutfits() {
       name,
       {
         type: 'MODEL',
-        tags: ['modular', 'character-component', 'quaternius', cat],
+        tags: ['modular', 'character-component', 'quaternius', cat, variant, 'playable_outfit', 'npc_outfit', 'creature_outfit'],
         isModularComponent: true,
         componentCategory: cat,
         baseBodyType: isMale ? 'male' : 'female',
         variantFamily: variant,
         presentation: { mode: '3D' },
         hidesComponents: cat === 'hat' ? ['hair'] : [],
+      }
+    );
+  }
+}
+
+async function processHairstyles() {
+  console.log('--- Processing Hairstyles & Eyebrows ---');
+  const basePath = path.join(SG_ANIMS, 'Universal Base Characters[Standard]', 'Hairstyles', 'Rigged to Head Bone', 'glTF (Godot -Unreal)');
+  if (!fs.existsSync(basePath)) return;
+
+  const files = fs.readdirSync(basePath).filter((f) => f.endsWith('.gltf'));
+  for (const f of files) {
+    const name = f.replace('.gltf', '');
+    const inPath = path.join(basePath, f);
+    const outPath = path.join(basePath, name + '.glb');
+
+    if (!fs.existsSync(outPath)) {
+      console.log(`  Converting ${f} to GLB...`);
+      try {
+        const document = await io.read(inPath);
+        await io.write(outPath, document);
+      } catch (err) {
+        console.error(`  Failed to convert ${f}:`, err);
+        continue;
+      }
+    }
+
+    const lower = name.toLowerCase();
+    const isEyebrow = lower.includes('eyebrow');
+    const isBeard = lower.includes('beard');
+    const cat = isBeard ? 'beard' : isEyebrow ? 'face' : 'hair';
+
+    await ingest(
+      outPath,
+      name,
+      {
+        type: 'MODEL',
+        tags: ['modular', 'character-component', 'quaternius', cat, isEyebrow ? 'eyebrow' : (isBeard ? 'facial-hair' : 'hairstyle')],
+        isModularComponent: true,
+        componentCategory: cat,
+        baseBodyType: 'unspecified',
+        presentation: { mode: '3D' },
       }
     );
   }
@@ -197,13 +277,15 @@ async function processBaseCharacters() {
       isMale ? 'Quaternius Male Base' : 'Quaternius Female Base',
       {
         type: 'CHARACTER',
-        tags: ['playable', 'humanoid', 'base-body', 'quaternius', isMale ? 'male' : 'female'],
+        tags: ['playable', 'humanoid', 'base-body', 'quaternius', isMale ? 'male' : 'female', 'character_creator', 'archetype_base'],
+        isPlayable: true,
+        showInCharacterCreation: true,
         presentation: {
           mode: '3D',
           character: {
             type: '3D_MODEL',
             isCustomizable: true,
-            supportedComponents: ['hair', 'face', 'body', 'arms', 'legs', 'feet', 'accessory'],
+            supportedComponents: ['hair', 'face', 'clothing', 'arms', 'legs', 'shoes', 'accessory', 'hat'],
             attachmentPoints: ['right_hand', 'left_hand', 'head', 'back'],
           },
         },

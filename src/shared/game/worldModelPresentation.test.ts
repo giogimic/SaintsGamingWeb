@@ -100,15 +100,20 @@ describe('worldModelPresentation', () => {
   });
 
   describe('canonical built-in models and modular parts', () => {
-    it('classifies Red Runner as a static prop, not a character with animations', () => {
-      expect(getCanonicalModelDef('leoverse')).toMatchObject({
-        category: 'prop',
-        skeleton: 'static',
-        isPlayable: false,
-        name: 'Red Runner 66',
-      });
-      expect(getCharacterModelProfile('leoverse')).toBeUndefined();
-      expect(getWorldModelPresentation('leoverse')?.animationProfileId).toBeUndefined();
+    it('retrieves definition for Quaternius Universal Base Characters', () => {
+      const male = getCanonicalModelDef('quaternius_base_male');
+      expect(male).toBeDefined();
+      expect(male?.isPlayable).toBe(true);
+      expect(male?.modelUrl).toBe('/uploads/Superhero_Male_FullBody.glb');
+
+      const female = getCanonicalModelDef('quaternius_base_female');
+      expect(female).toBeDefined();
+      expect(female?.isPlayable).toBe(true);
+      expect(female?.modelUrl).toBe('/uploads/Superhero_Female_FullBody.glb');
+
+      const superheroMale = getCanonicalModelDef('superhero_male_fullbody');
+      expect(superheroMale).toBeDefined();
+      expect(superheroMale?.isPlayable).toBe(true);
     });
 
     it('retrieves definition for brute', () => {
@@ -123,32 +128,20 @@ describe('worldModelPresentation', () => {
       expect(bruteByModel?.id).toBe('brute');
     });
 
-    it('returns modular components for brute character builder and wardrobe', () => {
-      const bruteParts = getModelModularComponents('brute');
-      expect(bruteParts.length).toBeGreaterThan(0);
-      expect(bruteParts.some((p) => p.meshName === 'Helmet1')).toBe(true);
-      expect(bruteParts.some((p) => p.meshName === 'Torso1')).toBe(true);
-      expect(bruteParts.some((p) => p.meshName === 'Cape1')).toBe(true);
-
+    it('returns empty array for unknown modular models', () => {
       expect(getModelModularComponents('unknown_model')).toEqual([]);
     });
 
-    it('preserves each individual citizen model and does not assign incompatible animation profiles', () => {
-      for (const name of ['girl_1', 'kid_1', 'man_1']) {
-        const id = `builtin-citizen-${name}`;
-        const expectedUrl = `/game-assets/models/humanoids/citizens/glb/${name}.glb`;
-        expect(resolveModelAssetUrl(id)).toBe(expectedUrl);
-        expect(getCanonicalModelDef(id)?.modelUrl).toBe(expectedUrl);
-        expect(getCharacterModelProfile(id)?.id).toBe('citizens');
-        expect(getWorldModelPresentation(id)).toMatchObject({
-          modelUrl: expectedUrl,
-          animationProfileId: undefined,
-        });
-      }
-    });
+    it('retrieves Bestiary monster definitions', () => {
+      const imp = getCanonicalModelDef('imp');
+      expect(imp).toBeDefined();
+      expect(imp?.category).toBe('monster');
+      expect(imp?.isPlayable).toBe(false);
 
-    it('does not advertise a Mixamo animation profile for the Asian heroine G8F rig', () => {
-      expect(getWorldModelPresentation('asian_girl')?.animationProfileId).toBeUndefined();
+      const puglin = getCanonicalModelDef('puglin');
+      expect(puglin).toBeDefined();
+      expect(puglin?.category).toBe('monster');
+      expect(puglin?.isPlayable).toBe(false);
     });
   });
 });

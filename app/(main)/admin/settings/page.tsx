@@ -23,7 +23,7 @@ export default async function AdminSettingsPage() {
     return acc;
   }, {} as Record<string, string>);
 
-  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.2.103-update.0";
+  if (!configMap["SITE_VERSION"]) configMap["SITE_VERSION"] = "2.2.104-update.1";
   if (!configMap["SOCIAL_INVITE_ONLY"]) configMap["SOCIAL_INVITE_ONLY"] = "false";
 
 

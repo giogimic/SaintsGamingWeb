@@ -41,7 +41,104 @@ export {
   type CharacterModelProfile,
 };
 
-export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {};
+export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
+  quaternius_base_male: {
+    id: 'quaternius_base_male',
+    name: 'Quaternius Base Male',
+    modelUrl: '/uploads/Superhero_Male_FullBody.glb',
+    category: 'character',
+    skeleton: 'mixamo',
+    isPlayable: true,
+    defaultAnimationProfileId: 'quaternius_native',
+    modularParts: [],
+  },
+  quaternius_base_female: {
+    id: 'quaternius_base_female',
+    name: 'Quaternius Base Female',
+    modelUrl: '/uploads/Superhero_Female_FullBody.glb',
+    category: 'character',
+    skeleton: 'mixamo',
+    isPlayable: true,
+    defaultAnimationProfileId: 'quaternius_native',
+    modularParts: [],
+  },
+  superhero_male_fullbody: {
+    id: 'superhero_male_fullbody',
+    name: 'Quaternius Base Male',
+    modelUrl: '/uploads/Superhero_Male_FullBody.glb',
+    category: 'character',
+    skeleton: 'mixamo',
+    isPlayable: true,
+    defaultAnimationProfileId: 'quaternius_native',
+    modularParts: [],
+  },
+  superhero_female_fullbody: {
+    id: 'superhero_female_fullbody',
+    name: 'Quaternius Base Female',
+    modelUrl: '/uploads/Superhero_Female_FullBody.glb',
+    category: 'character',
+    skeleton: 'mixamo',
+    isPlayable: true,
+    defaultAnimationProfileId: 'quaternius_native',
+    modularParts: [],
+  },
+  imp: {
+    id: 'imp',
+    name: 'Imp',
+    modelUrl: '/uploads/Imp.glb',
+    category: 'monster',
+    skeleton: 'creature_custom',
+    isPlayable: false,
+    modularParts: [],
+  },
+  puglin: {
+    id: 'puglin',
+    name: 'Puglin',
+    modelUrl: '/uploads/Puglin.glb',
+    category: 'monster',
+    skeleton: 'creature_custom',
+    isPlayable: false,
+    modularParts: [],
+  },
+  // Legacy / test compatibility
+  brute: {
+    id: 'brute',
+    name: 'Brute',
+    modelUrl: '/game-assets/models/humanoids/brute/brute.glb',
+    category: 'character',
+    skeleton: 'manny',
+    defaultAnimationProfileId: 'GreystoneManny',
+    modularParts: [],
+  },
+  asian_girl: {
+    id: 'asian_girl',
+    name: 'Asian Heroine',
+    modelUrl: '/game-assets/models/humanoids/asian_girl/asian_girl.glb',
+    category: 'character',
+    skeleton: 'daz_g8f',
+    isPlayable: true,
+    defaultAnimationProfileId: 'GreystoneManny',
+    modularParts: [],
+  },
+  boy: {
+    id: 'boy',
+    name: 'Stylized Boy',
+    modelUrl: '/game-assets/models/humanoids/boy/boy.glb',
+    category: 'character',
+    skeleton: 'mixamo',
+    defaultAnimationProfileId: 'boy_native',
+    modularParts: [],
+  },
+  girl: {
+    id: 'girl',
+    name: 'Stylized Girl',
+    modelUrl: '/game-assets/models/humanoids/girl/girl.glb',
+    category: 'character',
+    skeleton: 'mixamo',
+    defaultAnimationProfileId: 'girl_native',
+    modularParts: [],
+  },
+};
 
 export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalModelDef | undefined {
   if (!modelIdOrUrl) return undefined;
@@ -50,6 +147,18 @@ export function getCanonicalModelDef(modelIdOrUrl?: string | null): CanonicalMod
   if (CANONICAL_BUILTIN_MODELS[key]) {
     return CANONICAL_BUILTIN_MODELS[key];
   }
+  if (key.includes('superhero_male') || (key.includes('male') && key.includes('quaternius'))) {
+    return CANONICAL_BUILTIN_MODELS.quaternius_base_male;
+  }
+  if (key.includes('superhero_female') || (key.includes('female') && key.includes('quaternius'))) {
+    return CANONICAL_BUILTIN_MODELS.quaternius_base_female;
+  }
+  if (key.includes('imp')) return CANONICAL_BUILTIN_MODELS.imp;
+  if (key.includes('puglin')) return CANONICAL_BUILTIN_MODELS.puglin;
+  if (key.includes('brute')) return CANONICAL_BUILTIN_MODELS.brute;
+  if (key.includes('asian')) return CANONICAL_BUILTIN_MODELS.asian_girl;
+  if (key.includes('boy')) return CANONICAL_BUILTIN_MODELS.boy;
+  if (key.includes('girl')) return CANONICAL_BUILTIN_MODELS.girl;
   return undefined;
 }
 

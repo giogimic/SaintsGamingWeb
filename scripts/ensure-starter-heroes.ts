@@ -8,15 +8,91 @@ const prisma = new PrismaClient();
 
 const defaults = [
   {
+    slug: "champion_3d",
+    name: "Saint Champion (3D)",
+    gameId: "saints",
+    classId: "WARRIOR",
+    spriteKey: "warrior",
+    assetProfileId: "quaternius_base_male",
+    visualData: JSON.stringify({
+      worldModel: {
+        type: "3D Model",
+        assetId: "quaternius_base_male",
+        modelUrl: "/uploads/Superhero_Male_FullBody.glb",
+        scale: 0.85
+      },
+      modularAttachments: [
+        {
+          assetId: "builtin-piece-peasant_male",
+          label: "Peasant Attire",
+          category: "clothing",
+          type: "3D Model",
+          attachmentMode: "SKINNED",
+          isModular: true,
+          availableInCharacterCreation: true,
+          defaultVisible: true
+        }
+      ]
+    }),
+    flavor: "Frontline warrior built on the standard male humanoid foundation.",
+    tag: "3D Archetype",
+    tagColor: "#f59e0b",
+    sortOrder: 1,
+    isActive: true,
+    startingMap: "DEMO_SANDBOX",
+    startingX: 14,
+    startingY: 15,
+    startingInventory: '{"capture_script":10,"patch_kit":5}',
+  },
+  {
+    slug: "vanguard_3d",
+    name: "Saint Vanguard (3D)",
+    gameId: "saints",
+    classId: "RANGER",
+    spriteKey: "dragonrider",
+    assetProfileId: "quaternius_base_female",
+    visualData: JSON.stringify({
+      worldModel: {
+        type: "3D Model",
+        assetId: "quaternius_base_female",
+        modelUrl: "/uploads/Superhero_Female_FullBody.glb",
+        scale: 0.85
+      },
+      modularAttachments: [
+        {
+          assetId: "builtin-piece-ranger_female",
+          label: "Ranger Attire",
+          category: "clothing",
+          type: "3D Model",
+          attachmentMode: "SKINNED",
+          isModular: true,
+          availableInCharacterCreation: true,
+          defaultVisible: true
+        }
+      ]
+    }),
+    flavor: "Agile marksman built on the standard female humanoid foundation.",
+    tag: "3D Archetype",
+    tagColor: "#eab308",
+    sortOrder: 2,
+    isActive: true,
+    startingMap: "DEMO_SANDBOX",
+    startingX: 14,
+    startingY: 15,
+    startingInventory: '{"capture_script":10,"patch_kit":5}',
+  },
+  {
     slug: "warrior",
     name: "Warrior",
     gameId: "saints",
     classId: "WARRIOR",
     spriteKey: "warrior",
+    assetProfileId: "warrior",
+    visualData: "[]",
     flavor: "Frontline champion. High HP, unstoppable in melee.",
     tag: "Beginner Friendly",
     tagColor: "#34d399",
-    sortOrder: 1,
+    sortOrder: 3,
     isActive: true,
     startingMap: "DEMO_SANDBOX",
     startingX: 14,
@@ -124,24 +200,44 @@ const defaults = [
 async function main() {
   for (const h of defaults) {
     const gameId = (h as { gameId?: string }).gameId || "saints";
-    const row = { ...h, gameId };
+    const { spriteKey, ...cleanHero } = h as any;
+    const assetProfileId = cleanHero.assetProfileId || spriteKey;
+    const visualData = cleanHero.visualData || "[]";
+    const row = {
+      slug: cleanHero.slug,
+      gameId,
+      name: cleanHero.name,
+      classId: cleanHero.classId,
+      assetProfileId,
+      visualData,
+      flavor: cleanHero.flavor,
+      tag: cleanHero.tag,
+      tagColor: cleanHero.tagColor,
+      sortOrder: cleanHero.sortOrder,
+      isActive: cleanHero.isActive,
+      startingMap: cleanHero.startingMap,
+      startingX: cleanHero.startingX,
+      startingY: cleanHero.startingY,
+      startingInventory: cleanHero.startingInventory,
+    };
     await prisma.starterHero.upsert({
       where: { slug: h.slug },
       create: row,
       update: {
         gameId,
-        name: h.name,
-        classId: h.classId,
-        spriteKey: h.spriteKey,
-        flavor: h.flavor,
-        tag: h.tag,
-        tagColor: h.tagColor,
-        sortOrder: h.sortOrder,
-        isActive: h.isActive,
-        startingMap: h.startingMap,
-        startingX: h.startingX,
-        startingY: h.startingY,
-        startingInventory: h.startingInventory,
+        name: cleanHero.name,
+        classId: cleanHero.classId,
+        assetProfileId,
+        visualData,
+        flavor: cleanHero.flavor,
+        tag: cleanHero.tag,
+        tagColor: cleanHero.tagColor,
+        sortOrder: cleanHero.sortOrder,
+        isActive: cleanHero.isActive,
+        startingMap: cleanHero.startingMap,
+        startingX: cleanHero.startingX,
+        startingY: cleanHero.startingY,
+        startingInventory: cleanHero.startingInventory,
       },
     });
     console.log(`[ok] ${h.slug} → ${gameId}`);

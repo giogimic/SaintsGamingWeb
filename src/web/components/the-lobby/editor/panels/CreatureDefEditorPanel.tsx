@@ -777,6 +777,15 @@ export function CreatureDefEditorPanel() {
                 allowSocketConfig={true}
               />
 
+              {getWorldModel().type === '3D Model' && (
+                <ModelWardrobeEditor
+                  modelAssetId={getWorldModel().assetId}
+                  value={getModularAttachments()}
+                  onChange={handleModularAttachmentsChange}
+                  title="Creature Equipment & Attachment Sockets"
+                />
+              )}
+
               {/* 2D Battle Sprites */}
               <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-800/60">
                 <div>

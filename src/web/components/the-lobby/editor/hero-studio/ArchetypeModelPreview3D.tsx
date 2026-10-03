@@ -24,6 +24,7 @@ interface ArchetypeModelPreview3DProps {
   modularAttachments?: ArchetypePreviewAttachment[];
   className?: string;
   hideToolbar?: boolean;
+  showAnimationControls?: boolean;
   autoRotateDefault?: boolean;
   showHint?: boolean;
   disableBackground?: boolean;
@@ -450,10 +451,11 @@ export function ArchetypeModelPreview3D({
   modelScale = 0.8,
   modularAttachments = [],
   className = 'h-72',
-  hideToolbar = false,
+  hideToolbar = true,
+  showAnimationControls = false,
   autoRotateDefault = false,
   showHint = false,
-  disableBackground = false,
+  disableBackground = true,
 }: ArchetypeModelPreview3DProps) {
   const [animations, setAnimations] = useState<{ name: string; duration: number }[]>([]);
   const [activeAnimIndex, setActiveAnimIndex] = useState(0);
@@ -512,9 +514,9 @@ export function ArchetypeModelPreview3D({
   }
 
   return (
-    <div className={`w-full ${className} ${disableBackground ? '' : 'bg-[#050b14] border border-primary/30'} rounded-2xl overflow-hidden relative ${disableBackground ? '' : 'shadow-2xl'} flex flex-col`}>
-      {/* Top Header Controls */}
-      {!hideToolbar && (
+    <div className={`w-full ${className} ${disableBackground ? 'bg-transparent' : 'bg-[#050b14] border border-primary/30 shadow-2xl'} rounded-2xl overflow-hidden relative flex flex-col`}>
+      {/* Optional Debug / Animation Controls Header */}
+      {!hideToolbar && showAnimationControls && (
         <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
           <div className="flex items-center gap-2 pointer-events-auto bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
             <span className="text-[10px] font-black text-primary uppercase tracking-widest">
@@ -580,10 +582,10 @@ export function ArchetypeModelPreview3D({
 
       {/* 3D Canvas */}
       <div className="flex-1 w-full h-full">
-        <Canvas camera={{ position: [0, 1.4, 2.8], fov: 42 }}>
-          <ambientLight intensity={0.6} />
-          <directionalLight position={[6, 10, 6]} intensity={1.3} />
-          <directionalLight position={[-6, 4, -4]} intensity={0.5} />
+        <Canvas camera={{ position: [0, 1.35, 2.7], fov: 40 }}>
+          <ambientLight intensity={0.8} />
+          <directionalLight position={[5, 8, 5]} intensity={1.4} />
+          <directionalLight position={[-5, 4, -4]} intensity={0.5} />
           <Environment preset="city" />
 
           <CompositeCharacter
@@ -597,7 +599,20 @@ export function ArchetypeModelPreview3D({
             onLoadedAnimations={handleLoadedAnimations}
           />
 
-          <OrbitControls makeDefault target={[0, 0.9 * effectiveScale, 0]} maxPolarAngle={Math.PI / 2 + 0.1} />
+          {/* Clean grounding contact shadow under the character's feet */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
+            <circleGeometry args={[0.55 * effectiveScale, 32]} />
+            <meshBasicMaterial color="#000000" opacity={0.35} transparent depthWrite={false} />
+          </mesh>
+
+          <OrbitControls
+            makeDefault
+            target={[0, 0.88 * effectiveScale, 0]}
+            maxPolarAngle={Math.PI / 2}
+            minDistance={1.2}
+            maxDistance={4.5}
+            enablePan={false}
+          />
           {!disableBackground && <Grid infiniteGrid sectionColor="#eab308" cellColor="#1e293b" fadeDistance={12} />}
         </Canvas>
       </div>
@@ -605,8 +620,8 @@ export function ArchetypeModelPreview3D({
       {/* Bottom Hint */}
       {showHint && (
         <div className="absolute bottom-2 left-3 right-3 flex justify-between items-center pointer-events-none text-[9px] text-slate-500">
-          <span>Full 3D character composite with live bone attachment & anti-clipping</span>
-          <span>Left-click drag: Rotate • Right-click drag: Pan • Scroll: Zoom</span>
+          <span>Full 3D character composite</span>
+          <span>Click & drag to rotate • Scroll to zoom</span>
         </div>
       )}
     </div>

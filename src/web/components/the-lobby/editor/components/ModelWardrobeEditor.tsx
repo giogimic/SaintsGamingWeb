@@ -150,10 +150,17 @@ export function ModelWardrobeEditor({
         ? modelItems.filter((asset) => {
             const assetSkeleton = asset.metadata?.skeleton || asset.metadata?.assetDefinition?.skeleton;
             if (assetSkeleton && assetSkeleton !== profile.skeleton) return false;
-            // Never allow creature/monster items on humanoids or vice versa
+            // Never allow monster-exclusive parts on humanoids; allow modular outfits on creatures/monsters if equipped
             const isMonsterItem = asset.categories?.some((c) => c.toLowerCase() === 'monster' || c.toLowerCase() === 'creature');
             if (profile.category === 'character' && isMonsterItem) return false;
-            if (profile.category === 'monster' && !isMonsterItem && !asset.tags?.includes('monster')) return false;
+            if (
+              profile.category === 'monster' &&
+              !isMonsterItem &&
+              !asset.tags?.includes('monster') &&
+              !asset.tags?.includes('creature_outfit') &&
+              !asset.tags?.includes('monster_outfit') &&
+              !asset.tags?.includes('modular')
+            ) return false;
             return true;
           })
         : modelItems;

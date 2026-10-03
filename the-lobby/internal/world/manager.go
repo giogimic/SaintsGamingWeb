@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/protocol"
+	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world/atlas"
 )
 
 // MapDef is a loaded base map definition (logic grid + meta).
@@ -115,6 +116,7 @@ type Manager struct {
 	FetchMapDef func(id string) (*MapDef, error)
 	RM          *RegionManager
 	DB          *sql.DB
+	Biomes      []atlas.FractalArea
 }
 
 // LoadActiveRelease loads the active release from DB if not already loaded, or reloads it.
@@ -448,7 +450,7 @@ func BuildDemoMapDef(mapID string) *MapDef {
 	}
 
 	biome := GetDefaultBiome()
-	generator := NewProceduralVoxelGenerator(biome.Seed)
+	generator := NewProceduralVoxelGenerator(biome.Seed, nil)
 	placer := &FeaturePlacer{}
 	structPlacer := NewStructurePlacer()
 

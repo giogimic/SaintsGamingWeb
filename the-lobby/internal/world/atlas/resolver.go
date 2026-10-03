@@ -40,6 +40,12 @@ type AreaDecorators struct {
 	SubsurfaceOres []DecoratorRule
 }
 
+type AreaFlora struct {
+	Name        string  `json:"name"`
+	Category    string  `json:"category"`
+	SpawnWeight float64 `json:"spawnWeight"`
+}
+
 type FractalArea struct {
 	ID               string
 	Name             string
@@ -48,6 +54,7 @@ type FractalArea struct {
 	TerrainModifiers AreaTerrainModifiers
 	Strata           AreaStrata
 	Decorators       *AreaDecorators
+	Flora            []AreaFlora
 }
 
 var CanonicalFractalAreas = []FractalArea{
@@ -80,6 +87,12 @@ var CanonicalFractalAreas = []FractalArea{
 				{Material: 3, Probability: 0.05, StackHeight: 1}, // DIRT
 			},
 		},
+		Flora: []AreaFlora{
+			{Name: "oak_tree", Category: "Tree", SpawnWeight: 15},
+			{Name: "wildflower", Category: "Plant", SpawnWeight: 35},
+			{Name: "tall_grass", Category: "Plant", SpawnWeight: 40},
+			{Name: "berry_bush", Category: "Bush", SpawnWeight: 10},
+		},
 	},
 	{
 		ID:          "area_golden_dunes",
@@ -106,6 +119,10 @@ var CanonicalFractalAreas = []FractalArea{
 				{Material: 7, Probability: 0.005, StackHeight: 2}, // WOOD (cactus/dead bush)
 			},
 		},
+		Flora: []AreaFlora{
+			{Name: "cactus", Category: "Plant", SpawnWeight: 30},
+			{Name: "boulder", Category: "Rock", SpawnWeight: 15},
+		},
 	},
 	{
 		ID:          "area_alpine_range",
@@ -128,6 +145,35 @@ var CanonicalFractalAreas = []FractalArea{
 			BedrockMaterial:     1, // GUNMETAL
 		},
 		Decorators: &AreaDecorators{},
+		Flora: []AreaFlora{
+			{Name: "pine_tree", Category: "Tree", SpawnWeight: 35},
+			{Name: "boulder", Category: "Rock", SpawnWeight: 20},
+		},
+	},
+	{
+		ID:          "area_obsidian_crags",
+		Name:        "Obsidian Crags Area",
+		Description: "Volcanic badlands carved by ancient subterranean forces.",
+		ClimateRules: AreaClimateRules{
+			MinTemp: 0.8, MaxTemp: 1.0,
+			MinMoisture: 0.0, MaxMoisture: 0.2,
+			MinElevation: 0.5, MaxElevation: 1.0,
+		},
+		TerrainModifiers: AreaTerrainModifiers{
+			HeightOffset: 0.1, HeightMultiplier: 1.8, RuggednessMultiplier: 0.8,
+		},
+		Strata: AreaStrata{
+			RegolithMaterial:    4, // STONE
+			SedimentaryMaterial: 4, // STONE
+			PlutonicMaterial:    1, // BEDROCK
+			MetamorphicMaterial: 1,
+			BasementMaterial:    1,
+			BedrockMaterial:     1,
+		},
+		Decorators: &AreaDecorators{},
+		Flora: []AreaFlora{
+			{Name: "boulder", Category: "Rock", SpawnWeight: 40},
+		},
 	},
 }
 

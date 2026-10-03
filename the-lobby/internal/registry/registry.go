@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"log"
 	"sync"
+
+	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world/atlas"
 )
 
 // The Registry Manager holds all canonical content in thread-safe memory maps.
@@ -15,6 +17,7 @@ type Manager struct {
 	classes   map[string]CharacterClass
 	creatures map[string]CreatureDef
 	items     map[string]ItemTemplate
+	biomes    map[string]atlas.FractalArea
 }
 
 type CharacterClass struct {
@@ -57,6 +60,7 @@ func NewManager(db *sql.DB) *Manager {
 		classes:   make(map[string]CharacterClass),
 		creatures: make(map[string]CreatureDef),
 		items:     make(map[string]ItemTemplate),
+		biomes:    make(map[string]atlas.FractalArea),
 	}
 	// Do initial bootstrap
 	m.ReloadAll()
@@ -71,6 +75,7 @@ func (m *Manager) ReloadAll() {
 	m.ReloadClasses()
 	m.ReloadCreatures()
 	m.ReloadItems()
+	m.ReloadBiomes()
 }
 
 // LoadFromManifest initializes the registry directly from a project release manifest.
@@ -182,6 +187,109 @@ func (m *Manager) ReloadItems() {
 		}
 	}
 	log.Printf("[Registry] Loaded %d items", len(m.items))
+}
+
+func (m *Manager) ReloadBiomes() {
+	rows, err := m.db.Query(`
+		SELECT id, name, description, temperature, moisture, 
+		       amplitude, frequency, octaves, persistence, lacunarity,
+		       surfaceMaterial, subsurfaceMaterial, mantleMaterial, bedrockMaterial
+		FROM Biome
+	`)
+	if err != nil {
+		log.Printf("[Registry] Failed to load biomes: %v", err)
+		return
+	}
+	defer rows.Close()
+
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	for rows.Next() {
+		var b atlas.FractalArea
+		var temp, moist, amp sql.NullFloat64
+		var surf, sub, mantle, bed sql.NullInt64
+		var freq, pers, lac sql.NullFloat64
+		var oct sql.NullInt64
+
+		if err := rows.Scan(
+			&b.ID, &b.Name, &b.Description,
+			&temp, &moist,
+			&amp, &freq, &oct, &pers, &lac,
+			&surf, &sub, &mantle, &bed,
+		); err == nil {
+			
+			tVar := 0.5
+			if temp.Valid {
+				tVar = temp.Float64
+			}
+			moistVar := 0.5
+			if moist.Valid {
+				moistVar = moist.Float64
+			}
+			b.ClimateRules = atlas.AreaClimateRules{
+				MinTemp: tVar - 0.2, MaxTemp: tVar + 0.2,
+				MinMoisture: moistVar - 0.2, MaxMoisture: moistVar + 0.2,
+				MinElevation: 0.0, MaxElevation: 1.0,
+			}
+			b.TerrainModifiers = atlas.AreaTerrainModifiers{
+				HeightOffset:         0.0,
+				HeightMultiplier:     amp.Float64,
+				RuggednessMultiplier: freq.Float64 * 10,
+			}
+			b.Strata = atlas.AreaStrata{
+				RegolithMaterial:    uint32(surf.Int64),
+				SedimentaryMaterial: uint32(sub.Int64),
+				PlutonicMaterial:    uint32(mantle.Int64),
+				MetamorphicMaterial: uint32(mantle.Int64),
+				BasementMaterial:    uint32(mantle.Int64),
+				BedrockMaterial:     uint32(bed.Int64),
+			}
+			b.Flora = make([]atlas.AreaFlora, 0)
+			m.biomes[b.ID] = b
+		} else {
+			log.Printf("[Registry] Scan error on biome: %v", err)
+		}
+	}
+
+	// Load Foliage associations for biomes
+	fRows, err := m.db.Query(`
+		SELECT bf.biomeId, f.name, f.category, bf.spawnWeight
+		FROM BiomeFoliage bf
+		JOIN FoliageDef f ON bf.foliageId = f.id
+	`)
+	if err == nil {
+		defer fRows.Close()
+		for fRows.Next() {
+			var biomeID, fName, fCat string
+			var weight float64
+			if err := fRows.Scan(&biomeID, &fName, &fCat, &weight); err == nil {
+				if b, ok := m.biomes[biomeID]; ok {
+					b.Flora = append(b.Flora, atlas.AreaFlora{
+						Name:        fName,
+						Category:    fCat,
+						SpawnWeight: weight,
+					})
+					m.biomes[biomeID] = b
+				}
+			}
+		}
+	}
+
+	log.Printf("[Registry] Loaded %d biomes", len(m.biomes))
+}
+
+func (m *Manager) GetAllBiomes() []atlas.FractalArea {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if len(m.biomes) == 0 {
+		return atlas.CanonicalFractalAreas
+	}
+	var out []atlas.FractalArea
+	for _, b := range m.biomes {
+		out = append(out, b)
+	}
+	return out
 }
 
 func (m *Manager) GetClass(slug string) (CharacterClass, bool) {

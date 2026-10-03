@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"sync"
+
+	"github.com/giogimic/SaintsGamingWeb/the-lobby/internal/world/atlas"
 )
 
 // ChunkGenerationRequest represents a job for the worker pool.
@@ -43,11 +45,15 @@ func (wp *WorkerPool) Start() {
 			for {
 				select {
 				case job := <-wp.JobQueue:
-					generator := NewProceduralVoxelGenerator(job.Biome.Seed)
+					var areas []atlas.FractalArea
+					if wp.mgr != nil {
+						areas = wp.mgr.Biomes
+					}
+					generator := NewProceduralVoxelGenerator(job.Biome.Seed, areas)
 					chunk := generator.PopulateChunk(job.CX, job.CY, job.CZ)
 
 					placer := &FeaturePlacer{}
-					placer.PlaceFeatures(chunk, job.Biome.Seed, job.Biome)
+					placer.PlaceFeaturesWithResolver(chunk, job.Biome.Seed, generator.Resolver(), generator.Context())
 
 					// Run StructurePlacer if we have a manager and MapDef
 					if wp.mgr != nil && job.MapID != "" {

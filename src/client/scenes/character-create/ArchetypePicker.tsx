@@ -90,9 +90,9 @@ export function ArchetypePicker({
 
                   {/* Character Sprite Preview */}
                   {has3DModel ? (
-                    <div className="w-20 h-20 rounded-xl bg-black/60 border border-border/50 mx-auto my-2.5 flex flex-col items-center justify-center gap-1 text-cyan-300 shadow-inner group-hover:border-primary/60 transition-all">
-                      <Cuboid size={25} />
-                      <span className="text-[8px] font-mono uppercase tracking-wider">3D Model</span>
+                    <div className="w-20 h-20 rounded-xl bg-black/70 border border-primary/40 mx-auto my-2.5 flex flex-col items-center justify-center gap-1 text-primary shadow-[0_0_15px_rgba(234,179,8,0.15)] group-hover:border-primary group-hover:scale-105 transition-all">
+                      <Cuboid size={26} className="text-primary" />
+                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-primary">3D Model</span>
                     </div>
                   ) : (
                     <div className="w-20 h-20 rounded-xl bg-black/60 border border-border/50 mx-auto my-2.5 flex items-center justify-center shadow-inner group-hover:border-primary/60 transition-all overflow-hidden">
