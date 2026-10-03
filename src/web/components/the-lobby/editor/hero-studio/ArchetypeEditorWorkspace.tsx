@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
 import { ModelWardrobeEditor } from '../components/ModelWardrobeEditor';
-import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
+import { parseModelWardrobeItems, type ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { InventoryPicker } from '../components/InventoryPicker';
 import { ArchetypeModelPreview3D } from './ArchetypeModelPreview3D';
@@ -62,6 +62,7 @@ export function ArchetypeEditorWorkspace() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [previewHeroSlug, setPreviewHeroSlug] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const [heroesRes, mapsRes, classesRes] = await Promise.all([
@@ -170,6 +171,7 @@ export function ArchetypeEditorWorkspace() {
     try {
       const parsed = JSON.parse(form.visualData || '{}');
       if (parsed.worldModel) return parsed.worldModel;
+      if (parsed.type) return parsed;
     } catch {}
     return { type: '3D Model', assetId: form.assetProfileId || '' };
   };
@@ -180,11 +182,14 @@ export function ArchetypeEditorWorkspace() {
       parsed = JSON.parse(form.visualData || '{}');
       if (Array.isArray(parsed)) parsed = {}; // Migrate legacy array
     } catch {}
-    const prevAssetId = parsed.worldModel?.assetId;
+    const prevAssetId = parsed.worldModel?.assetId || parsed.assetId || form.assetProfileId;
     parsed.worldModel = val;
 
     // When selecting a base model or changing it, auto-bundle all compatible modular parts from its profile
-    const profile = getCharacterModelProfile(val.assetId);
+    if (prevAssetId !== val.assetId) {
+      parsed.modularAttachments = val.modularAttachments || [];
+    }
+    const profile = getCharacterModelProfile(val.assetId) || getCharacterModelProfile(val.modelUrl);
     if (profile && (prevAssetId !== val.assetId || !Array.isArray(parsed.modularAttachments) || parsed.modularAttachments.length === 0)) {
       const bundledAttachments: ModelWardrobeItem[] = profile.modularParts.map((part) => ({
         type: '3D Model',
@@ -312,21 +317,26 @@ export function ArchetypeEditorWorkspace() {
                   <div className="flex justify-center items-center h-28 mb-4 relative z-0">
                     <div className="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent rounded-xl" />
                     {(() => {
-                      let is3D = false;
-                      try {
-                        const parsed = JSON.parse(hero.visualData || '{}');
-                        if (parsed.worldModel?.type === '3D Model' || (!Array.isArray(parsed) && parsed.type === '3D Model')) {
-                          is3D = true;
+                       let is3D = false;
+                       let galleryModel: WorldModelValue | undefined;
+                       try {
+                         const parsed = JSON.parse(hero.visualData || '{}');
+                         if (parsed.worldModel?.type === '3D Model' || (!Array.isArray(parsed) && parsed.type === '3D Model')) {
+                           is3D = true;
+                           galleryModel = parsed.worldModel || parsed;
                         }
                       } catch {}
 
-                      if (is3D) {
-                        return (
+                       if (is3D) {
+                         if (previewHeroSlug === hero.slug) {
+                           return <div className="w-full relative z-10" onClick={(event) => event.stopPropagation()}><ArchetypeModelPreview3D worldModel={galleryModel} modularAttachments={parseModelWardrobeItems(hero.visualData).filter((item) => item.defaultVisible !== false) as WorldModelValue[]} className="h-28" /></div>;
+                         }
+                         return (
                           <div className="flex flex-col items-center justify-center gap-1.5 z-10">
                             <div className="w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]">
                               <Cuboid size={24} />
                             </div>
-                            <span className="text-[9px] font-bold text-cyan-400/80 uppercase tracking-widest">3D Model</span>
+                             <button type="button" onClick={(event) => { event.stopPropagation(); setPreviewHeroSlug(hero.slug); }} className="text-[10px] font-semibold text-primary hover:underline">Preview model</button>
                           </div>
                         );
                       }
@@ -554,9 +564,10 @@ export function ArchetypeEditorWorkspace() {
                 <h3 className="text-xs font-black text-cyan-400/80 uppercase tracking-widest">Asset Selector</h3>
               </div>
               {/* 3D Composite Character Live Preview */}
-              {getWorldModel().type === '3D Model' && getWorldModel().assetId && (
+              {getWorldModel().type === '3D Model' && (getWorldModel().assetId || getWorldModel().modelUrl) && (
                 <div className="pb-2">
                   <ArchetypeModelPreview3D
+                    worldModel={getWorldModel()}
                     baseAssetId={getWorldModel().assetId}
                     modelScale={getWorldModel().scale ?? 0.8}
                     modularAttachments={getModularAttachments()
@@ -576,10 +587,12 @@ export function ArchetypeEditorWorkspace() {
                 value={getWorldModel()}
                 onChange={handleWorldModelChange}
                 label="Base World Representation"
+                modelRole="archetype"
                 allowSocketConfig={true}
               />
               {getWorldModel().type === '3D Model' && (
                 <ModelWardrobeEditor
+                  worldModel={getWorldModel()}
                   modelAssetId={getWorldModel().assetId}
                   value={getModularAttachments()}
                   onChange={handleModularAttachmentsChange}

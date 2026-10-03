@@ -131,6 +131,17 @@ describe('Animation Profiles & World Model Presentation', () => {
     expect(applyAnimationProfileFallback(null, 'quaternius_2_native')?.mapped?.idle?.clip).toBe('Idle_FoldArms_Loop');
   });
 
+  it('provides all locomotion phases for both Universal profiles using available banks', () => {
+    for (const profileId of ['quaternius_native', 'quaternius_2_native']) {
+      const config = applyAnimationProfileFallback({ source: 'embedded', mapped: {} }, profileId);
+      for (const slot of ['idle', 'walk_fwd', 'walk_bwd', 'walk_left', 'walk_right', 'run_fwd', 'run_bwd', 'run_left', 'run_right', 'sprint', 'jump_start', 'jump_mid', 'jump_fall', 'jump_land']) {
+        expect(config?.mapped[slot], `${profileId} ${slot}`).toBeDefined();
+      }
+    }
+    expect(resolveAnimationUrl('quaternius_2_native', 'run_fwd')).toBe('/models/quaternius/ual1_standard.glb');
+    expect(getAnimationProfile('quaternius_native')?.slotMap.run_fwd?.clip).toBe('Jog_Fwd_Loop');
+  });
+
   it('offers Universal clips only when an uploaded rig matches the measured Quaternius humanoid signature', () => {
     const profile = getAnimationProfile('quaternius_native');
     expect(QUATERNIUS_UNIVERSAL_BONE_NAMES).toHaveLength(65);

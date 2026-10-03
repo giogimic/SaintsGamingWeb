@@ -16,6 +16,7 @@ import { DiagnosticConsole } from '../DiagnosticConsole';
 import type { DiagnosticEvent } from '@/server/diagnostics/SetupLogger';
 
 interface PublishReviewStepProps {
+  gameId?: string;
   gameDefinition: GameDefinitionData;
   startingMap: SetupStartingMapData;
   initializationId: string;
@@ -26,6 +27,7 @@ interface PublishReviewStepProps {
 }
 
 export function PublishReviewStep({
+  gameId = 'saints',
   gameDefinition,
   startingMap,
   initializationId,
@@ -52,7 +54,7 @@ export function PublishReviewStep({
       const payload = {
         initializationId,
         bootstrapRevisionId: startingMap.bootstrapRevisionId,
-        gameId: 'saints',
+        gameId,
         game: {
           name: gameDefinition.name,
           description: gameDefinition.description,

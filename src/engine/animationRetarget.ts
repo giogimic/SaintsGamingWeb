@@ -227,8 +227,10 @@ export function retargetAnimationGroup(
   }
 
   const newAg = new BABYLON.AnimationGroup(slotName, scene);
-  let matchedBones = 0;
-  const totalBones = sourceAg.targetedAnimations.length;
+  const matchedBoneNames = new Set<string>();
+  const totalBones = new Set(sourceAg.targetedAnimations
+    .map((track) => normalizeBoneName(track.target?.name || ''))
+    .filter((name) => name && name !== '__root__')).size;
 
   const ROOT_BONE_NAMES = ['root', 'armature', 'origin', 'bip01', 'pelvis', 'hips', 'hip', 'bip01pelvis'];
 
@@ -261,13 +263,14 @@ export function retargetAnimationGroup(
       }
 
       newAg.addTargetedAnimation(animToTarget, destNode);
-      matchedBones++;
+      matchedBoneNames.add(normalizeBoneName(targetName));
     }
   }
 
+  const matchedBones = matchedBoneNames.size;
   const matchRatio = totalBones > 0 ? matchedBones / totalBones : 0;
   if (matchedBones === 0 || matchRatio < (options?.minimumBoneMatchRatio ?? 0.3)) {
-    console.warn(`[AnimationRetarget] 0 of ${totalBones} bones matched for slot '${slotName}'. Source: ${sourceAg.name}`);
+    console.warn(`[AnimationRetarget] ${matchedBones} of ${totalBones} animated bones matched for slot '${slotName}'. Source: ${sourceAg.name}`);
     newAg.dispose();
     return null;
   }
@@ -290,7 +293,10 @@ export function selectAnimationGroupByName<T extends { name: string }>(
 ): T | null {
   if (!groups || groups.length === 0) return null;
   if (!clipName) return groups[0] || null;
-  return groups.find((group) => group.name === clipName) || null;
+  // Per-file profiles store a filename (for example Jog/Jog_Fwd), while
+  // older exports retain generic embedded names such as "Unreal Take".
+  // A bank must still select an exact named entry; a sole take is unambiguous.
+  return groups.find((group) => group.name === clipName) || (groups.length === 1 ? groups[0] : null);
 }
 
 /**

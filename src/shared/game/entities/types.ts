@@ -52,7 +52,25 @@ export interface ComponentTransform {
 
 export interface ComponentAppearance {
   assetProfileId: string;
+  type?: '3D Model' | '3D Sprite' | '2D Sprite' | '2D Box Sprite' | 'Other';
   assetId?: string;
+  modelUrl?: string | null;
+  source?: string | null;
+  modelScale?: number;
+  animationProfileId?: string;
+  animations?: any;
+  rigAnalysis?: any;
+  categorizedAnimations?: any[];
+  skeletonRequirements?: any;
+  materials?: any;
+  assetDefinition?: any;
+  transform?: any;
+  rotationY?: number;
+  grounding?: number;
+  modelRotationY?: number;
+  cameraHeightOffset?: number;
+  cameraYOffset?: number;
+  [key: string]: unknown;
   animSet?: string;
   frameIndex?: number;
   scale?: number;

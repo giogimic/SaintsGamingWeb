@@ -18,8 +18,6 @@ import {
   CreatureElementType
 } from '@/shared/game/creatureCatalog';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
-import { ModelWardrobeEditor } from '../components/ModelWardrobeEditor';
-import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 import { ArchetypeModelPreview3D } from '../hero-studio/ArchetypeModelPreview3D';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { useEditorStore } from '../editor-store';
@@ -215,30 +213,8 @@ export function MonsterEditorPanel() {
       parsed = JSON.parse(form.spriteOverworld || '{}');
       if (typeof parsed !== 'object') parsed = {};
     } catch {}
+    delete parsed.modularAttachments;
     parsed.worldModel = val;
-    f('spriteOverworld', JSON.stringify(parsed));
-  };
-
-  const getModularAttachments = (): ModelWardrobeItem[] => {
-    try {
-      const parsed = JSON.parse(form.spriteOverworld || '{}');
-      if (Array.isArray(parsed.modularAttachments)) return parsed.modularAttachments;
-      return Array.isArray(parsed.worldModel?.modularAttachments) ? parsed.worldModel.modularAttachments : [];
-    } catch {
-      return [];
-    }
-  };
-
-  const handleModularAttachmentsChange = (items: ModelWardrobeItem[]) => {
-    let parsed: any = {};
-    try {
-      parsed = JSON.parse(form.spriteOverworld || '{}');
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) parsed = {};
-    } catch {}
-    parsed.modularAttachments = items;
-    if (parsed.worldModel && Array.isArray(parsed.worldModel.modularAttachments)) {
-      parsed.worldModel = { ...parsed.worldModel, modularAttachments: items };
-    }
     f('spriteOverworld', JSON.stringify(parsed));
   };
 
@@ -704,12 +680,7 @@ export function MonsterEditorPanel() {
                   <ArchetypeModelPreview3D
                     baseAssetId={getWorldModel().assetId}
                     modelScale={getWorldModel().scale ?? 0.8}
-                    modularAttachments={getModularAttachments()
-                      .filter((attachment) => attachment.defaultVisible !== false)
-                      .map((attachment) => ({
-                        ...attachment,
-                        type: attachment.type === '3D Sprite' ? '3D Model' : attachment.type || '3D Model',
-                      }))}
+                    worldModel={getWorldModel()}
                     className="h-80"
                     disableBackground={true}
                     hideToolbar={true}
@@ -721,19 +692,10 @@ export function MonsterEditorPanel() {
                 value={getWorldModel()}
                 onChange={handleWorldModelChange}
                 label="Monster World Model"
-                allowSocketConfig={true}
-                assetPickerFilterType="CREATURE"
-                assetPickerCategoryFilter="CREATURES"
+                modelRole="monster"
               />
 
-              {getWorldModel().type === '3D Model' && (
-                <ModelWardrobeEditor
-                  modelAssetId={getWorldModel().assetId}
-                  value={getModularAttachments()}
-                  onChange={handleModularAttachmentsChange}
-                  title="Monster Weapon & Armor Sockets"
-                />
-              )}
+
             </div>
 
             {/* Box 5: Spawning Rules & Live Status */}

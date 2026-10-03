@@ -4,13 +4,14 @@ import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import type { WorldModelValue } from '@/web/components/the-lobby/editor/components/WorldModelSelector';
 import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
-import { getModelWardrobeItemLabel, getModelWardrobeSlotId } from '@/shared/game/modelWardrobe';
+import { getModelWardrobeItemLabel, getModelWardrobeSlotId, getDefaultCharacterCreationWardrobeIds } from '@/shared/game/modelWardrobe';
 import { ArchetypeModelPreview3D } from '@/web/components/the-lobby/editor/hero-studio/ArchetypeModelPreview3D';
 
 interface CharacterWardrobeSlotsProps {
   name: string;
   classId: string;
   modelAssetId: string;
+  worldModel?: WorldModelValue;
   modelScale?: number;
   wardrobeOptions: ModelWardrobeItem[];
   selectedWardrobeAssetIds: string[];
@@ -139,6 +140,7 @@ export function CharacterWardrobeSlots({
   name,
   classId,
   modelAssetId,
+  worldModel,
   modelScale = 0.8,
   wardrobeOptions,
   selectedWardrobeAssetIds,
@@ -237,7 +239,7 @@ export function CharacterWardrobeSlots({
           </div>
           <button
             type="button"
-            onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => item.defaultVisible !== false).map((item) => item.assetId))}
+            onClick={() => setSelectedWardrobeAssetIds(getDefaultCharacterCreationWardrobeIds(wardrobeOptions))}
             className="rounded-lg border border-border/50 px-3 py-1.5 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary transition-colors"
           >
             Reset
@@ -287,6 +289,7 @@ export function CharacterWardrobeSlots({
           </div>
           <div className="overflow-hidden rounded-2xl border border-primary/50 bg-[#050b14] shadow-[0_0_28px_rgba(234,179,8,0.18)]">
             <ArchetypeModelPreview3D
+              worldModel={worldModel}
               key={modelAssetId}
               baseAssetId={modelAssetId}
               modularAttachments={wardrobePreviewAttachments}

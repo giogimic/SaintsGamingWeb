@@ -40,6 +40,7 @@ function toBodyRegion(value: string): QuaterniusBodyRegion | undefined {
 export function getQuaterniusBodyRegionsToHide(items: WardrobeVisibilityItem[]): QuaterniusBodyRegion[] {
   const hidden = new Set<QuaterniusBodyRegion>();
   for (const item of items) {
+    if (item.defaultVisible === false) continue;
     const region = CATEGORY_REGION[normalize(item.category)];
     if (region && region !== 'head') hidden.add(region);
     for (const keyword of item.hidesComponents || []) {
@@ -87,4 +88,13 @@ export function getQuaterniusBodyRegionFromMeshName(meshName: string): Quaterniu
   const normalized = normalize(meshName).replace(/_/g, '');
   const match = normalized.match(/quaterniusbody(head|torso|arms|legs|feet)$/);
   return match?.[1] as QuaterniusBodyRegion | undefined;
+}
+
+/** Broad legacy rules such as "body" must never remove a prepared base's head. */
+export function shouldHideBaseMesh(meshName: string, keyword: string): boolean {
+  const region = getQuaterniusBodyRegionFromMeshName(meshName);
+  if (region) return region !== 'head' && toBodyRegion(keyword) === region;
+  const normalizedKeyword = normalize(keyword).replace(/_/g, '');
+  if (!normalizedKeyword || ['hair', 'beard', 'hat', 'headaccessory'].includes(normalizedKeyword)) return false;
+  return normalize(meshName).replace(/_/g, '').includes(normalizedKeyword);
 }

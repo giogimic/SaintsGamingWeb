@@ -498,6 +498,7 @@ interface EditorState {
   exitPlaytest: () => void;
   setStudioMode: (mode: StudioMode) => void;
   activeAssetPicker: {
+    modelRole?: 'archetype' | 'npc' | 'monster' | 'creature';
     filterType?: string;
     categoryFilter?: 'ALL' | 'CHARACTERS' | 'MODULAR' | 'WEAPONS' | 'CREATURES' | 'PROPS' | '2D' | string;
     slotFilter?: string;
@@ -505,6 +506,7 @@ interface EditorState {
     onSelect: (assetId: string, asset?: any) => void;
   } | null;
   openAssetPicker: (picker: {
+    modelRole?: 'archetype' | 'npc' | 'monster' | 'creature';
     filterType?: string;
     categoryFilter?: 'ALL' | 'CHARACTERS' | 'MODULAR' | 'WEAPONS' | 'CREATURES' | 'PROPS' | '2D' | string;
     slotFilter?: string;

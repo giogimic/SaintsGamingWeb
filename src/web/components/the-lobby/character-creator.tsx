@@ -40,7 +40,7 @@ import {
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { MidnightTropicalBackground } from '@/client/ui/shared/MidnightTropicalBackground';
 import { useTheme } from 'next-themes';
-import { applyCharacterCreationWardrobe, getModelWardrobeCategoryLabel, getModelWardrobeItemLabel, groupModelWardrobeItems, parseModelWardrobeItems } from '@/shared/game/modelWardrobe';
+import { applyCharacterCreationWardrobe, getModelWardrobeCategoryLabel, getModelWardrobeItemLabel, groupModelWardrobeItems, parseModelWardrobeItems, getCharacterCreationWardrobeOptions, getDefaultCharacterCreationWardrobeIds } from '@/shared/game/modelWardrobe';
 import { getStarterPerkEffectId } from '@/shared/game/starterPerks';
 import type { WorldModelValue } from './editor/components/WorldModelSelector';
 import { ArchetypeModelPreview3D } from './editor/hero-studio/ArchetypeModelPreview3D';
@@ -206,24 +206,15 @@ export function CharacterCreator({
 
   const is3DModel = parsedVisualData?.worldModel?.type === '3D Model' || parsedVisualData?.type === '3D Model';
   const wardrobeItems = useMemo(() => parseModelWardrobeItems(visualData), [visualData]);
-  const explicitWardrobeOptions = useMemo(
-    () => wardrobeItems.filter((item) => item.availableInCharacterCreation === true),
-    [wardrobeItems]
-  );
-  const wardrobeOptions = explicitWardrobeOptions.length > 0 ? explicitWardrobeOptions : wardrobeItems;
-  const modelAssetId = parsedVisualData?.worldModel?.type === '3D Model'
-    ? (parsedVisualData.worldModel.assetId || parsedVisualData.worldModel.modelUrl || parsedVisualData.worldModel.url)
-    : parsedVisualData?.type === '3D Model'
-    ? (parsedVisualData.assetId || parsedVisualData.modelUrl || parsedVisualData.url)
-    : undefined;
+  const wardrobeOptions = useMemo(() => getCharacterCreationWardrobeOptions(wardrobeItems), [wardrobeItems]);
+  const worldModel: WorldModelValue | undefined = is3DModel ? (parsedVisualData.worldModel || parsedVisualData) : undefined;
+  const modelAssetId = worldModel?.assetId || worldModel?.modelUrl || worldModel?.source || undefined;
   const wardrobePreviewAttachments = useMemo(() => {
     const hasCreationTagged = wardrobeItems.some((item) => item.availableInCharacterCreation === true);
     const activeIds = new Set(selectedWardrobeAssetIds);
     return wardrobeItems.filter((item) => {
-      if (hasCreationTagged && item.availableInCharacterCreation === false) {
-        return item.defaultVisible !== false;
-      }
-      return activeIds.has(item.assetId);
+      const isOffered = hasCreationTagged ? item.availableInCharacterCreation === true : item.availableInCharacterCreation !== false;
+      return isOffered ? activeIds.has(item.assetId) : item.defaultVisible !== false;
     }).map((item) => {
       const category = item.category?.toLowerCase() || '';
       if (category === 'hair' || category === 'beard' || category === 'eyebrows') {
@@ -338,14 +329,7 @@ export function CharacterCreator({
     setassetProfileId(hero.assetProfileId);
     setVisualData(hero.visualData || '[]');
     const initialWardrobe = parseModelWardrobeItems(hero.visualData);
-    const hasCreationTagged = initialWardrobe.some((item) => item.availableInCharacterCreation);
-    const defaultVisibleIds = initialWardrobe
-      .filter((item) => {
-        const isOffered = hasCreationTagged ? item.availableInCharacterCreation : true;
-        return isOffered && item.defaultVisible !== false;
-      })
-      .map((item) => item.assetId);
-    setSelectedWardrobeAssetIds(defaultVisibleIds);
+    setSelectedWardrobeAssetIds(getDefaultCharacterCreationWardrobeIds(initialWardrobe));
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setStep('NAME');
@@ -375,14 +359,7 @@ export function CharacterCreator({
     setassetProfileId(hero.assetProfileId);
     setVisualData(hero.visualData || '[]');
     const rolledWardrobe = parseModelWardrobeItems(hero.visualData);
-    const hasRolledCreationTagged = rolledWardrobe.some((item) => item.availableInCharacterCreation);
-    const rolledVisibleIds = rolledWardrobe
-      .filter((item) => {
-        const isOffered = hasRolledCreationTagged ? item.availableInCharacterCreation : true;
-        return isOffered && item.defaultVisible !== false;
-      })
-      .map((item) => item.assetId);
-    setSelectedWardrobeAssetIds(rolledVisibleIds);
+    setSelectedWardrobeAssetIds(getDefaultCharacterCreationWardrobeIds(rolledWardrobe));
     setClassId(hero.classId);
     setSelectedHeroSlug(hero.slug);
     setName(`${pick}${num}`);
@@ -881,6 +858,7 @@ export function CharacterCreator({
                 name={name}
                 classId={classId}
                 modelAssetId={modelAssetId}
+                worldModel={worldModel}
                 modelScale={parsedVisualData?.worldModel?.scale ?? parsedVisualData?.scale ?? 0.8}
                 wardrobeOptions={wardrobeOptions}
                 selectedWardrobeAssetIds={selectedWardrobeAssetIds}
@@ -905,7 +883,7 @@ export function CharacterCreator({
 
                 {is3DModel && modelAssetId ? (
                   <div className="w-full my-3 overflow-hidden rounded-2xl border border-primary/50 shadow-[0_0_25px_rgba(234,179,8,0.2)]">
-                    <ArchetypeModelPreview3D baseAssetId={modelAssetId} modularAttachments={wardrobePreviewAttachments} className="h-56" hideToolbar disableBackground />
+                    <ArchetypeModelPreview3D worldModel={worldModel} baseAssetId={modelAssetId} modularAttachments={wardrobePreviewAttachments} className="h-56" hideToolbar disableBackground />
                   </div>
                 ) : (
                   <div className="w-32 h-32 rounded-2xl bg-black/80 border-2 border-primary/60 flex items-center justify-center my-3 shadow-[0_0_25px_rgba(234,179,8,0.2)] overflow-hidden">
@@ -1190,7 +1168,7 @@ export function CharacterCreator({
                         <p className="text-xs text-muted-foreground">Choose the clothing and gear to wear.</p>
                         <button
                           type="button"
-                          onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => item.defaultVisible !== false).map((item) => item.assetId))}
+                          onClick={() => setSelectedWardrobeAssetIds(getDefaultCharacterCreationWardrobeIds(wardrobeOptions))}
                           className="shrink-0 rounded-lg border border-border/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary"
                         >
                           Reset to default
@@ -1374,6 +1352,7 @@ export function CharacterCreator({
               <div className="flex items-center gap-5 border-b border-border/40 pb-4">
                 {modelAssetId ? (
                   <ArchetypeModelPreview3D
+                    worldModel={worldModel}
                     baseAssetId={modelAssetId}
                     modularAttachments={wardrobePreviewAttachments}
                     className="h-44 w-36 shrink-0"

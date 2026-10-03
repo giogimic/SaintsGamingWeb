@@ -6,6 +6,79 @@ import {
 } from './modelWardrobe';
 
 import type { CharacterComponentCategory } from './assetImportProfiles';
+import type { ModelWardrobeItem } from './modelWardrobe';
+import { getProfileSlotUrls } from './animationProfiles';
+
+/** Saved actor binding. `scale` belongs to the actor; `modelScale` belongs to its imported asset. */
+export interface WorldModelBinding extends Omit<PresentationDefinition, 'mode' | 'modularAttachments'> {
+  type: '2D Sprite' | '2D Box Sprite' | '3D Model' | 'Other';
+  assetId: string;
+  source?: string | null;
+  scale?: number;
+  modularAttachments?: ModelWardrobeItem[];
+}
+
+/** Copy a new asset's complete visual definition without carrying settings from the previous base. */
+export function resolveWorldModelAssetValue(asset: any, actorScale?: number): WorldModelBinding {
+  let metadata = asset?.metadata || {};
+  if (typeof metadata === 'string') {
+    try { metadata = JSON.parse(metadata); } catch { metadata = {}; }
+  }
+  const presentation = asset?.presentation || metadata.presentation || {};
+  const definition = presentation.assetDefinition || metadata.assetDefinition || {};
+  const transform = definition.transform || presentation.transform || {};
+  const modelUrl = asset?.source || asset?.cdnUrl || presentation.modelUrl || asset?.id;
+  return {
+    ...presentation,
+    type: '3D Model',
+    assetId: asset?.id || modelUrl,
+    modelUrl,
+    source: modelUrl,
+    scale: actorScale ?? 1,
+    modelScale: presentation.modelScale ?? transform.scale,
+    modelRotationY: presentation.modelRotationY ?? transform.rotationY,
+    grounding: presentation.grounding ?? transform.grounding ?? transform.groundingOffsetY,
+    cameraHeightOffset: presentation.cameraHeightOffset ?? transform.cameraYOffset ?? transform.cameraHeightOffset,
+    animationProfileId: presentation.animationProfileId ?? definition.animationProfileId,
+    animations: presentation.animations ?? definition.animations,
+    rigAnalysis: presentation.rigAnalysis ?? definition.rigAnalysis ?? metadata.rigAnalysis,
+    categorizedAnimations: presentation.categorizedAnimations ?? definition.categorizedAnimations,
+    skeletonRequirements: presentation.skeletonRequirements ?? definition.skeletonRequirements,
+    skeleton: presentation.skeleton ?? definition.skeleton ?? metadata.skeleton,
+    sockets: presentation.sockets ?? definition.attachments,
+    materials: presentation.materials ?? definition.materials,
+    assetDefinition: definition,
+    modularAttachments: presentation.modularAttachments,
+  };
+}
+
+/** Collect stable asset identities and actual model/texture/animation sources from an actor visual. */
+export function collectWorldModelAssetReferences(value: unknown): string[] {
+  const refs = new Set<string>();
+  const add = (ref: unknown) => {
+    if (typeof ref === 'string' && ref.trim() && !ref.startsWith('blob:') && !ref.startsWith('data:')) refs.add(ref.trim());
+  };
+  let data: any = value;
+  if (typeof value === 'string') {
+    try { data = JSON.parse(value); } catch { add(value); data = undefined; }
+  }
+  const visit = (node: any) => {
+    if (!node || typeof node !== 'object') return;
+    for (const [key, ref] of Object.entries(node)) {
+      if (['assetId', 'modelUrl', 'source', 'cdnUrl', 'textureVariantUrl', 'sourcePath', 'textureUrl', 'spriteSheetUrl', 'portraitUrl'].includes(key)) add(ref);
+      else if (key === 'sourceId' && typeof ref === 'string' && !['embedded', 'profile'].includes(ref)) add(ref);
+      if (ref && typeof ref === 'object') visit(ref);
+      if (typeof ref === 'string' && /(?:url|texture|map)$/i.test(key) && /^(?:\/|https?:\/\/)/.test(ref)) add(ref);
+    }
+  };
+  visit(data);
+  const presentation = getWorldModelPresentation(value);
+  if (presentation) {
+    visit(presentation);
+    if (presentation.animationProfileId) Object.values(getProfileSlotUrls(presentation.animationProfileId)).forEach(add);
+  }
+  return [...refs];
+}
 
 export interface CanonicalModelPartDef {
   id: string;
@@ -27,6 +100,7 @@ export interface CanonicalModelDef {
   defaultAnimationProfileId?: string;
   modularParts?: CanonicalModelPartDef[];
   embeddedAnimations?: string[];
+  defaultScale?: number;
 }
 
 import {
@@ -252,7 +326,9 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
   }
   if (!data || typeof data !== 'object' || Array.isArray(data)) return undefined;
 
-  const model = data.worldModel || data;
+  const model = data.worldModel || data.appearance || data;
+  const assetDefinition = model.assetDefinition || data.assetDefinition || {};
+  const transform = assetDefinition.transform || model.transform || data.transform || {};
   const modelType = model.type || model.assetProfileId;
   const candidateBaseUrl = model.modelUrl || model.source || (typeof model === 'object' && model?.url);
   const rawId = model.assetId || model.id || candidateBaseUrl;
@@ -285,6 +361,7 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
         const wardrobeItem = typeof att === 'string' ? { assetId: rawId, modelUrl: url } : { ...att, assetId: rawId, modelUrl: url };
         const attachmentMode = att?.attachmentMode || (att?.isModular ? 'SKINNED' : getDefaultModelWardrobeAttachmentMode(wardrobeItem));
         return {
+          ...(typeof att === 'object' && att ? att : {}),
           modelUrl: url,
           assetId: rawId,
           socket: att?.socket || (attachmentMode === 'SKINNED' ? undefined : getDefaultModelWardrobeSocket(wardrobeItem)),
@@ -298,21 +375,22 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
           meshName: att?.meshName || att?.assetDefinition?.meshName || att?.metadata?.meshName,
           defaultVisible: att?.defaultVisible ?? att?.metadata?.defaultVisible,
           category: att?.category || att?.metadata?.category,
+          tint: att?.tint,
           textureVariantUrl: att?.textureVariantUrl || att?.metadata?.textureVariantUrl,
         };
       })
       .filter((a: ModularAttachmentDef | undefined): a is ModularAttachmentDef => !!a);
 
   const modularModelUrls = modularAttachments.map((a: ModularAttachmentDef) => a.modelUrl);
-  const scale = Number(model.scale ?? model.modelScale ?? data.scale ?? data.modelScale ?? (data.assetDefinition?.transform?.scale));
+  const scale = Number(model.modelScale ?? data.modelScale ?? transform.scale);
 
-  const camHeight = Number(model.cameraHeightOffset ?? model.cameraYOffset ?? data.cameraHeightOffset ?? data.cameraYOffset ?? (data.assetDefinition?.transform?.cameraYOffset));
+  const camHeight = Number(model.cameraHeightOffset ?? model.cameraYOffset ?? data.cameraHeightOffset ?? data.cameraYOffset ?? transform.cameraYOffset ?? transform.cameraHeightOffset);
 
-  const animations = model.animations ?? data.animations ?? data.assetDefinition?.animations;
-  const rigAnalysis = model.rigAnalysis ?? data.rigAnalysis ?? data.assetDefinition?.rigAnalysis;
-  const categorizedAnimations = model.categorizedAnimations ?? data.categorizedAnimations ?? data.assetDefinition?.categorizedAnimations;
-  const skeletonRequirements = model.skeletonRequirements ?? data.skeletonRequirements ?? data.assetDefinition?.skeletonRequirements;
-  const materials = model.materials ?? data.materials ?? data.assetDefinition?.materials;
+  const animations = model.animations ?? data.animations ?? assetDefinition.animations;
+  const rigAnalysis = model.rigAnalysis ?? data.rigAnalysis ?? assetDefinition.rigAnalysis;
+  const categorizedAnimations = model.categorizedAnimations ?? data.categorizedAnimations ?? assetDefinition.categorizedAnimations;
+  const skeletonRequirements = model.skeletonRequirements ?? data.skeletonRequirements ?? assetDefinition.skeletonRequirements;
+  const materials = model.materials ?? data.materials ?? assetDefinition.materials;
 
   const canonicalDef = canonicalLookup
     || (rawId && getCanonicalModelDef(String(rawId)))
@@ -331,12 +409,18 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
   return {
     mode: '3D',
     assetId: model.assetId || canonicalDef?.id || String(rawId ?? modelUrl),
-    animationProfileId: model.animationProfileId ?? data.animationProfileId ?? data.assetDefinition?.animationProfileId ?? canonicalDef?.defaultAnimationProfileId ?? profile?.defaultAnimationProfileId ?? (canonicalDef?.skeleton === 'manny' ? 'GreystoneManny' : undefined),
+    animationProfileId: model.animationProfileId ?? data.animationProfileId ?? assetDefinition.animationProfileId ?? canonicalDef?.defaultAnimationProfileId ?? profile?.defaultAnimationProfileId ?? (canonicalDef?.skeleton === 'manny' ? 'GreystoneManny' : undefined),
     modelUrl,
     modularModelUrls,
     modularAttachments,
-    modelScale: Number.isFinite(scale) && scale > 0 ? Math.min(100, scale) : (canonicalDef?.defaultScale ?? 0.8),
-    cameraHeightOffset: Number.isFinite(camHeight) && camHeight > 0 ? camHeight : undefined,
+    modelScale: Number.isFinite(scale) && scale > 0 ? Math.min(100, scale) : (canonicalDef?.defaultScale ?? profile?.baseScale ?? 1),
+    modelRotationY: model.modelRotationY ?? transform.rotationY,
+    grounding: model.grounding ?? transform.grounding ?? transform.groundingOffsetY,
+    cameraHeightOffset: Number.isFinite(camHeight) ? camHeight : undefined,
+    character: model.character ?? data.character,
+    assetDefinition,
+    skeleton: model.skeleton ?? assetDefinition.skeleton,
+    sockets: model.sockets ?? assetDefinition.attachments,
     animations: resolvedAnimations,
     rigAnalysis,
     categorizedAnimations,

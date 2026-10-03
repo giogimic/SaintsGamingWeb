@@ -75,4 +75,10 @@ describe('animationRetarget', () => {
     expect(selectAnimationGroupByName(groups, 'Missing_Clip')).toBeNull();
     expect(selectAnimationGroupByName(groups)?.name).toBe('A_TPose');
   });
+
+  it('accepts the sole embedded take in a legacy per-file animation', () => {
+    const take = { name: 'Unreal Take' };
+    expect(selectAnimationGroupByName([take], 'Jog/Jog_Fwd')).toBe(take);
+    expect(selectAnimationGroupByName([{ name: 'mixamo.com' }], 'Walking')?.name).toBe('mixamo.com');
+  });
 });

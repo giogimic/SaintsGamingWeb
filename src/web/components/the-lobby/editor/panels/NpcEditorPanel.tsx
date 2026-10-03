@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Users, Plus, Trash2, Save, RefreshCw, Eye, EyeOff, CheckCircle2, AlertCircle,
   FileJson, Copy, Check, ChevronLeft, Cuboid, ShoppingBag, Shield, Award,
@@ -8,13 +8,14 @@ import {
 } from 'lucide-react';
 import { WorldModelSelector, WorldModelValue } from '../components/WorldModelSelector';
 import { ModelWardrobeEditor } from '../components/ModelWardrobeEditor';
-import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
+import { parseModelWardrobeItems, type ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 import { ArchetypeModelPreview3D } from '../hero-studio/ArchetypeModelPreview3D';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { listNpcDefs, upsertNpcDef, deleteNpcDef } from '@/app/actions/studio/npc-def';
 import { ComponentMap } from '@/shared/game/entities/types';
 import { useEditorStore } from '../editor-store';
 import { cn } from '@/shared/lib/utils';
+import { createNpcVisualSnapshot, parseNpcVisualSnapshot } from '@/shared/game/npcVisualSnapshot';
 
 export interface NpcDefState {
   slug: string;
@@ -90,6 +91,9 @@ export function NpcEditorPanel() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | NpcCapabilityKey>('ALL');
   const [copied, setCopied] = useState(false);
+  const [visualSourceSlug, setVisualSourceSlug] = useState('');
+  const [previewNpcSlug, setPreviewNpcSlug] = useState<string | null>(null);
+  const visualImportRef = useRef<HTMLInputElement>(null);
 
   const fetchNpcs = useCallback(async () => {
     setLoading(true);
@@ -263,16 +267,20 @@ export function NpcEditorPanel() {
   // World Model representation helpers
   const getWorldModel = (): WorldModelValue => {
     const app = form.componentsData.appearance;
-    if (app && app.assetId) {
-      return { type: (app.assetProfileId || '3D Model') as any, assetId: app.assetId, scale: app.scale ?? 0.8 };
+    if (app) {
+      return {
+        ...app,
+        type: (app.type || app.assetProfileId || '3D Model') as WorldModelValue['type'],
+        assetId: app.assetId || '',
+      } as WorldModelValue;
     }
     return { type: '3D Model', assetId: '', scale: 1 };
   };
 
   const handleWorldModelChange = (val: WorldModelValue) => {
     setComponent('appearance', {
+      ...val,
       assetProfileId: val.type,
-      assetId: val.assetId,
       scale: val.scale ?? 0.8,
     });
   };
@@ -283,6 +291,51 @@ export function NpcEditorPanel() {
 
   const handleModularAttachmentsChange = (items: ModelWardrobeItem[]) => {
     setComponent('appearance', { modularAttachments: items });
+  };
+
+  const applyVisualSnapshot = (value: unknown) => {
+    try {
+      const appearance = parseNpcVisualSnapshot(value);
+      setForm((prev) => ({ ...prev, componentsData: { ...prev.componentsData, appearance } }));
+      showStatus('success', 'Visual configuration copied. Save to apply it to this NPC.');
+    } catch (error) {
+      showStatus('error', error instanceof Error ? error.message : 'Unable to load this visual configuration.');
+    }
+  };
+
+  const handleCopyVisual = () => {
+    const source = npcs.find((npc) => npc.slug === visualSourceSlug);
+    if (!source) return;
+    try {
+      applyVisualSnapshot({ appearance: JSON.parse(source.componentsData || '{}').appearance });
+    } catch {
+      showStatus('error', 'This NPC has no readable visual configuration.');
+    }
+  };
+
+  const handleExportVisual = () => {
+    try {
+      const snapshot = createNpcVisualSnapshot(form.name || 'NPC Visual', form.componentsData.appearance!);
+      const url = URL.createObjectURL(new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' }));
+      const download = document.createElement('a');
+      download.href = url;
+      download.download = `${form.slug || 'npc'}-visual.json`;
+      download.click();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      showStatus('error', error instanceof Error ? error.message : 'Select a base model before exporting.');
+    }
+  };
+
+  const handleImportVisual = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    try {
+      applyVisualSnapshot(await file.text());
+    } catch {
+      showStatus('error', 'Unable to read the selected visual snapshot.');
+    }
   };
 
   // Live validation markers
@@ -429,14 +482,18 @@ export function NpcEditorPanel() {
                     <div className="flex justify-center items-center h-28 mb-4 relative z-0">
                       <div className="absolute inset-0 bg-gradient-to-t from-white/5 to-transparent rounded-xl" />
                       {is3D ? (
+                        previewNpcSlug === npc.slug ? (
+                          <div className="w-full relative z-10" onClick={(event) => event.stopPropagation()}>
+                            <ArchetypeModelPreview3D worldModel={{ ...parsed.appearance, type: '3D Model', assetId: parsed.appearance?.assetId || '' }} modularAttachments={parseModelWardrobeItems(parsed.appearance).filter((item) => item.defaultVisible !== false) as WorldModelValue[]} className="h-28" />
+                          </div>
+                        ) : (
                         <div className="flex flex-col items-center justify-center gap-1.5 z-10">
                           <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
                             <Cuboid size={24} />
                           </div>
-                          <span className="text-[9px] font-bold text-amber-400/80 uppercase tracking-widest">
-                            {parsed.appearance?.assetId || '3D Model'}
-                          </span>
+                          <button type="button" onClick={(event) => { event.stopPropagation(); setPreviewNpcSlug(npc.slug); }} className="text-[10px] font-semibold text-primary hover:underline">Preview model</button>
                         </div>
+                        )
                       ) : (
                         <CharacterSpritePreview
                           assetProfileId={parsed.appearance?.assetId || 'adventurer'}
@@ -745,10 +802,28 @@ export function NpcEditorPanel() {
                 <h3 className="text-xs font-black text-cyan-400/80 uppercase tracking-widest">3D Model & Visuals</h3>
               </div>
 
+              <div className="space-y-2 rounded-xl border border-border/50 bg-black/20 p-3">
+                <p className="text-xs font-semibold text-foreground">Reuse a visual configuration</p>
+                <p className="text-[11px] text-muted-foreground">Copy a saved NPC's body, outfit, materials, and animations, or keep a visual snapshot for other NPCs.</p>
+                <div className="flex gap-2">
+                  <select value={visualSourceSlug} onChange={(event) => setVisualSourceSlug(event.target.value)} className={inputCls} aria-label="NPC to copy visuals from">
+                    <option value="">Choose a saved NPC...</option>
+                    {npcs.filter((npc) => npc.slug !== form.slug).map((npc) => <option key={npc.slug} value={npc.slug}>{npc.name}</option>)}
+                  </select>
+                  <button type="button" onClick={handleCopyVisual} disabled={!visualSourceSlug} className="shrink-0 rounded-lg border border-primary/40 px-3 text-xs font-semibold text-primary disabled:opacity-40">Copy visuals</button>
+                </div>
+                <div className="flex gap-2">
+                  <button type="button" onClick={handleExportVisual} className="rounded-lg border border-border/50 px-3 py-1.5 text-xs text-foreground hover:border-primary/50">Export visual</button>
+                  <button type="button" onClick={() => visualImportRef.current?.click()} className="rounded-lg border border-border/50 px-3 py-1.5 text-xs text-foreground hover:border-primary/50">Import visual</button>
+                  <input ref={visualImportRef} type="file" accept=".json,application/json" onChange={handleImportVisual} className="hidden" aria-label="Import NPC visual snapshot" />
+                </div>
+              </div>
+
               {/* Live 3D Canvas Preview */}
-              {getWorldModel().type === '3D Model' && getWorldModel().assetId && (
+              {getWorldModel().type === '3D Model' && (getWorldModel().assetId || getWorldModel().modelUrl) && (
                 <div className="pb-2">
                   <ArchetypeModelPreview3D
+                    worldModel={getWorldModel()}
                     baseAssetId={getWorldModel().assetId}
                     modelScale={getWorldModel().scale ?? 0.8}
                     modularAttachments={getModularAttachments()
@@ -768,6 +843,7 @@ export function NpcEditorPanel() {
                 value={getWorldModel()}
                 onChange={handleWorldModelChange}
                 label="NPC World Model"
+                modelRole="npc"
                 allowSocketConfig={true}
                 assetPickerFilterType=""
                 assetPickerCategoryFilter="ALL"
@@ -775,6 +851,7 @@ export function NpcEditorPanel() {
 
               {getWorldModel().type === '3D Model' && (
                 <ModelWardrobeEditor
+                  worldModel={getWorldModel()}
                   modelAssetId={getWorldModel().assetId}
                   value={getModularAttachments()}
                   onChange={handleModularAttachmentsChange}

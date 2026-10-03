@@ -18,9 +18,11 @@ import { WorldGenerationStep } from './steps/WorldGenerationStep';
 import { PublishReviewStep } from './steps/PublishReviewStep';
 import { type SetupStartingMapData } from './steps/StartingMapStep';
 import type { DiagnosticEvent } from '@/server/diagnostics/SetupLogger';
+import { useEditorStore } from '@/web/components/the-lobby/editor/editor-store';
 
 export function GameInitializationWizard({ isReinit = false }: { isReinit?: boolean }) {
   const router = useRouter();
+  const setupGameId = 'saints';
   const [step, setStep] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
@@ -63,6 +65,7 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
   }));
 
   useEffect(() => {
+    useEditorStore.getState().setActiveGameId(setupGameId);
     async function fetchStatus() {
       try {
         setLoading(true);
@@ -159,6 +162,7 @@ export function GameInitializationWizard({ isReinit = false }: { isReinit?: bool
           )}
           {step === 3 && (
             <PublishReviewStep
+              gameId={setupGameId}
               gameDefinition={gameDefinition}
               startingMap={startingMap}
               initializationId={initializationId}

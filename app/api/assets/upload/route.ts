@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { ingestAsset } from "@/web/lib/assetUpload";
 import { canUserModerateAssets } from "@/shared/game/assetPermissions";
+import { normalizeModelUploadRole } from '@/shared/game/worldModelRoles';
 import {
   AssetImportProfileId,
   getMissingRequiredRoles,
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
 
     const gameId = (formData.get("gameId") as string) || "saints";
     const name = formData.get("name") as string | undefined;
-    const type = formData.get("type") as string | undefined;
+    let type = formData.get("type") as string | undefined;
     const category = formData.get("category") as string | undefined;
     const rawTags = formData.get("tags") as string | null;
     let tags: string[] | undefined = undefined;
@@ -70,7 +71,7 @@ export async function POST(req: NextRequest) {
     const componentCategory = (formData.get("componentCategory") as string | null)?.trim() || undefined;
     const componentLayer = (formData.get("componentLayer") as string | null)?.trim() || undefined;
     const variantFamily = (formData.get("variantFamily") as string | null)?.trim() || undefined;
-    const isModularComponent = formData.get("isModularComponent") === "true";
+    let isModularComponent = formData.get("isModularComponent") === "true";
     const zOrderHintRaw = (formData.get("zOrderHint") as string | null)?.trim();
     const zOrderHint = zOrderHintRaw && !Number.isNaN(Number(zOrderHintRaw)) ? Number(zOrderHintRaw) : undefined;
     const baseBodyType = (formData.get("baseBodyType") as string | null)?.trim() || undefined;
@@ -180,6 +181,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    let modelRoleFlags: { isPlayable: boolean; showInCharacterCreation: boolean } | undefined;
+    if (presentation?.assetDefinition) {
+      try {
+        const normalized = normalizeModelUploadRole(type, presentation.assetDefinition);
+        type = normalized.type;
+        modelRoleFlags = normalized;
+        isModularComponent ||= presentation.assetDefinition.structure === 'ModularItem';
+        if (presentation.assetDefinition.structure === 'Modular') {
+          presentation.character = { ...presentation.character, type: '3D_MODEL', isCustomizable: true };
+        }
+      } catch (error) {
+        return NextResponse.json({ success: false, error: error instanceof Error ? error.message : String(error) }, { status: 400 });
+      }
+    }
+
     const thumbnailFile = formData.get("thumbnail") as File | null;
     let thumbnailUrl: string | undefined = undefined;
     if (thumbnailFile && thumbnailFile.size > 0) {
@@ -246,6 +262,7 @@ export async function POST(req: NextRequest) {
       componentLayer,
       variantFamily,
       isModularComponent,
+      ...modelRoleFlags,
       zOrderHint,
       baseBodyType,
       hidesComponents,

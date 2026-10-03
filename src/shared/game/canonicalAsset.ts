@@ -89,8 +89,13 @@ export interface PresentationDefinition {
   modelUrl?: string;
   modularModelUrls?: string[];
   modularAttachments?: ModularAttachmentDef[];
-  /** Multiplier applied by this actor over the model asset's import scale. */
+  /** Import scale of the shared model. Actor `scale` is applied separately once. */
   modelScale?: number;
+  modelRotationY?: number;
+  grounding?: number;
+  assetDefinition?: any;
+  skeleton?: any;
+  sockets?: any[];
   /**
    * Manual camera height offset override (world units above entity origin).
    * When set, the camera focuses at this height instead of auto-detecting

@@ -10,7 +10,10 @@ import {
   getDefaultModelWardrobeSocket,
 } from '@/shared/game/modelWardrobe';
 import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
-import { STANDARD_SOCKET_OPTIONS } from './WorldModelSelector';
+import { STANDARD_SOCKET_OPTIONS, type WorldModelValue } from './WorldModelSelector';
+import { GLTFLoader } from 'three-stdlib';
+import { discoverModelParts } from '@/shared/game/modelPartDiscovery';
+import { resolveModelAssetUrl, type CanonicalModelPartDef } from '@/shared/game/worldModelPresentation';
 import {
   getCharacterModelProfile,
   isWardrobeItemCompatibleWithProfile,
@@ -19,6 +22,7 @@ import { getQuaterniusOutfitTextureVariants } from '@/shared/game/quaterniusOutf
 
 interface ModelWardrobeEditorProps {
   modelAssetId: string;
+  worldModel?: WorldModelValue;
   value: ModelWardrobeItem[];
   onChange: (items: ModelWardrobeItem[]) => void;
   allowCharacterCreationOptions?: boolean;
@@ -95,6 +99,7 @@ function isModularAsset(asset: WardrobeAsset): boolean {
 
 export function ModelWardrobeEditor({
   modelAssetId,
+  worldModel,
   value,
   onChange,
   allowCharacterCreationOptions = false,
@@ -108,6 +113,44 @@ export function ModelWardrobeEditor({
   const [search, setSearch] = useState('');
   const [showAddedOnly, setShowAddedOnly] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<'ALL' | 'HEAD_FACE' | 'CLOTHING' | 'GEAR'>('ALL');
+  const [internalParts, setInternalParts] = useState<CanonicalModelPartDef[]>([]);
+  const [internalModelUrl, setInternalModelUrl] = useState<string | undefined>();
+  const definitionSignature = JSON.stringify(worldModel?.assetDefinition || {});
+
+  useEffect(() => {
+    let cancelled = false;
+    setInternalParts([]);
+    const load = async () => {
+      const asset = await AssetManager.getInstance().getAsset(modelAssetId);
+      const definition = worldModel?.assetDefinition || asset?.presentation?.assetDefinition || asset?.metadata?.assetDefinition;
+      const url = worldModel?.modelUrl || worldModel?.source || asset?.cdnUrl || asset?.source || resolveModelAssetUrl(modelAssetId);
+      if (cancelled) return;
+      setInternalModelUrl(url);
+      setInternalParts(discoverModelParts(modelAssetId, definition));
+      if (!url) return;
+      const gltf = await new GLTFLoader().loadAsync(url);
+      if (!cancelled) setInternalParts(discoverModelParts(modelAssetId, definition, gltf.scene));
+      // This scan never mounts the model. Release its rendering resources.
+      gltf.scene.traverse((node: any) => {
+        node.geometry?.dispose();
+        const materials = node.material ? (Array.isArray(node.material) ? node.material : [node.material]) : [];
+        materials.forEach((material: any) => material.dispose());
+      });
+    };
+    void load().catch((error) => console.warn('[ModelWardrobeEditor] Internal part discovery failed:', error));
+    return () => { cancelled = true; };
+  }, [modelAssetId, worldModel?.modelUrl, worldModel?.source, definitionSignature]);
+
+  const updateInternalPart = (part: CanonicalModelPartDef, patch: Partial<ModelWardrobeItem>) => {
+    const existing = value.find((item) => item.meshName === part.meshName && item.isSubmesh);
+    const item: ModelWardrobeItem = {
+      type: '3D Model', assetId: part.id, modelUrl: internalModelUrl, meshName: part.meshName,
+      isSubmesh: true, isModular: true, attachmentMode: 'SKINNED', category: part.category,
+      label: part.label, defaultVisible: part.defaultVisible, hidesComponents: part.suppressesSubmeshes || [],
+      availableInCharacterCreation: false, ...existing, ...patch,
+    };
+    onChange([...value.filter((entry) => entry.assetId !== item.assetId), item]);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -401,6 +444,20 @@ export function ModelWardrobeEditor({
 
   return (
     <section className="mt-3 rounded-lg border border-cyan-900/40 bg-black/25 p-3 space-y-2.5">
+      {internalParts.length > 0 && <div className="space-y-2 border-b border-cyan-900/40 pb-3">
+        <h4 className="text-xs font-semibold text-cyan-300">Parts inside this model</h4>
+        <p className="text-[10px] text-slate-400">Choose the default parts and which choices players can customize.</p>
+        {internalParts.map((part) => {
+          const configured = value.find((item) => item.isSubmesh && item.meshName === part.meshName);
+          return <div key={part.meshName} className="flex items-center justify-between gap-2 text-[11px] text-slate-300">
+            <span>{part.label}</span>
+            <label className="flex items-center gap-1"><input type="checkbox" checked={configured?.defaultVisible ?? part.defaultVisible}
+              onChange={(event) => updateInternalPart(part, { defaultVisible: event.target.checked })} />Show by default</label>
+            {allowCharacterCreationOptions && <label className="flex items-center gap-1"><input type="checkbox" checked={configured?.availableInCharacterCreation === true}
+              onChange={(event) => updateInternalPart(part, { availableInCharacterCreation: event.target.checked })} />Player choice</label>}
+          </div>;
+        })}
+      </div>}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-cyan-300">
           <Shirt size={12} /> {title}

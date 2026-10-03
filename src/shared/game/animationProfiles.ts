@@ -57,6 +57,8 @@ export interface AnimationClipMapping {
   loop: boolean;
   /** Playback speed multiplier (1.0 = normal) */
   speed?: number;
+  /** Optional bank override when a profile combines action and locomotion libraries. */
+  sourcePath?: string;
 }
 
 /** Bone names parsed from the bundled 65-joint Universal Base Character rig. */
@@ -486,7 +488,7 @@ export const ANIMATION_PROFILES: AnimationProfile[] = [
     slotMap: {
       idle: { clip: 'Idle_Loop', loop: true },
       idle_combat: { clip: 'Sword_Idle', loop: true },
-      run_fwd: { clip: 'Sprint_Loop', loop: true },
+      run_fwd: { clip: 'Jog_Fwd_Loop', loop: true },
       run_bwd: { clip: 'Jog_Fwd_Loop', loop: true },
       run_left: { clip: 'Jog_Fwd_Loop', loop: true },
       run_right: { clip: 'Jog_Fwd_Loop', loop: true },
@@ -505,6 +507,12 @@ export const ANIMATION_PROFILES: AnimationProfile[] = [
       attack_light: { clip: 'Sword_Attack', loop: false },
       attack_heavy: { clip: 'Sword_Attack', loop: false },
       cast: { clip: 'Spell_Simple_Shoot', loop: false },
+      sprint: { clip: 'Sprint_Loop', loop: true },
+      crouch_idle: { clip: 'Crouch_Idle_Loop', loop: true },
+      crouch_walk: { clip: 'Crouch_Fwd_Loop', loop: true },
+      sit: { clip: 'Sitting_Idle_Loop', loop: true },
+      talk: { clip: 'Idle_Talking_Loop', loop: true },
+      emote: { clip: 'Dance_Loop', loop: true },
     },
     availableClips: ['A_TPose', 'Crouch_Fwd_Loop', 'Crouch_Idle_Loop', 'Dance_Loop', 'Death01', 'Driving_Loop', 'Fixing_Kneeling', 'Hit_Chest', 'Hit_Head', 'Idle_Loop', 'Idle_Talking_Loop', 'Idle_Torch_Loop', 'Interact', 'Jog_Fwd_Loop', 'Jump_Land', 'Jump_Loop', 'Jump_Start', 'PickUp_Table', 'Pistol_Aim_Down', 'Pistol_Aim_Neutral', 'Pistol_Aim_Up', 'Pistol_Idle_Loop', 'Pistol_Reload', 'Pistol_Shoot', 'Punch_Cross', 'Punch_Jab', 'Push_Loop', 'Roll', 'Sitting_Enter', 'Sitting_Exit', 'Sitting_Idle_Loop', 'Sitting_Talking_Loop', 'Spell_Simple_Enter', 'Spell_Simple_Exit', 'Spell_Simple_Idle_Loop', 'Spell_Simple_Shoot', 'Sprint_Loop', 'Swim_Fwd_Loop', 'Swim_Idle_Loop', 'Sword_Attack', 'Sword_Idle', 'Walk_Formal_Loop', 'Walk_Loop']
   },
@@ -530,6 +538,17 @@ export const ANIMATION_PROFILES: AnimationProfile[] = [
     availableClips: ['A_TPose', 'Chest_Open', 'ClimbUp_1m', 'Consume', 'Farm_Harvest', 'Farm_PlantSeed', 'Farm_Watering', 'Hit_Knockback', 'Idle_FoldArms_Loop', 'Idle_Lantern_Loop', 'Idle_No_Loop', 'Idle_Rail_Call', 'Idle_Rail_Loop', 'Idle_Shield_Break', 'Idle_Shield_Loop', 'Idle_TalkingPhone_Loop', 'LayToIdle', 'Melee_Hook', 'Melee_Hook_Rec', 'NinjaJump_Idle_Loop', 'NinjaJump_Land', 'NinjaJump_Start', 'OverhandThrow', 'Shield_Dash', 'Shield_OneShot', 'Slide_Exit', 'Slide_Loop', 'Slide_Start', 'Sword_Block', 'Sword_Dash', 'Sword_Heavy_Combo', 'Sword_Regular_A', 'Sword_Regular_A_Rec', 'Sword_Regular_B', 'Sword_Regular_B_Rec', 'Sword_Regular_C', 'Sword_Regular_Combo', 'TreeChopping_Loop', 'Walk_Carry_Loop', 'Yes', 'Zombie_Idle_Loop', 'Zombie_Scratch', 'Zombie_Walk_Fwd_Loop']
   },
 ];
+
+// UAL2 supplies additional actions rather than a complete ordinary locomotion
+// set. Keep its selected actions and use UAL1 for missing movement phases.
+const universal1 = ANIMATION_PROFILES.find((profile) => profile.id === 'quaternius_native')!;
+const universal2 = ANIMATION_PROFILES.find((profile) => profile.id === 'quaternius_2_native')!;
+for (const slot of ['walk_bwd', 'walk_left', 'walk_right', 'run_fwd', 'run_bwd', 'run_left', 'run_right', 'sprint', 'crouch_idle', 'crouch_walk', 'sit', 'talk', 'death', 'cast'] as AnimationSlot[]) {
+  const mapping = universal1.slotMap[slot];
+  if (mapping) universal2.slotMap[slot] = { ...mapping, sourcePath: universal1.basePath };
+}
+universal2.slotMap.jump_fall = { clip: 'NinjaJump_Idle_Loop', loop: true };
+universal2.slotMap.jump_land = { clip: 'NinjaJump_Land', loop: false };
 
 // Root-motion exports contain the same named clips with root translation preserved.
 for (const [sourceId, id, displayName, basePath] of [
@@ -606,7 +625,7 @@ export function getProfileAnimationMappings(profileId: string): Record<string, {
           clip: mapping.clip,
           sourceKind: 'animation-set' as const,
           sourceId: profile.id,
-          sourcePath: resolveAnimationClipPath(profile.basePath, mapping.clip),
+          sourcePath: mapping.sourcePath || resolveAnimationClipPath(profile.basePath, mapping.clip),
           loop: mapping.loop,
           speed: mapping.speed,
         }]]
@@ -637,7 +656,7 @@ export function resolveAnimationUrl(profileId: string, slot: AnimationSlot): str
   if (!profile) return null;
   const mapping = profile.slotMap[slot];
   if (!mapping) return null;
-  return resolveAnimationClipPath(profile.basePath, mapping.clip);
+  return mapping.sourcePath || resolveAnimationClipPath(profile.basePath, mapping.clip);
 }
 
 /** Get all available slot URLs for a profile (for preloading) */
@@ -647,7 +666,7 @@ export function getProfileSlotUrls(profileId: string): Record<string, string> {
   const urls: Record<string, string> = {};
   for (const [slot, mapping] of Object.entries(profile.slotMap)) {
     if (mapping) {
-      urls[slot] = resolveAnimationClipPath(profile.basePath, mapping.clip);
+      urls[slot] = mapping.sourcePath || resolveAnimationClipPath(profile.basePath, mapping.clip);
     }
   }
   return urls;

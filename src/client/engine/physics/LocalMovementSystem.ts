@@ -12,6 +12,7 @@ import { cameraManager } from '../CameraManager';
 import { worldStreamer } from '../streaming/WorldStreamer';
 import { SweptAABBController } from '@/shared/game/voxel/VoxelCollision';
 import { resolveSafeVoxelSpawnInWorld } from '@/shared/game/voxel/SpawnResolver';
+import { resolveLocomotionAnimationState } from '@/engine/animationSelection';
 
 const voxelMovementController = new SweptAABBController();
 
@@ -24,6 +25,13 @@ export class LocalMovementSystem {
   private isGrounded = true;
   private voidRecoveryPending = false;
   private spawnReady = true;
+  private airborneSeconds = 0;
+  private landingSeconds = 0;
+  private locomotionAnimationState = 'idle';
+
+  public getLocomotionAnimationState(): string {
+    return this.locomotionAnimationState;
+  }
 
   // Heading & Rotation State
   private currentMoveAngle: number | null = null;
@@ -48,6 +56,9 @@ export class LocalMovementSystem {
   public resetAfterTeleport() {
     this.verticalVelocity = 0;
     this.isGrounded = true;
+    this.airborneSeconds = 0;
+    this.landingSeconds = 0;
+    this.locomotionAnimationState = 'idle';
   }
 
   /** Prevent gravity/input from advancing an unvalidated join position. */
@@ -199,11 +210,15 @@ export class LocalMovementSystem {
     const now = Date.now();
     const playerStore = usePlayerStore.getState();
     const currentPos = playerStore.player.position;
+    const wasMoving = playerStore.player.isMoving;
+    const isSprinting = inputManager.isAnyKeyPressed(KEYBINDS.SPRINT);
+    const isWalking = inputManager.isAnyKeyPressed(KEYBINDS.WALK || ['Control']);
 
     // A 3D map without streamed collision chunks is not safe to move through.
     // Previously this path skipped physics and still applied horizontal input.
     if (is3D && !voxelWorld) {
       this.currentMoveAngle = null;
+      this.locomotionAnimationState = 'idle';
       if (playerStore.player.isMoving) {
         playerStore.setPlayerPosition(currentPos, undefined, false, this.lastFacingAngle);
       }
@@ -212,6 +227,7 @@ export class LocalMovementSystem {
 
     if (!isMoving && !simulate3DPhysics) {
       this.currentMoveAngle = null;
+      this.locomotionAnimationState = 'idle';
       if (playerStore.player.isMoving) {
         playerStore.setPlayerPosition(currentPos, undefined, false, this.lastFacingAngle);
         socketManager.emit('player_move' as any, {
@@ -238,8 +254,7 @@ export class LocalMovementSystem {
       
       if (is3D) {
         // Continuous, camera-relative movement
-        const isSprinting = inputManager.isKeyPressed(KEYBINDS.SPRINT[0]);
-        const speed = isSprinting ? 22.0 : 15.0; // units per second
+        const speed = isWalking ? 6.0 : isSprinting ? 22.0 : 15.0; // units per second
         const yaw = cameraManager.yaw;
         
         // Normalize input vector
@@ -351,6 +366,26 @@ export class LocalMovementSystem {
       // Update local position smoothly
       const direction = newDirection || playerStore.player.direction;
       playerStore.setPlayerPosition({ x: targetX, y: targetY, z: targetZ }, direction as any, isMoving, this.lastFacingAngle);
+      if (simulate3DPhysics && !this.isGrounded) {
+        this.airborneSeconds += dtSec;
+        this.landingSeconds = 0;
+      } else {
+        this.airborneSeconds = 0;
+        this.landingSeconds = simulate3DPhysics && !wasGrounded
+          ? 0.2 : Math.max(0, this.landingSeconds - dtSec);
+      }
+      const animationDirection = inputZ < 0 ? 'bwd'
+        : Math.abs(inputX) > Math.abs(inputZ) ? (inputX < 0 ? 'left' : 'right') : 'fwd';
+      this.locomotionAnimationState = resolveLocomotionAnimationState({
+        moving: isMoving,
+        direction: is3D ? animationDirection : 'fwd',
+        sprinting: isSprinting,
+        walking: isWalking,
+        grounded: !simulate3DPhysics || this.isGrounded,
+        verticalVelocity: this.verticalVelocity,
+        airborneSeconds: this.airborneSeconds,
+        landed: this.landingSeconds > 0,
+      });
 
       // Footstep audio cadence
       if (isMoving && (!is3D || this.isGrounded)) {
@@ -363,7 +398,7 @@ export class LocalMovementSystem {
       const isAirborne = simulate3DPhysics && !this.isGrounded;
       const verticalPositionChanged = simulate3DPhysics && Math.abs(targetY - currentPos.y) > 1e-4;
       const groundStateChanged = simulate3DPhysics && wasGrounded !== this.isGrounded;
-      const shouldBroadcast = isMoving || isAirborne || verticalPositionChanged || groundStateChanged;
+      const shouldBroadcast = isMoving || wasMoving || isAirborne || verticalPositionChanged || groundStateChanged;
       if (shouldBroadcast && now - this.lastMoveCommandTime > this.MOVE_THROTTLE_MS) {
         this.lastMoveCommandTime = now;
         

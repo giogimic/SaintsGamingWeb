@@ -448,6 +448,21 @@ export function parseModelWardrobeItems(value: unknown): ModelWardrobeItem[] {
     });
 }
 
+/** The choices an author has made available to players, including legacy unflagged outfits. */
+export function getCharacterCreationWardrobeOptions(items: ModelWardrobeItem[]): ModelWardrobeItem[] {
+  const hasExplicitOptions = items.some((item) => item.availableInCharacterCreation === true);
+  return items.filter((item) => hasExplicitOptions
+    ? item.availableInCharacterCreation === true
+    : item.availableInCharacterCreation !== false);
+}
+
+/** Use the authored default outfit consistently when picking, rolling, or resetting an Archetype. */
+export function getDefaultCharacterCreationWardrobeIds(items: ModelWardrobeItem[]): string[] {
+  return [...new Set(getCharacterCreationWardrobeOptions(items)
+    .filter((item) => item.defaultVisible !== false)
+    .map((item) => item.assetId))];
+}
+
 /** Keep each archetype outfit intact while applying the creator's choices. */
 export function applyCharacterCreationWardrobe(
   visualData: string | null | undefined,

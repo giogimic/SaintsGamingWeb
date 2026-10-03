@@ -19,4 +19,5 @@ export let KEYBINDS: Record<string, string[]> = {
   ATTACK: ['Mouse0'],
   JUMP: [' '], // Space
   SPRINT: ['Shift'],
+  WALK: ['Control'],
 };

@@ -117,7 +117,7 @@ export async function POST(req: Request) {
 
     // 2. Validate Characters (Minimum 1 Required)
     const dbHeroesCount = await prisma.starterHero.count({
-      where: { isActive: true }
+      where: { isActive: true, gameId: 'saints' }
     });
     
     if (!Array.isArray(body.characters)) {

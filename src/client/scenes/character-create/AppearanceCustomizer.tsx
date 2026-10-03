@@ -5,7 +5,7 @@ import { soundSynth } from '@/engine/sound-synth';
 import { ArchetypeModelPreview3D } from '@/web/components/the-lobby/editor/hero-studio/ArchetypeModelPreview3D';
 import { CharacterWardrobeSlots } from './CharacterWardrobeSlots';
 import type { WorldModelValue } from '@/web/components/the-lobby/editor/components/WorldModelSelector';
-import { getModelWardrobeCategoryLabel, getModelWardrobeItemLabel, groupModelWardrobeItems } from '@/shared/game/modelWardrobe';
+import { getModelWardrobeCategoryLabel, getModelWardrobeItemLabel, groupModelWardrobeItems, getDefaultCharacterCreationWardrobeIds } from '@/shared/game/modelWardrobe';
 import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 
 export type AppearanceTab = 'BASE' | 'CAPE' | 'HEAD' | 'ARMOR' | 'CATALOG' | 'WARDROBE';
@@ -39,6 +39,7 @@ export interface AppearanceCustomizerProps {
   selectedWardrobeAssetIds: string[];
   setSelectedWardrobeAssetIds: (assetIds: string[]) => void;
   modelAssetId?: string;
+  worldModel?: WorldModelValue;
   modelScale?: number;
   wardrobePreviewAttachments: WorldModelValue[];
 }
@@ -72,6 +73,7 @@ export function AppearanceCustomizer({
   selectedWardrobeAssetIds,
   setSelectedWardrobeAssetIds,
   modelAssetId,
+  worldModel,
   modelScale,
   wardrobePreviewAttachments,
 }: AppearanceCustomizerProps) {
@@ -105,6 +107,7 @@ export function AppearanceCustomizer({
           name={name}
           classId={classId}
           modelAssetId={modelAssetId}
+          worldModel={worldModel}
           modelScale={modelScale}
           wardrobeOptions={wardrobeOptions}
           selectedWardrobeAssetIds={selectedWardrobeAssetIds}
@@ -127,6 +130,7 @@ export function AppearanceCustomizer({
           {modelAssetId ? (
             <div className="w-full my-3 overflow-hidden rounded-2xl border border-primary/50 shadow-[0_0_25px_rgba(234,179,8,0.2)]">
               <ArchetypeModelPreview3D
+                worldModel={worldModel}
                 baseAssetId={modelAssetId}
                 modularAttachments={wardrobePreviewAttachments}
                 className="h-56"
@@ -407,7 +411,7 @@ export function AppearanceCustomizer({
                   <p className="text-xs text-muted-foreground">Choose the clothing and gear to wear.</p>
                   <button
                     type="button"
-                    onClick={() => setSelectedWardrobeAssetIds(wardrobeOptions.filter((item) => (item.category === 'face' || item.category === 'hair' || (item as any).isStarterOutfit) && item.defaultVisible !== false).map((item) => item.assetId))}
+                    onClick={() => setSelectedWardrobeAssetIds(getDefaultCharacterCreationWardrobeIds(wardrobeOptions))}
                     className="shrink-0 rounded-lg border border-border/50 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground hover:border-primary/50 hover:text-primary"
                   >
                     Reset to default

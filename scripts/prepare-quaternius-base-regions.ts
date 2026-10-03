@@ -114,11 +114,19 @@ function prepareBase(document: any, bodyNodeName: string): void {
     const name = `QuaterniusBody_${region[0].toUpperCase()}${region.slice(1)}`;
     const mesh = document.createMesh(name);
     const primitive = document.createPrimitive().setMode(sourcePrimitive.getMode());
-    for (const attribute of sourcePrimitive.listAttributes()) {
+    // Accessor names are optional labels, not glTF attribute semantics. Preserve
+    // POSITION/NORMAL/JOINTS_0/etc so loaders receive renderable skinned geometry.
+    for (const semantic of sourcePrimitive.listSemantics()) {
+      const attribute = sourcePrimitive.getAttribute(semantic);
       primitive.setAttribute(
-        attribute.getName(),
-        makeAccessorSubset(document, attribute, localVertexIds, `${name}_${attribute.getName()}`),
+        semantic,
+        makeAccessorSubset(document, attribute, localVertexIds, `${name}_${semantic}`),
       );
+    }
+    for (const semantic of ['POSITION', 'NORMAL', 'JOINTS_0', 'WEIGHTS_0']) {
+      if (primitive.getAttribute(semantic)?.getCount() !== localVertexIds.length) {
+        throw new Error(`${name} has invalid ${semantic} geometry`);
+      }
     }
     const IndexArray = localVertexIds.length <= 65535 ? Uint16Array : Uint32Array;
     primitive.setIndices(document.createAccessor(`${name}_indices`).setType('SCALAR').setArray(new IndexArray(localIndices)));

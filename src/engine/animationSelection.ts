@@ -2,6 +2,33 @@ export interface NamedAnimationGroup {
   name?: string;
 }
 
+export interface LocomotionAnimationInput {
+  moving: boolean;
+  direction?: 'fwd' | 'bwd' | 'left' | 'right';
+  sprinting?: boolean;
+  walking?: boolean;
+  grounded?: boolean;
+  verticalVelocity?: number;
+  airborneSeconds?: number;
+  landed?: boolean;
+}
+
+export function resolveLocomotionAnimationState(input: LocomotionAnimationInput): string {
+  if (input.grounded === false) {
+    if ((input.verticalVelocity ?? 0) < -0.5) return 'jump_fall';
+    return (input.airborneSeconds ?? 1) < 0.18 ? 'jump_start' : 'jump_mid';
+  }
+  if (input.landed) return 'jump_land';
+  if (!input.moving) return 'idle';
+  if (input.sprinting && (input.direction ?? 'fwd') === 'fwd') return 'sprint';
+  return `${input.walking ? 'walk' : 'run'}_${input.direction ?? 'fwd'}`;
+}
+
+export function shouldLoopAnimationState(state: string | undefined, authoredLoop: boolean): boolean {
+  if (/^(attack|hit_react|jump_(start|end|land)|cast$|death$|recall$)/.test(state || '')) return false;
+  return authoredLoop;
+}
+
 const isLocomotionClip = (name: string) =>
   /run|walk|jog|sprint|locomotion|move/i.test(name);
 const isIdleClip = (name: string) =>

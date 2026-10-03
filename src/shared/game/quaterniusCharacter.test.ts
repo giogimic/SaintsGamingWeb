@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { getQuaterniusBodyRegionsToHide, getHiddenWardrobeAttachmentIndexes } from './quaterniusCharacter';
+import { getQuaterniusBodyRegionsToHide, getHiddenWardrobeAttachmentIndexes, shouldHideBaseMesh } from './quaterniusCharacter';
 
 describe('Quaternius wardrobe visibility', () => {
+  it('keeps intrinsic head visible under broad legacy body rules and ignores unequipped clothes', () => {
+    expect(shouldHideBaseMesh('QuaterniusBody_Head', 'body')).toBe(false);
+    expect(shouldHideBaseMesh('QuaterniusBody_Head', 'head')).toBe(false);
+    expect(shouldHideBaseMesh('QuaterniusBody_Torso', 'torso')).toBe(true);
+    expect(shouldHideBaseMesh('QuaterniusBody_Arms', 'torso')).toBe(false);
+    expect(getQuaterniusBodyRegionsToHide([{ category: 'clothing', defaultVisible: false }])).toEqual([]);
+  });
   it('hides only clothing-covered regions and preserves the head', () => {
     expect(getQuaterniusBodyRegionsToHide([
       { assetId: 'quat-male_ranger_body', category: 'clothing' },

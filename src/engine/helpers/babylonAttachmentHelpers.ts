@@ -3,6 +3,7 @@ import { normalizeBoneName } from '../animationRetarget';
 import { areRigBoneNamesEquivalent } from '@/shared/game/modelRigTaxonomy';
 import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 import { getDefaultModelWardrobeSocket } from '@/shared/game/modelWardrobe';
+import { shouldHideBaseMesh } from '@/shared/game/quaterniusCharacter';
 
 /** Standard socket pattern matching table mapping canonical sockets to common skeleton bone names. */
 const SOCKET_MATCHERS: Record<string, string[]> = {
@@ -276,8 +277,7 @@ export function attachModularComponent({
       if (!hw) return;
       modelWrapper.getChildMeshes(false).forEach((bm: any) => {
         if (attMeshSet.has(bm)) return;
-        const mn = (bm.name || '').toLowerCase();
-        if (mn.includes(hw)) {
+        if (shouldHideBaseMesh(bm.name || '', hw)) {
           bm.setEnabled(false);
         }
       });

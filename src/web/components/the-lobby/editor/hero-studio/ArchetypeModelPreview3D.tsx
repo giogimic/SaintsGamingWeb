@@ -1,17 +1,20 @@
 'use client';
 
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Environment, Grid } from '@react-three/drei';
+import { OrbitControls, Bounds, useBounds, Grid } from '@react-three/drei';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three-stdlib';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
-import { resolveModelAssetUrl, getModelModularComponents } from '@/shared/game/worldModelPresentation';
+import { resolveModelAssetUrl, getWorldModelPresentation } from '@/shared/game/worldModelPresentation';
+import { applyAnimationProfileFallback } from '@/shared/game/animationProfiles';
 import { getDefaultModelWardrobeAttachmentMode, getDefaultModelWardrobeSocket } from '@/shared/game/modelWardrobe';
 import { normalizeBoneName } from '@/engine/animationRetarget';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { getCharacterModelProfile } from '@/shared/game/characterProfiles';
-import { getHiddenWardrobeAttachmentIndexes, getQuaterniusBodyRegionFromMeshName, getQuaterniusBodyRegionsToHide } from '@/shared/game/quaterniusCharacter';
+import { getHiddenWardrobeAttachmentIndexes, getQuaterniusBodyRegionFromMeshName, getQuaterniusBodyRegionsToHide, shouldHideBaseMesh } from '@/shared/game/quaterniusCharacter';
+import { captureThreeRestPose, retargetThreeAnimationClip, selectThreeAnimationClip } from '@/web/lib/threeAnimationRetarget';
+import { discoverModelParts } from '@/shared/game/modelPartDiscovery';
 import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 import { WorldModelValue, STANDARD_SOCKET_OPTIONS } from '../components/WorldModelSelector';
 import { Play, Pause, RotateCw, Bone, Layers, EyeOff, Shield } from 'lucide-react';
@@ -85,6 +88,7 @@ export function applyQuaterniusTextureVariant(
 }
 
 interface ArchetypeModelPreview3DProps {
+  worldModel?: WorldModelValue;
   baseAssetId?: string;
   baseModelUrl?: string;
   modelScale?: number;
@@ -101,6 +105,8 @@ interface LoadedSubModel {
   scene: THREE.Group;
   attachment: ArchetypePreviewAttachment;
 }
+
+type PreviewAnimationClip = THREE.AnimationClip & { userData?: { loop: boolean; speed: number } };
 
 function findBone(scene: THREE.Group, socketName?: string): THREE.Bone | null {
   if (!socketName) return null;
@@ -144,6 +150,10 @@ function CompositeCharacter({
   showSkeleton,
   autoRotate,
   onLoadedAnimations,
+  animationConfig,
+  modelRotationY = 0,
+  assetDefinition,
+  onStatus,
 }: {
   baseUrl: string;
   modelScale?: number;
@@ -153,10 +163,15 @@ function CompositeCharacter({
   showSkeleton: boolean;
   autoRotate: boolean;
   onLoadedAnimations: (anims: { name: string; duration: number }[]) => void;
+  animationConfig?: Record<string, any>;
+  modelRotationY?: number;
+  assetDefinition?: Record<string, any>;
+  onStatus: (status: string | null, error?: boolean) => void;
 }) {
+  const bounds = useBounds();
   const rootGroup = useRef<THREE.Group>(null);
   const [baseScene, setBaseScene] = useState<THREE.Group | null>(null);
-  const [animations, setAnimations] = useState<THREE.AnimationClip[]>([]);
+  const [animations, setAnimations] = useState<PreviewAnimationClip[]>([]);
   const [loadedAttachments, setLoadedAttachments] = useState<LoadedSubModel[]>([]);
   const mixerRef = useRef<THREE.AnimationMixer | null>(null);
   const skeletonHelperRef = useRef<THREE.SkeletonHelper | null>(null);
@@ -166,12 +181,18 @@ function CompositeCharacter({
     if (!baseUrl) return;
     let isCancelled = false;
     const loader = new GLTFLoader();
+    setBaseScene(null);
+    setAnimations([]);
+    onLoadedAnimations([]);
+    onStatus('Loading model…');
 
     loader.load(
       baseUrl,
       (gltf) => {
         if (isCancelled) return;
+        const restPose = captureThreeRestPose(gltf.scene);
         setBaseScene(gltf.scene);
+        onStatus(null);
         const validAnims = (gltf.animations || []).filter((a) => a.tracks && a.tracks.length > 0);
         if (validAnims.length > 0) {
           setAnimations(validAnims);
@@ -182,20 +203,59 @@ function CompositeCharacter({
           setAnimations([]);
           onLoadedAnimations([]);
         }
+        const mappings = Object.entries(animationConfig?.mapped || {}) as Array<[string, any]>;
+        const sources = new Map<string, Promise<Awaited<ReturnType<GLTFLoader['loadAsync']>>>>();
+        const externalClips: PreviewAnimationClip[] = [];
+        const loadMappings = async () => {
+          for (const [slot, mapping] of mappings) {
+            if (isCancelled) return;
+            if (!mapping.sourcePath || mapping.sourceKind === 'embedded') {
+              const embedded = selectThreeAnimationClip(validAnims, mapping.clip);
+              if (embedded) externalClips.push(new THREE.AnimationClip(slot, embedded.duration, embedded.tracks.map((track) => track.clone())));
+              continue;
+            }
+            try {
+              let promise = sources.get(mapping.sourcePath);
+              if (!promise) {
+                promise = loader.loadAsync(mapping.sourcePath);
+                sources.set(mapping.sourcePath, promise);
+              }
+              const source = await promise;
+              if (isCancelled) return;
+              const clip = selectThreeAnimationClip(source.animations, mapping.clip);
+              if (!clip) continue;
+              const retargeted = retargetThreeAnimationClip(clip, source.scene, gltf.scene, restPose, slot) as PreviewAnimationClip | undefined;
+              if (retargeted) {
+                retargeted.userData = { loop: mapping.loop !== false, speed: mapping.speed || 1 };
+                externalClips.push(retargeted);
+              }
+            } catch (error) {
+              console.warn('[ArchetypeModelPreview3D] Animation load failed:', mapping.sourcePath, error);
+            }
+          }
+          if (isCancelled || !externalClips.length) return;
+          const clips = [...externalClips, ...validAnims.filter((clip) => !externalClips.some((external) => external.name === clip.name))];
+          setAnimations(clips);
+          onLoadedAnimations(clips.map((clip) => ({ name: clip.name, duration: clip.duration })));
+        };
+        void loadMappings();
       },
       undefined,
-      (err) => console.error('[ArchetypeModelPreview3D] Base load error:', err)
+      (err) => {
+        if (!isCancelled) onStatus('Could not load this model. Check its saved file or select it again.', true);
+        console.error('[ArchetypeModelPreview3D] Base load error:', err);
+      }
     );
 
     return () => {
       isCancelled = true;
     };
-  }, [baseUrl]);
+  }, [baseUrl, animationConfig, onLoadedAnimations, onStatus]);
 
   // Load Modular Attachments
   useEffect(() => {
     // Deduplicate attachments by category (keep the last one), but keep all non-categorized items
-    const activeAttachments = [...modularAttachments].reverse().filter((att, index, self) => {
+    const activeAttachments = [...modularAttachments].filter((att) => att.defaultVisible !== false).reverse().filter((att, index, self) => {
       if (!att.category) return true;
       return self.findIndex(a => a.category === att.category) === index;
     }).reverse();
@@ -269,7 +329,7 @@ function CompositeCharacter({
       isCancelled = true;
       resolvedAttachments.forEach(({ scene }) => scene.parent?.remove(scene));
     };
-  }, [modularAttachments]);
+  }, [baseUrl, modularAttachments]);
 
   // Apply only alternate maps that are confirmed in the user's supplied Standard archive.
   useEffect(() => {
@@ -325,6 +385,7 @@ function CompositeCharacter({
       // Gather existing node names to prevent Three.js PropertyBinding warning spam
       const existingNodes = new Set<string>();
       baseScene.traverse((child) => {
+        existingNodes.add(child.uuid);
         if (child.name) {
           existingNodes.add(child.name);
           const leaf = child.name.split(/[:\/|]/).pop();
@@ -345,6 +406,9 @@ function CompositeCharacter({
       }
 
       const action = mixerRef.current.clipAction(clipToPlay);
+      action.setLoop(originalClip.userData?.loop === false ? THREE.LoopOnce : THREE.LoopRepeat, Infinity);
+      action.clampWhenFinished = originalClip.userData?.loop === false;
+      action.timeScale = originalClip.userData?.speed || 1;
       if (isPlaying) {
         action.play();
       } else {
@@ -378,7 +442,7 @@ function CompositeCharacter({
     if (!baseScene) return;
 
     // Anti-clipping, Modular Submesh Activation & Socket Attachment Logic
-    const canonicalParts = getModelModularComponents(baseUrl);
+    const canonicalParts = discoverModelParts(baseUrl, assetDefinition, baseScene);
     const norm = (s: string) => s.toLowerCase().replace(/[-_\s.]/g, '');
 
     const partByMesh = new Map<string, any>();
@@ -459,7 +523,7 @@ function CompositeCharacter({
     });
     
     // Use activeAttachments here because we deduplicated them earlier
-    const activeAttachments = [...modularAttachments].reverse().filter((att, index, self) => {
+    const activeAttachments = [...modularAttachments].filter((att) => att.defaultVisible !== false).reverse().filter((att, index, self) => {
       if (!att.category) return true;
       return self.findIndex(a => a.category === att.category) === index;
     }).reverse();
@@ -488,12 +552,8 @@ function CompositeCharacter({
     if (hiddenKeywords.size > 0) {
       baseScene.traverse((child) => {
         if ((child as THREE.Mesh).isMesh) {
-          const meshName = child.name.toLowerCase();
-          const normMesh = norm(child.name);
           for (const kw of hiddenKeywords) {
-            if (['hair', 'beard', 'hat', 'head_accessory'].includes(kw)) continue;
-            const normKw = norm(kw);
-            if (meshName.includes(kw) || normMesh.includes(normKw)) {
+            if (shouldHideBaseMesh(child.name, kw)) {
               child.visible = false;
               break;
             }
@@ -584,7 +644,15 @@ function CompositeCharacter({
         attScene.parent?.remove(attScene);
       });
     };
-  }, [baseScene, loadedAttachments]);
+  }, [baseScene, loadedAttachments, modularAttachments, assetDefinition]);
+
+  useEffect(() => {
+    if (!baseScene || !rootGroup.current) return;
+    const frame = requestAnimationFrame(() => {
+      if (rootGroup.current) bounds.refresh(rootGroup.current).clip().fit();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [baseScene, loadedAttachments, modelScale, bounds]);
 
   useFrame((_, delta) => {
     if (mixerRef.current && isPlaying) {
@@ -598,17 +666,18 @@ function CompositeCharacter({
   if (!baseScene) return null;
 
   return (
-    <group ref={rootGroup} scale={[modelScale, modelScale, modelScale]}>
+    <group ref={rootGroup} scale={[modelScale, modelScale, modelScale]} rotation={[0, modelRotationY * Math.PI / 180, 0]}>
       <primitive object={baseScene} />
     </group>
   );
 }
 
 export function ArchetypeModelPreview3D({
+  worldModel,
   baseAssetId,
   baseModelUrl,
   modelScale = 0.8,
-  modularAttachments = [],
+  modularAttachments,
   className = 'h-72',
   hideToolbar = true,
   showAnimationControls = false,
@@ -621,44 +690,49 @@ export function ArchetypeModelPreview3D({
   const [isPlaying, setIsPlaying] = useState(true);
   const [showSkeleton, setShowSkeleton] = useState(false);
   const [autoRotate, setAutoRotate] = useState(autoRotateDefault);
-
-  const [resolvedBaseUrl, setResolvedBaseUrl] = useState<string | null>(() => {
-    if (baseModelUrl) return baseModelUrl;
-    if (baseAssetId) return resolveModelAssetUrl(baseAssetId) || null;
-    return null;
-  });
+  const [status, setStatus] = useState<{ message: string; error: boolean } | null>(null);
+  const inputSignature = JSON.stringify(worldModel || { type: '3D Model', assetId: baseAssetId, modelUrl: baseModelUrl, scale: modelScale });
+  const inputModel = useMemo(() => JSON.parse(inputSignature) as WorldModelValue, [inputSignature]);
+  const [resolvedModel, setResolvedModel] = useState<WorldModelValue>(inputModel);
+  const onStatus = useCallback((message: string | null, error = false) => setStatus(message ? { message, error } : null), []);
 
   useEffect(() => {
-    if (baseModelUrl) {
-      setResolvedBaseUrl(baseModelUrl);
-      return;
-    }
-    if (!baseAssetId) {
-      setResolvedBaseUrl(null);
-      return;
-    }
-    const syncUrl = resolveModelAssetUrl(baseAssetId);
-    if (syncUrl) {
-      setResolvedBaseUrl(syncUrl);
-      return;
-    }
+    setResolvedModel(inputModel);
+    setAnimations([]);
+    const directUrl = inputModel.modelUrl || inputModel.source || resolveModelAssetUrl(inputModel.assetId);
+    onStatus(directUrl ? 'Loading model…' : 'Finding model…');
     let cancelled = false;
-    AssetManager.getInstance().getAsset(baseAssetId).then((asset) => {
-      if (!cancelled && asset?.source) {
-        const assetUrl = resolveModelAssetUrl(asset.source) || asset.source;
-        setResolvedBaseUrl(assetUrl);
+    if (!inputModel.assetId) {
+      if (!directUrl) onStatus('Select a character model to see its preview.');
+      return;
+    }
+    AssetManager.getInstance().getAsset(inputModel.assetId).then((asset) => {
+      if (cancelled) return;
+      if (asset) {
+        const imported = asset.presentation || asset.metadata?.presentation || {};
+        setResolvedModel({
+          ...imported,
+          assetDefinition: imported.assetDefinition || asset.metadata?.assetDefinition,
+          ...inputModel,
+          modelUrl: directUrl || imported.modelUrl || asset.cdnUrl || asset.source,
+        });
+      } else if (!directUrl) {
+        onStatus('This model is unavailable. Select its file again.', true);
       }
     }).catch(() => {
-      // Do not assign 2D sprite URLs to a 3D GLTF renderer
+      if (!cancelled && !directUrl) onStatus('Could not find this model. Select its file again.', true);
     });
     return () => { cancelled = true; };
-  }, [baseAssetId, baseModelUrl]);
+  }, [inputModel, onStatus]);
 
-  const effectiveBaseUrl = resolvedBaseUrl || (baseAssetId ? resolveModelAssetUrl(baseAssetId) : null);
-  const profile = getCharacterModelProfile(baseAssetId || effectiveBaseUrl);
-  const effectiveScale = modelScale * (profile?.baseScale ?? 1.0);
+  const presentation = useMemo(() => getWorldModelPresentation(resolvedModel), [resolvedModel]);
+  const effectiveBaseUrl = presentation?.modelUrl;
+  const effectiveScale = (presentation?.modelScale || 1) * (resolvedModel.scale || 1);
+  const effectiveAttachments = useMemo(() => modularAttachments || resolvedModel.modularAttachments || [], [modularAttachments, resolvedModel.modularAttachments]);
+  const animationSignature = JSON.stringify(presentation?.animations || {});
+  const animationConfig = useMemo(() => applyAnimationProfileFallback(JSON.parse(animationSignature), presentation?.animationProfileId), [animationSignature, presentation?.animationProfileId]);
 
-  const handleLoadedAnimations = (loaded: { name: string; duration: number }[]) => {
+  const handleLoadedAnimations = useCallback((loaded: { name: string; duration: number }[]) => {
     setAnimations(loaded);
     const idleIdx = loaded.findIndex((a) => /idle|stand|wait|breath|rest/i.test(a.name));
     if (idleIdx >= 0) {
@@ -666,11 +740,7 @@ export function ArchetypeModelPreview3D({
     } else {
       setActiveAnimIndex(0);
     }
-  };
-
-  if (!effectiveBaseUrl) {
-    return null;
-  }
+  }, []);
 
   return (
     <div className={`w-full ${className} ${disableBackground ? 'bg-transparent' : 'bg-[#050b14] border border-primary/30 shadow-2xl'} rounded-2xl overflow-hidden relative flex flex-col`}>
@@ -681,9 +751,9 @@ export function ArchetypeModelPreview3D({
             <span className="text-[10px] font-black text-primary uppercase tracking-widest">
               3D Compositor
             </span>
-            {modularAttachments.length > 0 && (
+            {effectiveAttachments.length > 0 && (
               <span className="text-[9px] font-mono bg-primary/20 text-primary border border-primary/40 px-1.5 py-0.5 rounded">
-                +{modularAttachments.length} attachments
+                +{effectiveAttachments.length} attachments
               </span>
             )}
           </div>
@@ -740,23 +810,29 @@ export function ArchetypeModelPreview3D({
       )}
 
       {/* 3D Canvas */}
-      <div className="flex-1 w-full h-full">
+      {status && <div role={status.error ? 'alert' : 'status'} className="absolute inset-0 z-20 flex items-center justify-center p-4 text-center text-xs text-slate-300 pointer-events-none bg-black/20">{status.message}</div>}
+      <div className="flex-1 min-h-0 w-full h-full">
+        {effectiveBaseUrl && <>
         <Canvas camera={{ position: [0, 1.35, 2.7], fov: 40 }}>
           <ambientLight intensity={0.8} />
           <directionalLight position={[5, 8, 5]} intensity={1.4} />
           <directionalLight position={[-5, 4, -4]} intensity={0.5} />
-          <Environment preset="city" />
-
+          <Bounds margin={1.25}>
           <CompositeCharacter
             baseUrl={effectiveBaseUrl}
             modelScale={effectiveScale}
-            modularAttachments={modularAttachments}
+            modularAttachments={effectiveAttachments}
+            animationConfig={animationConfig}
+            modelRotationY={presentation?.modelRotationY}
+            assetDefinition={presentation?.assetDefinition}
             activeAnimationIndex={activeAnimIndex}
             isPlaying={isPlaying}
             showSkeleton={showSkeleton}
             autoRotate={autoRotate}
             onLoadedAnimations={handleLoadedAnimations}
+            onStatus={onStatus}
           />
+          </Bounds>
 
           {/* Clean grounding contact shadow under the character's feet */}
           <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
@@ -768,12 +844,13 @@ export function ArchetypeModelPreview3D({
             makeDefault
             target={[0, 0.88 * effectiveScale, 0]}
             maxPolarAngle={Math.PI / 2}
-            minDistance={1.2}
-            maxDistance={4.5}
+            minDistance={0.05}
+            maxDistance={1000}
             enablePan={false}
           />
           {!disableBackground && <Grid infiniteGrid sectionColor="#eab308" cellColor="#1e293b" fadeDistance={12} />}
         </Canvas>
+        </>}
       </div>
 
       {/* Bottom Hint */}

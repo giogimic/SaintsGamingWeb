@@ -64,6 +64,7 @@ import {
 import { AssetDefinitionStudio } from './asset-studio/AssetDefinitionStudio';
 import type { DetectedAssetCategory } from '@/web/lib/assetTaxonomy';
 import { isAnimationFileName } from '@/shared/game/modelRigTaxonomy';
+import { isWorldModelEligibleForRole } from '@/shared/game/worldModelRoles';
 
 export interface AssetUploadViewProps {
   initialAssetType?: string;
@@ -235,7 +236,9 @@ export function AssetUploadView({
     setIsLoadingLibrary(true);
     try {
       let typeFilter = 'MODEL';
-      if (activeAssetPicker?.filterType) {
+      if (activeAssetPicker?.modelRole) {
+        typeFilter = 'MODEL';
+      } else if (activeAssetPicker?.filterType) {
         typeFilter = activeAssetPicker.filterType;
       } else {
         if (libraryCategoryFilter === '2D' || libraryCategoryFilter === 'CHARACTERS') typeFilter = 'CHARACTER';
@@ -245,7 +248,7 @@ export function AssetUploadView({
       }
 
       let tagsFilter: string[] | undefined = undefined;
-      if (!activeAssetPicker?.filterType) {
+      if (!activeAssetPicker?.filterType && !activeAssetPicker?.modelRole) {
         if (libraryCategoryFilter === 'MODULAR') tagsFilter = ['modular'];
         else if (libraryCategoryFilter === 'WEAPONS') tagsFilter = ['weapon'];
         else if (libraryCategoryFilter === 'PROPS') tagsFilter = ['prop'];
@@ -253,7 +256,7 @@ export function AssetUploadView({
       }
 
       const manager = AssetManager.getInstance();
-      const res = await manager.searchAssets(
+      let res = await manager.searchAssets(
         {
           type: typeFilter === 'ALL' ? undefined : (typeFilter as any),
           query: searchQuery || undefined,
@@ -262,8 +265,14 @@ export function AssetUploadView({
         0,
         100
       );
+      let items = res.items || [];
+      let nextPage = 1;
+      while (activeAssetPicker?.modelRole && res.hasMore && items.filter((asset) => isWorldModelEligibleForRole(asset, activeAssetPicker.modelRole!)).length < 100) {
+        res = await manager.searchAssets({ type: 'MODEL', query: searchQuery || undefined }, nextPage++, 100);
+        items = items.concat(res.items || []);
+      }
       if (requestId === libraryRequestId.current) {
-        setLibraryAssets(res.items || []);
+        setLibraryAssets(items);
         setTotalLibraryCount(res.total || res.items?.length || 0);
       }
     } catch (err) {
@@ -271,7 +280,7 @@ export function AssetUploadView({
     } finally {
       if (requestId === libraryRequestId.current) setIsLoadingLibrary(false);
     }
-  }, [activeAssetPicker?.filterType, libraryCategoryFilter, searchQuery]);
+  }, [activeAssetPicker?.filterType, activeAssetPicker?.modelRole, libraryCategoryFilter, searchQuery]);
 
   useEffect(() => {
     if (activeTab !== 'library') return;
@@ -523,6 +532,10 @@ export function AssetUploadView({
 
   // Selection Handler
   const handleSelectAsset = (asset: GameAssetItem) => {
+    if (activeAssetPicker?.modelRole && !isWorldModelEligibleForRole(asset, activeAssetPicker.modelRole)) {
+      showToast?.('Choose a model that fits this actor role. Monsters and Creatures use complete nonplayer models.');
+      return;
+    }
     soundSynth?.playSelectSound?.();
     const sourceId = asset.source || asset.id;
     const assetName = getAssetName(asset);
@@ -539,6 +552,8 @@ export function AssetUploadView({
   // Filtered Library Assets
   const filteredLibraryAssets = useMemo(() => {
     let list = libraryAssets;
+    const modelRole = activeAssetPicker?.modelRole;
+    if (modelRole) list = list.filter((asset) => isWorldModelEligibleForRole(asset, modelRole));
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(
@@ -548,7 +563,9 @@ export function AssetUploadView({
           (a.tags || []).some((t) => t.toLowerCase().includes(q))
       );
     }
-    if (libraryCategoryFilter === 'CHARACTERS') {
+    if (modelRole) {
+      // The originating actor's role remains enforced when browsing or changing tabs.
+    } else if (libraryCategoryFilter === 'CHARACTERS') {
       list = list.filter((a) => {
         const isModular =
           a.isModularComponent === true ||
@@ -664,7 +681,7 @@ export function AssetUploadView({
     });
 
     return sorted;
-  }, [libraryAssets, searchQuery, libraryCategoryFilter, librarySlotFilter, sortBy, sortAsc]);
+  }, [libraryAssets, activeAssetPicker?.modelRole, searchQuery, libraryCategoryFilter, librarySlotFilter, sortBy, sortAsc]);
 
   // If a 3D model is loaded, immediately show AssetDefinitionStudio!
   if (selectedFile?.name.match(/\.(fbx|glb|gltf|obj|vox|dae|stl|ply)$/i) && previewUrl) {
@@ -684,6 +701,12 @@ export function AssetUploadView({
           }}
           onSuccess={(asset) => {
             if (activeAssetPicker) {
+              if (activeAssetPicker.modelRole && !isWorldModelEligibleForRole(asset, activeAssetPicker.modelRole)) {
+                showToast?.('Asset saved. Choose a model that fits this actor role from the library.');
+                resetUpload();
+                setActiveTab('library');
+                return;
+              }
               activeAssetPicker.onSelect(asset.source || asset.id, asset);
               closeAssetPicker();
               showToast?.(`Selected ${asset.name} for entity!`);

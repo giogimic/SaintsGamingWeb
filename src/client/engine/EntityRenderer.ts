@@ -23,11 +23,9 @@ import { localMovementSystem } from './physics/LocalMovementSystem';
 import { WrappedCharacterMesher } from './rendering/WrappedCharacterMesher';
 import { AssetManager } from '@/engine/assets/AssetManager';
 import { loadAndRetargetAnimation } from '@/engine/animationRetarget';
-import { getCharacterModelProfile } from '@/shared/game/characterProfiles';
-import { applyAnimationProfileFallback } from '@/shared/game/animationProfiles';
-import { selectAnimationGroup } from '@/engine/animationSelection';
+import { resolveActorAnimationPresentation } from '@/shared/game/actorAnimationPresentation';
+import { resolveLocomotionAnimationState, selectAnimationGroup, shouldLoopAnimationState } from '@/engine/animationSelection';
 import { getCameraFacingAngle } from '@/shared/game/cameraFacing';
-import { isMovingBackward } from '@/shared/game/locomotionDirection';
 import { attachModularComponent } from '@/engine/helpers/babylonAttachmentHelpers';
 import { getHiddenWardrobeAttachmentIndexes, getQuaterniusBodyRegionFromMeshName, getQuaterniusBodyRegionsToHide } from '@/shared/game/quaterniusCharacter';
 import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
@@ -59,6 +57,10 @@ interface ManagedSprite {
   presentationSignature?: string;
   animationGroups?: BABYLON.AnimationGroup[];
   currentAnimationName?: string;
+  currentAnimationGroup?: BABYLON.AnimationGroup;
+  desiredAnimationState?: string;
+  desiredIsMoving?: boolean;
+  completedAnimationState?: string;
   computedHeight?: number;
   cameraYOffset?: number;
   attachmentAnimationGroups?: BABYLON.AnimationGroup[];
@@ -143,29 +145,23 @@ export class EntityRenderer {
         } catch {}
       }
 
+      const sourceAssetId = worldPresentation?.assetId || profileId;
+      // Preserve the database identity even when a saved URL already resolves.
+      // getAssetSync begins the async fetch; the next frame hydrates the result.
+      const asset = sourceAssetId ? AssetManager.getInstance().getAssetSync(sourceAssetId) : null;
       let isModel = (worldPresentation?.mode === '3D') || (effectiveProfileId ? /\.(glb|gltf|fbx)(\?.*)?$/i.test(effectiveProfileId) : false);
       let resolvedUrl = effectiveProfileId ? resolveEntitySpriteUrl(effectiveProfileId, { kind: defaultKind as any }) : undefined;
       let presentationType = effectiveProfileId?.includes('wrapped') ? '2D_WRAPPED' : (isModel ? '3D_MODEL' : '2D_SPRITE');
       let transform: any = visualTransform;
       
-      const profile = getCharacterModelProfile(effectiveProfileId);
-      if (profile?.baseScale && transform?.scale) {
-        transform.scale *= profile.baseScale;
-      } else if (profile?.baseScale && !transform) {
-        transform = { scale: profile.baseScale };
-      } else if (profile?.baseScale && transform && !transform.scale) {
-        transform.scale = profile.baseScale;
-      }
-
       let animations: any = visualAnimations;
 
-      if (effectiveProfileId && effectiveProfileId.length >= 20 && !effectiveProfileId.includes('.')) {
-        const asset = AssetManager.getInstance().getAssetSync(effectiveProfileId);
+      {
         if (asset) {
           isModel = asset.type === 'MODEL' || !!(asset.source && /\.(glb|gltf|fbx)(\?.*)?$/i.test(asset.source));
-          if (asset.source) resolvedUrl = resolveEntitySpriteUrl(asset.source);
-          if (asset.presentation) {
-            const pres = asset.presentation as any;
+          if (asset.source && !worldPresentation?.modelUrl) resolvedUrl = resolveEntitySpriteUrl(asset.source);
+          const pres = asset.presentation || asset.metadata?.presentation;
+          if (pres) {
             if (pres.characterPresentationType) presentationType = pres.characterPresentationType;
             else if (isModel) presentationType = '3D_MODEL';
             
@@ -184,34 +180,26 @@ export class EntityRenderer {
                 cameraYOffset: parsedCamOffset !== undefined && Number.isFinite(parsedCamOffset) && parsedCamOffset > 0 ? parsedCamOffset : transform?.cameraYOffset
               };
             }
-            const assetAnimations = pres.animations || pres.assetDefinition?.animations || asset.metadata?.animations;
-            const actorAnimationProfileId = visualAnimationProfileId
-              || pres.animationProfileId
-              || pres.assetDefinition?.animationProfileId
-              || asset.metadata?.animationProfileId
-              || asset.metadata?.assetDefinition?.animationProfileId;
-            if (assetAnimations || animations || actorAnimationProfileId) {
-              const baseMappings = assetAnimations?.mapped || {};
-              const actorMappings = animations?.mapped || {};
-              animations = applyAnimationProfileFallback({
-                ...(assetAnimations || {}),
-                ...(animations || {}),
-                mapped: { ...baseMappings, ...actorMappings },
-              }, actorAnimationProfileId);
-            }
           } else if (isModel) {
             presentationType = '3D_MODEL';
           }
         }
       }
-      if (visualAnimationProfileId && !animations) {
-        animations = applyAnimationProfileFallback(undefined, visualAnimationProfileId);
-      }
+      const animationPresentation = resolveActorAnimationPresentation({
+        ...(worldPresentation || {}),
+        assetId: sourceAssetId,
+        modelUrl: resolvedUrl,
+        animationProfileId: visualAnimationProfileId,
+        animations,
+      }, asset);
+      animations = animationPresentation.animations;
 
       const presentationSignature = JSON.stringify({
         isModel,
         resolvedUrl,
         transform,
+        animationProfileId: animationPresentation.animationProfileId,
+        animations,
         modularAttachments: modularAttachments.map((att) => ({
           assetId: att.assetId,
           modelUrl: att.modelUrl,
@@ -260,9 +248,7 @@ export class EntityRenderer {
     let localRotationY: number;
     const moveAngle = localMovementSystem.getCurrentMoveAngle();
     const isPointerLocked = typeof document !== 'undefined' && document.pointerLockElement !== null;
-    const isMovingBackwardRelativeToCamera = is3D && moveAngle !== null &&
-      isMovingBackward(moveAngle, cameraManager.yaw);
-    const locomotionAnimationState = isMovingBackwardRelativeToCamera ? 'run_bwd' : undefined;
+    const locomotionAnimationState = localMovementSystem.getLocomotionAnimationState();
 
     if (is3D) {
       localRotationY = getCameraFacingAngle(cameraManager.yaw);
@@ -361,8 +347,14 @@ export class EntityRenderer {
         isPlayer: true,
         presentationType: rpAssetInfo.presentationType,
         transform: rpAssetInfo.transform,
-        animations: rpAssetInfo.animations,
-        isMoving: rp.isMoving,
+      animations: rpAssetInfo.animations,
+      isMoving: rp.isMoving,
+        animationState: rp.animationState || resolveLocomotionAnimationState({
+          moving: Math.hypot(vx, vz) > 0.1 || rp.isMoving === true,
+          sprinting: Math.hypot(vx, vz) > 18,
+          grounded: Math.abs(rp.vy ?? 0) < 0.1,
+          verticalVelocity: rp.vy,
+        }),
         isGuarding: rp.isGuarding,
         modularAttachments: rpAssetInfo.modularAttachments,
         presentationSignature: rpAssetInfo.presentationSignature,

@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Loader2, Dice5, ChevronRight, Cuboid } from 'lucide-react';
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
+import { ArchetypeModelPreview3D } from '@/web/components/the-lobby/editor/hero-studio/ArchetypeModelPreview3D';
+import type { WorldModelValue } from '@/web/components/the-lobby/editor/components/WorldModelSelector';
+import { parseModelWardrobeItems } from '@/shared/game/modelWardrobe';
 
 interface ArchetypePickerProps {
   starterHeroes: any[];
@@ -19,6 +22,8 @@ export function ArchetypePicker({
   onSelect,
   onRandomize,
 }: ArchetypePickerProps) {
+  const [previewHeroSlug, setPreviewHeroSlug] = useState<string | null>(null);
+  const focusedHeroSlug = previewHeroSlug || starterHeroes[0]?.slug;
   return (
     <div className="w-full flex flex-col items-center">
       <div className="text-center mb-6">
@@ -58,9 +63,11 @@ export function ArchetypePicker({
           {starterHeroes.map((hero) => {
             const isSelected = selectedHeroSlug === hero.slug;
             let has3DModel = false;
+            let worldModel: WorldModelValue | undefined;
             try {
               const visual = JSON.parse(hero.visualData || '{}');
               has3DModel = visual.worldModel?.type === '3D Model' || visual.type === '3D Model';
+              if (has3DModel) worldModel = visual.worldModel || visual;
             } catch {
               // Keep the legacy sprite preview when visual data is malformed.
             }
@@ -90,10 +97,16 @@ export function ArchetypePicker({
 
                   {/* Character Sprite Preview */}
                   {has3DModel ? (
+                    focusedHeroSlug === hero.slug ? (
+                      <div className="my-2.5" onClick={(event) => event.stopPropagation()}>
+                        <ArchetypeModelPreview3D worldModel={worldModel} modularAttachments={parseModelWardrobeItems(hero.visualData).filter((item) => item.defaultVisible !== false) as WorldModelValue[]} className="h-40" />
+                      </div>
+                    ) : (
                     <div className="w-20 h-20 rounded-xl bg-black/70 border border-primary/40 mx-auto my-2.5 flex flex-col items-center justify-center gap-1 text-primary shadow-[0_0_15px_rgba(234,179,8,0.15)] group-hover:border-primary group-hover:scale-105 transition-all">
                       <Cuboid size={26} className="text-primary" />
-                      <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-primary">3D Model</span>
+                      <button type="button" onClick={(event) => { event.stopPropagation(); setPreviewHeroSlug(hero.slug); }} className="text-[9px] font-semibold text-primary hover:underline">Preview model</button>
                     </div>
+                    )
                   ) : (
                     <div className="w-20 h-20 rounded-xl bg-black/60 border border-border/50 mx-auto my-2.5 flex items-center justify-center shadow-inner group-hover:border-primary/60 transition-all overflow-hidden">
                       <CharacterSpritePreview assetProfileId={hero.assetProfileId} size={32} scale={1.8} />

@@ -3,6 +3,9 @@ import { Box, Image as ImageIcon, BoxSelect, Cuboid, MoreHorizontal, Crosshair, 
 import { CharacterSpritePreview } from '@/client/ui/shared/CharacterSpritePreview';
 import { cn } from '@/shared/lib/utils';
 import { useEditorStore } from '../editor-store';
+import { resolveWorldModelAssetValue } from '@/shared/game/worldModelPresentation';
+import { isWorldModelEligibleForRole, type WorldModelRole } from '@/shared/game/worldModelRoles';
+import type { ModelWardrobeItem } from '@/shared/game/modelWardrobe';
 
 
 export type WorldModelType = '2D Sprite' | '2D Box Sprite' | '3D Model' | 'Other';
@@ -20,6 +23,14 @@ export interface WorldModelValue {
   source?: string | null;
   /** Import-time scale from the asset; `scale` remains the per-actor override. */
   modelScale?: number;
+  modelRotationY?: number;
+  grounding?: number;
+  cameraHeightOffset?: number;
+  assetDefinition?: any;
+  character?: any;
+  skeleton?: any;
+  sockets?: any[];
+  modularAttachments?: ModelWardrobeItem[];
   animationProfileId?: string;
   animations?: any;
   rigAnalysis?: any;
@@ -75,6 +86,7 @@ interface WorldModelSelectorProps {
   allowModularConfig?: boolean;
   assetPickerFilterType?: string;
   assetPickerCategoryFilter?: string;
+  modelRole?: WorldModelRole;
 }
 
 const MODEL_OPTIONS: { id: WorldModelType; label: string; icon: any; isImplemented: boolean }[] = [
@@ -91,6 +103,7 @@ export function WorldModelSelector({
   allowModularConfig = false,
   assetPickerFilterType = 'CHARACTER',
   assetPickerCategoryFilter = 'CHARACTERS',
+  modelRole,
 }: WorldModelSelectorProps) {
   const [mounted, setMounted] = useState(false);
   const [scaleInput, setScaleInput] = useState(String(value.scale ?? 1));
@@ -192,28 +205,16 @@ export function WorldModelSelector({
                 type="button"
                 onClick={() => {
                   useEditorStore.getState().openAssetPicker({
-                    filterType: assetPickerFilterType,
-                    categoryFilter: assetPickerCategoryFilter as any,
-                    title: 'Select Base 3D Model',
+                    filterType: modelRole ? 'MODEL' : assetPickerFilterType,
+                    categoryFilter: modelRole ? 'ALL' : assetPickerCategoryFilter as any,
+                    modelRole,
+                    title: modelRole === 'monster' || modelRole === 'creature' ? 'Select Complete Nonplayer Model' : 'Select Base 3D Model',
                     onSelect: (selectedId, asset) => {
-                      const assetPresentation = asset?.presentation || asset?.metadata?.presentation || {};
-                      const assetDefinition = assetPresentation.assetDefinition || asset?.metadata?.assetDefinition || {};
-                      const modelUrl = asset?.source || asset?.cdnUrl || selectedId;
-
-                      onChange({
-                        ...value,
-                        // Keep the stable database identity while preserving the actual model URL.
-                        assetId: typeof asset?.id === 'string' && asset.id ? asset.id : selectedId,
-                        modelUrl,
-                        source: modelUrl,
-                        modelScale: assetPresentation.modelScale ?? assetDefinition.transform?.scale,
-                        animationProfileId: assetPresentation.animationProfileId ?? assetDefinition.animationProfileId,
-                        animations: assetPresentation.animations ?? assetDefinition.animations,
-                        rigAnalysis: assetPresentation.rigAnalysis ?? assetDefinition.rigAnalysis ?? asset?.metadata?.rigAnalysis,
-                        categorizedAnimations: assetPresentation.categorizedAnimations ?? assetDefinition.categorizedAnimations,
-                        skeletonRequirements: assetPresentation.skeletonRequirements ?? assetDefinition.skeletonRequirements,
-                        materials: assetPresentation.materials ?? assetDefinition.materials,
-                      });
+                      const selectedAsset = asset || { id: selectedId, source: selectedId, type: 'MODEL' };
+                      if (modelRole && !isWorldModelEligibleForRole(selectedAsset, modelRole)) return;
+                      const next = resolveWorldModelAssetValue(selectedAsset, value.scale);
+                      // Reselecting the same base preserves this actor's authored attachments and overrides.
+                      onChange(next.assetId === value.assetId ? { ...value, ...next, modularAttachments: value.modularAttachments ?? next.modularAttachments } : next);
                     },
                   });
                 }}
@@ -265,7 +266,7 @@ export function WorldModelSelector({
               </div>
 
               {/* Socket & Grip Calibration (Weapons, Tools, Helmets, Modular Pieces) */}
-              {(allowSocketConfig || value.socket || value.attachmentMode || value.isModular) && (
+              {(modelRole !== 'monster' && modelRole !== 'creature') && (allowSocketConfig || value.socket || value.attachmentMode || value.isModular) && (
                 <div className="mt-3 pt-3 border-t border-slate-800 space-y-3">
                   <div className="flex items-center justify-between">
                     <button
