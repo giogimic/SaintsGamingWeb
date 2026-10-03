@@ -1,3 +1,7 @@
+# 2026-10-02 (2.2.100)
+- Moved Quaternius assets to public/models/quaternius/ with stable names.
+- Auto-seed Quaternius assets from prisma/quaternius-manifest.json during startup via canonicalAssetsSync.ts.
+
 # 2026-10-02 (2.2.099d)
 - Fixed 3D GLTF/GLB models (e.g., Stylized Girl) facing the ground when animations play by automatically stripping root node rotations from imported animation groups.
 
@@ -7594,3 +7598,4 @@ odeConnections in WorldState, resetting worldOriginOffset on map change, and sna
 
 ### v2.2.088
 - Removed incomplete canonical models (Citizens and Leoverse/Red Runner) from the engine as they lack skeletons and textures.
+

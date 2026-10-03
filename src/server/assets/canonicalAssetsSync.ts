@@ -38,6 +38,31 @@ function getBundledFileSize(modelUrl: string, fallback: number): number {
 }
 
 export function buildCanonicalGameAssetRecords(): CanonicalAssetSeedRecord[] {
+  try {
+    const manifestPath = path.join(process.cwd(), 'prisma', 'quaternius-manifest.json');
+    if (fs.existsSync(manifestPath)) {
+      const data = fs.readFileSync(manifestPath, 'utf8');
+      const manifest = JSON.parse(data);
+      return manifest.map((item: any) => ({
+        id: item.id,
+        gameId: 'saints',
+        type: item.type,
+        source: item.source,
+        atlasSource: item.atlasSource,
+        atlasFrame: item.atlasFrame,
+        tags: item.tags,
+        categories: item.categories,
+        metadata: item.metadata,
+        customLabels: item.customLabels,
+        isActive: item.isActive,
+        usageCount: item.usageCount,
+        fileSize: item.fileSize,
+        cdnUrl: item.cdnUrl,
+      }));
+    }
+  } catch (err) {
+    console.error("[canonicalAssetsSync] Failed to load quaternius manifest:", err);
+  }
   return [];
 }
 
