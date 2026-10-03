@@ -140,6 +140,7 @@ export function CharacterCreator({
   const [assetProfileId, setassetProfileId] = useState('evil-berserker-bloodaxe-male');
   const [visualData, setVisualData] = useState<string>('[]');
   const [selectedWardrobeAssetIds, setSelectedWardrobeAssetIds] = useState<string[]>([]);
+  const [hairColor, setHairColor] = useState<string>('#473b30'); // Default brown hair
   const [selectedCape, setSelectedCape] = useState<string | null>(null);
   const [selectedHat, setSelectedHat] = useState<string | null>(null);
   const [selectedArmor, setSelectedArmor] = useState<string | null>(null);
@@ -223,8 +224,14 @@ export function CharacterCreator({
         return item.defaultVisible !== false;
       }
       return activeIds.has(item.assetId);
+    }).map((item) => {
+      const category = item.category?.toLowerCase() || '';
+      if (category === 'hair' || category === 'beard' || category === 'eyebrows') {
+        return { ...item, tint: hairColor };
+      }
+      return item;
     }) as WorldModelValue[];
-  }, [wardrobeItems, selectedWardrobeAssetIds]);
+  }, [wardrobeItems, selectedWardrobeAssetIds, hairColor]);
   const isModular = parsedVisualData 
     ? !!(parsedVisualData.worldModel?.isModular || parsedVisualData.isModular) || wardrobeOptions.length > 0
     : detectPresentationMode(assetProfileId, allSprites) === 'modular';
@@ -553,7 +560,7 @@ export function CharacterCreator({
       name: name.trim(),
       assetProfileId,
       visualData: wardrobeOptions.length > 0
-        ? applyCharacterCreationWardrobe(visualData, selectedWardrobeAssetIds)
+        ? applyCharacterCreationWardrobe(visualData, selectedWardrobeAssetIds, hairColor)
         : visualData,
       classId,
       initialState: JSON.stringify(initialState),
@@ -1189,6 +1196,31 @@ export function CharacterCreator({
                           Reset to default
                         </button>
                       </div>
+
+                      {/* Hair Color Picker */}
+                      {wardrobeOptions.some(item => {
+                        const cat = item.category?.toLowerCase() || '';
+                        return cat === 'hair' || cat === 'beard' || cat === 'eyebrows';
+                      }) && (
+                        <div className="space-y-2 rounded-xl border border-border/40 bg-black/30 p-3">
+                          <label className="text-[10px] font-black uppercase tracking-wider text-primary flex items-center gap-1.5">
+                            <span>🎨</span>
+                            <span>Hair Color</span>
+                          </label>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {['#473b30', '#111111', '#eab308', '#f87171', '#3b82f6', '#10b981', '#a855f7', '#f43f5e', '#d4d4d8'].map((color) => (
+                              <button
+                                key={color}
+                                type="button"
+                                onClick={() => setHairColor(color)}
+                                className={`w-6 h-6 rounded-full border-2 transition-transform ${hairColor === color ? 'border-white scale-110 shadow-[0_0_10px_rgba(255,255,255,0.5)]' : 'border-transparent hover:scale-105'}`}
+                                style={{ backgroundColor: color }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       {wardrobeOptions.length === 0 && (
                         <p className="rounded-lg border border-dashed border-border/50 p-4 text-center text-xs text-muted-foreground">No clothing options are configured for this model yet.</p>
                       )}

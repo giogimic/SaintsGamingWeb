@@ -392,6 +392,23 @@ function CompositeCharacter({
       const attachmentMode = attachment.attachmentMode || getDefaultModelWardrobeAttachmentMode(attachment as any);
       let attachedToSkeleton = false;
 
+      // Apply tint if specified
+      if (attachment.tint) {
+        attScene.traverse((child) => {
+          if ((child as THREE.Mesh).isMesh) {
+            const mesh = child as THREE.Mesh;
+            if (mesh.material) {
+              const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+              materials.forEach((mat) => {
+                if ('color' in mat && typeof (mat as any).color?.set === 'function') {
+                  (mat as any).color.set(attachment.tint);
+                }
+              });
+            }
+          }
+        });
+      }
+
       if (attachmentMode === 'SKINNED' || ('isModular' in attachment && Boolean((attachment as any).isModular))) {
         attScene.traverse((child) => {
           if ((child as THREE.SkinnedMesh).isSkinnedMesh && baseSkeleton) {

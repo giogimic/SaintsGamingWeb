@@ -220,6 +220,29 @@ export function attachModularComponent({
     });
   }
 
+  // 4. Apply Tint if provided
+  if (attachment.tint) {
+    importedResult.meshes.forEach((mesh: any) => {
+      if (mesh.material) {
+        // Handle Standard, PBR, and Multi materials
+        const mats = mesh.material.subMaterials ? mesh.material.subMaterials : [mesh.material];
+        mats.forEach((mat: any) => {
+          if (!mat) return;
+          try {
+            const c = BABYLON.Color3.FromHexString(attachment.tint as string);
+            if (mat.albedoColor !== undefined) {
+              mat.albedoColor = c;
+            } else if (mat.diffuseColor !== undefined) {
+              mat.diffuseColor = c;
+            }
+          } catch (e) {
+            console.warn("Failed to apply tint:", attachment.tint, e);
+          }
+        });
+      }
+    });
+  }
+
   return {
     rootNodes: targetRoots,
     isSkinned,

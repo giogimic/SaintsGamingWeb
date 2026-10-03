@@ -452,6 +452,7 @@ export function parseModelWardrobeItems(value: unknown): ModelWardrobeItem[] {
 export function applyCharacterCreationWardrobe(
   visualData: string | null | undefined,
   selectedAssetIds: string[],
+  hairColor?: string,
 ): string {
   let data: any = {};
   try {
@@ -464,13 +465,35 @@ export function applyCharacterCreationWardrobe(
   const selected = new Set(selectedAssetIds);
   const attachments = parseModelWardrobeItems(data);
   const anyExplicitCreation = attachments.some((item) => item.availableInCharacterCreation === true);
-  const nextAttachments = attachments.map((item) => {
-    const isOffered = anyExplicitCreation
-      ? item.availableInCharacterCreation === true
-      : item.availableInCharacterCreation !== false;
-    if (!isOffered) return item;
-    return { ...item, defaultVisible: selected.has(item.assetId) };
-  });
+  const nextAttachments = attachments
+    .map((item) => {
+      const isOffered = anyExplicitCreation
+        ? item.availableInCharacterCreation === true
+        : item.availableInCharacterCreation !== false;
+      
+      let finalItem = item;
+      // Keep items not offered in Character Creation exactly as they were
+      if (isOffered) {
+        // If it is offered, ONLY keep it if it was explicitly selected by the user
+        if (selected.has(item.assetId)) {
+          finalItem = { ...item, defaultVisible: true };
+        } else {
+          // Discard unselected items so they aren't saved to the DB
+          return null;
+        }
+      }
+
+      // Apply hair color tint
+      if (hairColor) {
+        const category = finalItem.category?.toLowerCase() || '';
+        if (category === 'hair' || category === 'beard' || category === 'eyebrows') {
+          finalItem = { ...finalItem, tint: hairColor };
+        }
+      }
+      
+      return finalItem;
+    })
+    .filter(Boolean);
 
   data.modularAttachments = nextAttachments;
   if (data.worldModel && typeof data.worldModel === 'object' && !Array.isArray(data.worldModel)) {
