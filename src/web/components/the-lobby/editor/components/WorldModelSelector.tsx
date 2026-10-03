@@ -180,7 +180,7 @@ export function WorldModelSelector({
                 type="button"
                 onClick={() => {
                   useEditorStore.getState().openAssetPicker({
-                    filterType: 'MODEL',
+                    filterType: 'CHARACTER',
                     categoryFilter: 'CHARACTERS',
                     title: 'Select Base Playable Character',
                     onSelect: (selectedId) => {

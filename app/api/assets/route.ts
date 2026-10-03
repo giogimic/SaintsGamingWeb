@@ -83,8 +83,6 @@ export async function GET(req: NextRequest) {
               { categories: { contains: "npcs" } },
               { tags: { contains: "profile:character" } },
               { tags: { contains: "character" } },
-              { tags: { contains: "modular" } },
-              { tags: { contains: "sprite-component" } },
               { source: { contains: "/npc/" } },
               { source: { contains: "/player/" } },
             ],

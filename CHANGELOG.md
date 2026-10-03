@@ -1,3 +1,7 @@
+# 2026-10-02 (2.2.101)
+- Fixed UI asset browser bug where modular armors/clothing items incorrectly appeared in the Playable Characters list.
+- Implemented `scripts/ingest-quaternius-packs.ts` to natively convert FBX/glTF files to GLB and ingest 150+ Quaternius Universal Animation, Modular Outfits, Base Characters, Bestiary Monsters, and Ultimate RPG items into the asset database with corresponding thumbnails and tags.
+
 # 2026-10-02 (2.2.100)
 - Moved Quaternius assets to public/models/quaternius/ with stable names.
 - Auto-seed Quaternius assets from prisma/quaternius-manifest.json during startup via canonicalAssetsSync.ts.
