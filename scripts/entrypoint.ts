@@ -68,6 +68,10 @@ async function main() {
       console.log(`[*] Auto-provisioning setup admin account (${process.env.ADMIN_USER})...`);
       runCommand("npx", ["tsx", "scripts/create-admin.ts", process.env.ADMIN_USER, process.env.ADMIN_PASS, process.env.ADMIN_EMAIL || ""], true);
     }
+    
+    console.log("[*] Seeding canonical game assets (Quaternius etc)...");
+    runCommand("npx", ["tsx", "scripts/seed-canonical.ts"], true);
+    
     console.log("[*] Demo maps/NPCs seed via server.ts bootstrapDemoContent() on every boot.");
   } else {
     console.log("[*] Skipping schema migration (DB_SKIP_MIGRATION=true).");
