@@ -195,7 +195,7 @@ function CompositeCharacter({
         onStatus(null);
         const validAnims = (gltf.animations || []).filter((a) => a.tracks && a.tracks.length > 0);
         if (validAnims.length > 0) {
-          setAnimations(validAnims);
+          setAnimations(validAnims as PreviewAnimationClip[]);
           onLoadedAnimations(
             validAnims.map((a) => ({ name: a.name || 'Animation', duration: a.duration }))
           );
@@ -211,7 +211,7 @@ function CompositeCharacter({
             if (isCancelled) return;
             if (!mapping.sourcePath || mapping.sourceKind === 'embedded') {
               const embedded = selectThreeAnimationClip(validAnims, mapping.clip);
-              if (embedded) externalClips.push(new THREE.AnimationClip(slot, embedded.duration, embedded.tracks.map((track) => track.clone())));
+              if (embedded) externalClips.push(new THREE.AnimationClip(slot, embedded.duration, embedded.tracks.map((track) => track.clone())) as PreviewAnimationClip);
               continue;
             }
             try {
@@ -235,7 +235,7 @@ function CompositeCharacter({
           }
           if (isCancelled || !externalClips.length) return;
           const clips = [...externalClips, ...validAnims.filter((clip) => !externalClips.some((external) => external.name === clip.name))];
-          setAnimations(clips);
+          setAnimations(clips as PreviewAnimationClip[]);
           onLoadedAnimations(clips.map((clip) => ({ name: clip.name, duration: clip.duration })));
         };
         void loadMappings();
@@ -821,7 +821,7 @@ export function ArchetypeModelPreview3D({
           <CompositeCharacter
             baseUrl={effectiveBaseUrl}
             modelScale={effectiveScale}
-            modularAttachments={effectiveAttachments}
+            modularAttachments={effectiveAttachments as ArchetypePreviewAttachment[]}
             animationConfig={animationConfig}
             modelRotationY={presentation?.modelRotationY}
             assetDefinition={presentation?.assetDefinition}

@@ -21,7 +21,7 @@ export function discoverModelParts(
       id: info.id || `builtin-piece-${meshName}`,
       meshName,
       label: info.label || meshName,
-      category: getModelWardrobeCategory({ category: info.category, label: meshName }),
+      category: getModelWardrobeCategory({ assetId: '', category: info.category, label: meshName }),
       defaultVisible: info.defaultVisible !== false,
       suppressesSubmeshes: info.hidesComponents || info.suppressesSubmeshes,
       isFaceVariant: Boolean(info.isFaceVariant),
@@ -32,7 +32,7 @@ export function discoverModelParts(
     const info = node.userData?.saints?.modularComponent || node.userData?.modularComponent;
     const discoverNames = String(resolved.structure).toLowerCase() === 'modular';
     if (!info && !discoverNames) return;
-    const category = getModelWardrobeCategory({ category: info?.category, label: node.name });
+    const category = getModelWardrobeCategory({ assetId: '', category: info?.category, label: node.name });
     // Skin, eyes and teeth remain intrinsic base geometry. Only named wardrobe
     // choices or explicit component metadata become editable internal parts.
     if (!info && (category === 'other' || /eyes|teeth|quaterniusbody/i.test(node.name))) return;

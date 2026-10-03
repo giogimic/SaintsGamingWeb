@@ -25,7 +25,7 @@ export async function hydrateActorModelBinding(value: unknown, role: WorldModelR
   if ((role === 'monster' || role === 'creature') && Array.isArray(attachments) && attachments.length > 0) {
     throw new Error('Monsters and Creatures use complete models. Publish the assembled model before assigning it.');
   }
-  const base = record ? resolveWorldModelAssetValue(asset, model.scale) : {};
+  const base = record ? resolveWorldModelAssetValue(asset, model.scale) : ({} as any);
   const hydrated = { ...base, ...model, assetId: record?.id || model.assetId, modelUrl: model.modelUrl || model.source || base.modelUrl || asset.source };
   if (data.worldModel) return { ...data, worldModel: hydrated };
   if (data.appearance) return { ...data, appearance: hydrated };
