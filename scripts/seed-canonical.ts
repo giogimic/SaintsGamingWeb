@@ -1,5 +1,5 @@
-import { prisma } from './src/web/lib/prisma';
-import { syncCanonicalGameAssets } from './src/server/assets/canonicalAssetsSync';
+import { prisma } from '../src/web/lib/prisma';
+import { syncCanonicalGameAssets } from '../src/server/assets/canonicalAssetsSync';
 
 async function main() {
   console.log("Running canonical asset sync locally...");
