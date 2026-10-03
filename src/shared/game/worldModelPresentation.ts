@@ -45,7 +45,7 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
   quaternius_base_male: {
     id: 'quaternius_base_male',
     name: 'Quaternius Base Male',
-    modelUrl: '/uploads/Superhero_Male_FullBody.glb',
+    modelUrl: '/game-assets/models/humanoids/superheroes/Superhero_Male_FullBody.glb',
     category: 'character',
     skeleton: 'mixamo',
     isPlayable: true,
@@ -55,7 +55,7 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
   quaternius_base_female: {
     id: 'quaternius_base_female',
     name: 'Quaternius Base Female',
-    modelUrl: '/uploads/Superhero_Female_FullBody.glb',
+    modelUrl: '/game-assets/models/humanoids/superheroes/Superhero_Female_FullBody.glb',
     category: 'character',
     skeleton: 'mixamo',
     isPlayable: true,
@@ -65,7 +65,7 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
   superhero_male_fullbody: {
     id: 'superhero_male_fullbody',
     name: 'Quaternius Base Male',
-    modelUrl: '/uploads/Superhero_Male_FullBody.glb',
+    modelUrl: '/game-assets/models/humanoids/superheroes/Superhero_Male_FullBody.glb',
     category: 'character',
     skeleton: 'mixamo',
     isPlayable: true,
@@ -75,7 +75,7 @@ export const CANONICAL_BUILTIN_MODELS: Record<string, CanonicalModelDef> = {
   superhero_female_fullbody: {
     id: 'superhero_female_fullbody',
     name: 'Quaternius Base Female',
-    modelUrl: '/uploads/Superhero_Female_FullBody.glb',
+    modelUrl: '/game-assets/models/humanoids/superheroes/Superhero_Female_FullBody.glb',
     category: 'character',
     skeleton: 'mixamo',
     isPlayable: true,

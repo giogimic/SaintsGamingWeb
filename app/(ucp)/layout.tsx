@@ -37,7 +37,7 @@ export default async function UcpLayout({
   let gameTitle = "The Lobby";
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: "SITE_VERSION" } });
-    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.2.105-update.0";
+    siteVersion = versionSetting?.value || process.env.NEXT_PUBLIC_SITE_VERSION || "2.2.106-update.0";
     const ucpNavSetting = await prisma.siteSetting.findUnique({ where: { key: "show_ucp_in_nav" } });
     if (ucpNavSetting?.value === "true") showUcpInNav = true;
 
@@ -45,7 +45,7 @@ export default async function UcpLayout({
     if (realmSetting?.value) gameTitle = realmSetting.value;
   } catch (error) {
     console.error("Failed to load SITE_VERSION from db, using fallback", error);
-    siteVersion = process.env.NEXT_PUBLIC_SITE_VERSION || "2.2.105-update.0";
+    siteVersion = process.env.NEXT_PUBLIC_SITE_VERSION || "2.2.106-update.0";
   }
 
   return (

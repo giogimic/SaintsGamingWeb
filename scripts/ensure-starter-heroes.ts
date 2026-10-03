@@ -18,7 +18,7 @@ const defaults = [
       worldModel: {
         type: "3D Model",
         assetId: "quaternius_base_male",
-        modelUrl: "/uploads/Superhero_Male_FullBody.glb",
+        modelUrl: "/game-assets/models/humanoids/superheroes/Superhero_Male_FullBody.glb",
         scale: 0.85
       },
       modularAttachments: [
@@ -55,7 +55,7 @@ const defaults = [
       worldModel: {
         type: "3D Model",
         assetId: "quaternius_base_female",
-        modelUrl: "/uploads/Superhero_Female_FullBody.glb",
+        modelUrl: "/game-assets/models/humanoids/superheroes/Superhero_Female_FullBody.glb",
         scale: 0.85
       },
       modularAttachments: [

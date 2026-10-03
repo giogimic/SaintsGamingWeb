@@ -104,12 +104,12 @@ describe('worldModelPresentation', () => {
       const male = getCanonicalModelDef('quaternius_base_male');
       expect(male).toBeDefined();
       expect(male?.isPlayable).toBe(true);
-      expect(male?.modelUrl).toBe('/uploads/Superhero_Male_FullBody.glb');
+      expect(male?.modelUrl).toBe('/game-assets/models/humanoids/superheroes/Superhero_Male_FullBody.glb');
 
       const female = getCanonicalModelDef('quaternius_base_female');
       expect(female).toBeDefined();
       expect(female?.isPlayable).toBe(true);
-      expect(female?.modelUrl).toBe('/uploads/Superhero_Female_FullBody.glb');
+      expect(female?.modelUrl).toBe('/game-assets/models/humanoids/superheroes/Superhero_Female_FullBody.glb');
 
       const superheroMale = getCanonicalModelDef('superhero_male_fullbody');
       expect(superheroMale).toBeDefined();

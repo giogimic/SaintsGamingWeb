@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function GET(_req: NextRequest) {
   try {
     const versionSetting = await prisma.siteSetting.findUnique({ where: { key: 'SITE_VERSION' } });
-    const version = (versionSetting?.value || packageJson.version || "2.2.105-update.0").replace(/^v/, '');
+    const version = (versionSetting?.value || packageJson.version || "2.2.106-update.0").replace(/^v/, '');
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
 
     // Check if an installer file actually exists in public/downloads
