@@ -15,7 +15,7 @@ import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 import { WorldModelValue, STANDARD_SOCKET_OPTIONS } from '../components/WorldModelSelector';
 import { Play, Pause, RotateCw, Bone, Layers, EyeOff, Shield } from 'lucide-react';
 
-export type ArchetypePreviewAttachment = WorldModelValue | ModularAttachmentDef;
+export type ArchetypePreviewAttachment = (WorldModelValue | ModularAttachmentDef) & { tint?: string };
 
 interface ArchetypeModelPreview3DProps {
   baseAssetId?: string;

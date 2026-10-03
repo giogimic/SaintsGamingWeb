@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { useEditorStore } from '../editor-store';
-import { Link2 } from 'lucide-react';
+import { Link2, Image as ImageIcon } from 'lucide-react';
 import {
   listItemTemplates,
   getItemTemplate,
@@ -328,13 +328,30 @@ export const ItemEditorPanel: React.FC = () => {
 
           <div className="flex-1">
             <label className="text-xs text-blue-300 uppercase tracking-widest font-semibold">Icon Asset ID</label>
-            <input
-              type="text"
-              className="w-full bg-[#111a2a] border border-[#806f47]/40 rounded px-3 py-1.5 outline-none focus:border-[#cbb26a] text-[#e2d5b3]"
-              placeholder="e.g. icon_sword_01"
-              value={formData.iconAssetId || ''}
-              onChange={(e) => setFormData({ ...formData, iconAssetId: e.target.value })}
-            />
+            <div className="flex gap-2">
+              <input
+                type="text"
+                className="w-full bg-[#111a2a] border border-[#806f47]/40 rounded px-3 py-1.5 outline-none focus:border-[#cbb26a] text-[#e2d5b3]"
+                placeholder="e.g. icon-item-sword"
+                value={formData.iconAssetId || ''}
+                onChange={(e) => setFormData({ ...formData, iconAssetId: e.target.value })}
+              />
+              <button
+                type="button"
+                className="bg-black/40 border border-slate-700 hover:border-cyan-400 p-2 rounded text-cyan-400"
+                onClick={() => {
+                  useEditorStore.getState().openAssetPicker({
+                    filterType: 'ITEM_ICON',
+                    title: 'Select Item Icon',
+                    onSelect: (selectedId) => {
+                      setFormData({ ...formData, iconAssetId: selectedId });
+                    },
+                  });
+                }}
+              >
+                <ImageIcon size={14} />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -382,6 +399,8 @@ export const ItemEditorPanel: React.FC = () => {
                 label="Item Asset Representation"
                 description="The 3D model or 2D sprite used when the item is dropped or equipped in the world."
                 allowSocketConfig={true}
+                assetPickerFilterType="MODEL"
+                assetPickerCategoryFilter="ALL"
               />
 
               {currentVisual.type === '3D Model' && currentVisual.assetId && (

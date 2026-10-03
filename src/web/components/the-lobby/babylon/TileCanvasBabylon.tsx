@@ -2243,18 +2243,6 @@ export const TileCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
         className={`block w-full h-full outline-none touch-none ${canvasCursor}`}
         tabIndex={0}
         onClick={(e) => (e.currentTarget as HTMLCanvasElement).focus()}
-        onMouseDown={(e) => {
-          if (e.button === 1) {
-            e.preventDefault();
-            const canvas = e.currentTarget;
-            if (document.pointerLockElement !== canvas) {
-              canvas.requestPointerLock().catch(() => {});
-            } else {
-              (window as any).__intentionalPointerLockExit = true;
-              document.exitPointerLock();
-            }
-          }
-        }}
         onDragOver={(e) => {
           e.preventDefault();
           e.dataTransfer.dropEffect = 'copy';

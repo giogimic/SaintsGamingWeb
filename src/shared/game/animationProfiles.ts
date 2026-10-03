@@ -460,6 +460,35 @@ export const ANIMATION_PROFILES: AnimationProfile[] = [
     },
     availableClips: ['Idle', 'Walking', 'Running', 'Jumping', 'Talking', 'Sitting Idle'],
   },
+  {
+    id: 'quaternius_native',
+    displayName: 'Quaternius Native',
+    basePath: '/models/quaternius/ual1_standard.glb',
+    slotMap: {
+      idle: { clip: 'Idle_Loop', loop: true },
+      idle_combat: { clip: 'Sword_Idle', loop: true },
+      run_fwd: { clip: 'Sprint_Loop', loop: true },
+      run_bwd: { clip: 'Jog_Fwd_Loop', loop: true },
+      run_left: { clip: 'Jog_Fwd_Loop', loop: true },
+      run_right: { clip: 'Jog_Fwd_Loop', loop: true },
+      walk_fwd: { clip: 'Walk_Loop', loop: true },
+      walk_bwd: { clip: 'Walk_Loop', loop: true },
+      walk_left: { clip: 'Walk_Loop', loop: true },
+      walk_right: { clip: 'Walk_Loop', loop: true },
+      jump_start: { clip: 'Jump_Start', loop: false },
+      jump_mid: { clip: 'Jump_Loop', loop: true },
+      jump_end: { clip: 'Jump_Land', loop: false },
+      jump_fall: { clip: 'Jump_Loop', loop: true },
+      jump_land: { clip: 'Jump_Land', loop: false },
+      death: { clip: 'Death01', loop: false },
+      hit_react_front: { clip: 'Hit_Chest', loop: false },
+      hit_react_back: { clip: 'Hit_Chest', loop: false },
+      attack_light: { clip: 'Sword_Attack', loop: false },
+      attack_heavy: { clip: 'Sword_Attack', loop: false },
+      cast: { clip: 'Spell_Simple_Shoot', loop: false },
+    },
+    availableClips: ['A_TPose', 'Crouch_Fwd_Loop', 'Crouch_Idle_Loop', 'Dance_Loop', 'Death01', 'Driving_Loop', 'Fixing_Kneeling', 'Hit_Chest', 'Hit_Head', 'Idle_Loop', 'Idle_Talking_Loop', 'Idle_Torch_Loop', 'Interact', 'Jog_Fwd_Loop', 'Jump_Land', 'Jump_Loop', 'Jump_Start', 'PickUp_Table', 'Pistol_Aim_Down', 'Pistol_Aim_Neutral', 'Pistol_Aim_Up', 'Pistol_Idle_Loop', 'Pistol_Reload', 'Pistol_Shoot', 'Punch_Cross', 'Punch_Jab', 'Push_Loop', 'Roll', 'Sitting_Enter', 'Sitting_Exit', 'Sitting_Idle_Loop', 'Sitting_Talking_Loop', 'Spell_Simple_Enter', 'Spell_Simple_Exit', 'Spell_Simple_Idle_Loop', 'Spell_Simple_Shoot', 'Sprint_Loop', 'Swim_Fwd_Loop', 'Swim_Idle_Loop', 'Sword_Attack', 'Sword_Idle', 'Walk_Formal_Loop', 'Walk_Loop']
+  },
 ];
 
 /** Look up a profile by its ID */
@@ -478,6 +507,9 @@ export function resolveAnimationProfileId(
 
 /** Encode each folder/name segment while preserving clip folders in the URL. */
 export function resolveAnimationClipPath(basePath: string, clip: string): string {
+  if (basePath.endsWith('.glb')) {
+    return basePath;
+  }
   const ext = /\.(glb|gltf|fbx)$/i.test(clip) ? '' : '.glb';
   const encodedClipPath = clip.split('/').map((segment) => encodeURIComponent(segment)).join('/');
   return `${basePath}${encodedClipPath}${ext}`;

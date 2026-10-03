@@ -1,3 +1,16 @@
+# 2026-10-03 (2.2.107)
+- **Modular Characters & Animation Pipeline**:
+  - Registered `quaternius_native` in `animationProfiles.ts` to properly link the engine's action slots to the embedded clips inside `ual1_standard.glb`. Modular characters now animate properly in the Character Creator and game view.
+  - Implemented deduplication for modular wardrobe pieces.
+  - Added hair color tinting directly into the UI, mapping to the 3D model meshes.
+- **Item Studio & Asset Bundling**:
+  - Ingested 106 3D models and 107 2D icons from the RPG item pack into the `GameAsset` registry.
+  - Updated `ItemEditorPanel.tsx` with an Icon Asset Picker to browse and assign `ITEM_ICON` visuals visually rather than strictly by ID.
+  - Allowed `WorldModelSelector` in Item Studio to pick from all `MODEL` type assets.
+- **Monsters & Entities**:
+  - Ingested `Imp.glb` and `Puglin.glb` from Bestiary pack as unplayable Monsters/NPCs. They dynamically bind to the Universal Animation Library rig.
+- Bumped site version to 2.2.107.
+
 # 2026-10-03 (2.2.105-update.0)
 - **Electron Client Synchronization & Modernization (`saints-app`)**:
   - Bumped `saints-app` version from `2.1.777` to match portal release `2.2.105-update.0`.
