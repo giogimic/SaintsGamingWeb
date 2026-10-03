@@ -127,7 +127,13 @@ function CompositeCharacter({
 
   // Load Modular Attachments
   useEffect(() => {
-    if (modularAttachments.length === 0) {
+    // Deduplicate attachments by category (keep the last one), but keep all non-categorized items
+    const activeAttachments = [...modularAttachments].reverse().filter((att, index, self) => {
+      if (!att.category) return true;
+      return self.findIndex(a => a.category === att.category) === index;
+    }).reverse();
+
+    if (activeAttachments.length === 0) {
       setLoadedAttachments([]);
       return;
     }
@@ -141,7 +147,7 @@ function CompositeCharacter({
       const normUrl = (u?: string | null) => (u ? u.trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.(glb|gltf)$/i, '') : '');
       const cleanBase = normUrl(baseUrl);
 
-      const promises = modularAttachments.map(async (att) => {
+      const promises = activeAttachments.map(async (att) => {
         // If this attachment is an internal submesh or canonical built-in piece, NEVER load a duplicate GLB instance
         if (att.isSubmesh) return null;
         if (typeof att.assetId === 'string' && att.assetId.startsWith('builtin-piece-')) return null;
@@ -340,8 +346,21 @@ function CompositeCharacter({
     loadedAttachments.forEach((sub) => {
       (sub.attachment.hidesComponents || []).forEach((c) => hiddenKeywords.add(c.toLowerCase()));
     });
-    modularAttachments.forEach((att: any) => {
+    
+    // Use activeAttachments here because we deduplicated them earlier
+    const activeAttachments = [...modularAttachments].reverse().filter((att, index, self) => {
+      if (!att.category) return true;
+      return self.findIndex(a => a.category === att.category) === index;
+    }).reverse();
+
+    activeAttachments.forEach((att: any) => {
       (att.hidesComponents || []).forEach((c: string) => hiddenKeywords.add(c.toLowerCase()));
+      
+      // If a major modular body piece is equipped, hide the monolithic base meshes
+      if (att.category && ['clothing', 'arms', 'legs', 'shoes'].includes(att.category)) {
+        hiddenKeywords.add('superhero_male');
+        hiddenKeywords.add('superhero_female');
+      }
     });
 
     if (hiddenKeywords.size > 0) {

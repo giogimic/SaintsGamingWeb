@@ -68,6 +68,7 @@ export interface ModularAttachmentDef {
   isSubmesh?: boolean;
   meshName?: string;
   defaultVisible?: boolean;
+  category?: string;
 }
 
 export interface PresentationDefinition {

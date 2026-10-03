@@ -286,6 +286,7 @@ export function getWorldModelPresentation(value?: unknown): PresentationDefiniti
           isSubmesh: Boolean(att?.isSubmesh || att?.meshName || att?.assetDefinition?.meshName || att?.metadata?.meshName),
           meshName: att?.meshName || att?.assetDefinition?.meshName || att?.metadata?.meshName,
           defaultVisible: att?.defaultVisible ?? att?.metadata?.defaultVisible,
+          category: att?.category || att?.metadata?.category,
         };
       })
       .filter((a: ModularAttachmentDef | undefined): a is ModularAttachmentDef => !!a);

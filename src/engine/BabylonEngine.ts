@@ -4256,9 +4256,24 @@ export class BabylonEngine {
             }
 
             // Attach modular components (clothing, armor, hats, weapons, etc.)
-            const modularAttachments: ModularAttachmentDef[] = (entity.presentation?.modularAttachments && entity.presentation.modularAttachments.length > 0)
+            let rawAttachments: ModularAttachmentDef[] = (entity.presentation?.modularAttachments && entity.presentation.modularAttachments.length > 0)
               ? entity.presentation.modularAttachments
               : (entity.presentation?.modularModelUrls ? entity.presentation.modularModelUrls.map((url: string) => ({ modelUrl: url, isModular: true, attachmentMode: 'SKINNED' })) : []);
+
+            // Deduplicate attachments by category (keep the last one)
+            const modularAttachments = [...rawAttachments].reverse().filter((att, index, self) => {
+              if (!att.category) return true;
+              return self.findIndex(a => a.category === att.category) === index;
+            }).reverse();
+
+            // Auto-hide base monolithic meshes if a major modular body piece is equipped
+            modularAttachments.forEach((att) => {
+              if (att.category && ['clothing', 'arms', 'legs', 'shoes'].includes(att.category)) {
+                if (!att.hidesComponents) att.hidesComponents = [];
+                att.hidesComponents.push('superhero_male');
+                att.hidesComponents.push('superhero_female');
+              }
+            });
 
             if (modularAttachments.length > 0) {
               const normBase = (baseModelUrl || '').trim().toLowerCase().replace(/^.*[\\/]/, '').replace(/\.(glb|gltf)$/i, '');
