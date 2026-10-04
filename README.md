@@ -354,3 +354,9 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 - **Procedural Generation Fix:** Fixed an issue where procedural/fractal maps would repeatedly request chunks on the client by correctly updating the `WorldStreamer` chunk residency state to `MESHED`.
 - **Character Creator:** Improved asset studio sorting to automatically categorize modular clothing/hair based on filenames and updated character creator to display human-readable names for custom modular items.
 - **Rendering & Viewport fixes:** Fixed mobile browser bottom cutoff by updating viewport scaling to `100dvh` and clamped max zoom out to 15 in dynamic/ortho modes.
+
+### v2.2.111-1
+- **Engine/Rendering**: Fixed overlapping character rendering states. Attached clothing now natively synchronizes transform nodes to the base skeleton hierarchy to prevent clipping and drifting.
+- **Engine/Rendering**: Implemented modular attachment deduplication in EntityRenderer matching the Character Studio.
+- **Engine/Rendering**: Centralized visibility components (hidesComponents) to completely prevent base-mesh clipping for multi-layered outfits.
+

@@ -12,6 +12,8 @@ import { useGameStore } from '@/web/components/the-lobby/store';
 import { useSessionStore } from '@/client/state/useSessionStore';
 import GameOptionsMenu from '@/web/components/the-lobby/hud/GameOptionsMenu';
 
+import { AssetLoadingOverlay } from './overlays/AssetLoadingOverlay';
+
 /**
  * Root UI container for the exploring scene.
  * Mounts all decoupled HUD components.
@@ -29,6 +31,7 @@ export function GameUI() {
     <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
       <LobbyHudDockLayout />
       <ToastOverlay />
+      <AssetLoadingOverlay />
       
       {/* Interactive UI that needs pointer events */}
       <div className="pointer-events-none w-full h-full">

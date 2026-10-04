@@ -188,7 +188,6 @@ export function attachModularComponent({
 
     if (clothingSkeletons.length > 0) {
       clothingSkeletons.forEach((clothingSkeleton) => {
-        const boneMap: { clothingBone: BABYLON.Bone; baseBone: BABYLON.Bone }[] = [];
         
         clothingSkeleton.bones.forEach((clothingBone: any) => {
           const normClothing = normalizeBoneName(clothingBone.name);
@@ -198,25 +197,12 @@ export function attachModularComponent({
             b.id === clothingBone.id
           );
           if (baseBone) {
-            boneMap.push({ clothingBone, baseBone });
+            const baseNode = baseBone.getTransformNode();
+            if (baseNode) {
+              clothingBone.linkTransformNode(baseNode);
+            }
           }
         });
-
-        // Sync clothing bones to base bones every frame, after animations are evaluated
-        const obs = scene.onBeforeRenderObservable.add(() => {
-          for (let i = 0; i < boneMap.length; i++) {
-            const { clothingBone, baseBone } = boneMap[i];
-            clothingBone.getLocalMatrix().copyFrom(baseBone.getLocalMatrix());
-            clothingBone.markAsDirty();
-          }
-        });
-
-        // Ensure the observer is removed if the clothing mesh is disposed
-        if (targetRoots[0]) {
-          targetRoots[0].onDisposeObservable.add(() => {
-            scene.onBeforeRenderObservable.remove(obs);
-          });
-        }
       });
     } else {
       importedResult.meshes.forEach((m: any) => {
@@ -364,3 +350,5 @@ export function attachModularComponent({
     socketWrapper,
   };
 }
+
+

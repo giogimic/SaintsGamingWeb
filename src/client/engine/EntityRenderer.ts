@@ -15,6 +15,7 @@ import { useWorldStore } from '../state/useWorldStore';
 import { useMultiplayerStore } from '../state/useMultiplayerStore';
 import { usePlayerStore } from '../state/usePlayerStore';
 import { useSessionStore } from '../state/useSessionStore';
+import { useGameStore } from '@/web/components/the-lobby/store';
 import { resolveEntitySpriteUrl } from '@/shared/game/creatureCatalog';
 import { getWorldModelPresentation, resolveModelAssetUrl, getModelModularComponents } from '@/shared/game/worldModelPresentation';
 import { mapMesher } from './MapMesher';
@@ -27,7 +28,7 @@ import { resolveActorAnimationPresentation } from '@/shared/game/actorAnimationP
 import { resolveLocomotionAnimationState, selectAnimationGroup, shouldLoopAnimationState } from '@/engine/animationSelection';
 import { getCameraFacingAngle } from '@/shared/game/cameraFacing';
 import { attachModularComponent } from '@/engine/helpers/babylonAttachmentHelpers';
-import { getHiddenWardrobeAttachmentIndexes, getQuaterniusBodyRegionFromMeshName, getQuaterniusBodyRegionsToHide } from '@/shared/game/quaterniusCharacter';
+import { getHiddenWardrobeAttachmentIndexes, getQuaterniusBodyRegionFromMeshName, getQuaterniusBodyRegionsToHide, shouldHideBaseMesh } from '@/shared/game/quaterniusCharacter';
 import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 
 // Player is 2 blocks tall (like a classic voxel game character)
@@ -505,6 +506,9 @@ export class EntityRenderer {
         const rootUrl = data.modelUrl.substring(0, lastSlash + 1);
         const filename = data.modelUrl.substring(lastSlash + 1);
 
+        const setStatus = id === 'local_player' ? useGameStore.getState().setAssetLoadingStatus : undefined;
+        if (setStatus) setStatus('Loading 3D assets...');
+
         BABYLON.SceneLoader.ImportMeshAsync("", rootUrl, filename, this.scene).then(async (result) => {
           // Entity/model data can change while the network request is in flight.
           // Never attach a stale result to a replacement entity.
@@ -559,7 +563,14 @@ export class EntityRenderer {
             baseSkeleton.useTextureToStoreBoneMatrices = true;
           }
 
-          const modularAttachments = data.modularAttachments || [];
+          const modularAttachments = [...(data.modularAttachments || [])]
+            .filter((att) => att.defaultVisible !== false)
+            .reverse()
+            .filter((att, index, self) => {
+              if (!att.category) return true;
+              return self.findIndex(a => a.category === att.category) === index;
+            })
+            .reverse();
           // Attach modular components (clothing, armor, hats, weapons, etc.)
           if (modularAttachments.length > 0) {
             current.attachmentAnimationGroups = current.attachmentAnimationGroups || [];
@@ -731,7 +742,26 @@ export class EntityRenderer {
                 }
               }
             }
+
+          // Global Anti-clipping Component Hiding (hidesComponents)
+          const hiddenKeywords = new Set<string>();
+          modularAttachments.forEach((att: any) => {
+            if (att.defaultVisible !== false) {
+              (att.hidesComponents || []).forEach((c: string) => hiddenKeywords.add(c.toLowerCase()));
+            }
+          });
+
+          if (hiddenKeywords.size > 0) {
+            allMeshes.forEach((childMesh) => {
+              for (const kw of hiddenKeywords) {
+                if (shouldHideBaseMesh(childMesh.name, kw)) {
+                  childMesh.setEnabled(false);
+                  break;
+                }
+              }
+            });
           }
+        }
 
           let modelVisualHeight = 1.6;
           let headBoneHeight: number | null = null;
@@ -893,6 +923,7 @@ export class EntityRenderer {
           }
           
           console.warn(`[EntityRenderer] Final Sprite Stats -> Scale: ${scale}, VisualHeight: ${modelVisualHeight}, AnimCount: ${current.animationGroups?.length}`);
+          if (setStatus) setStatus(null);
         }).catch(async (err) => {
           let responseInfo: Record<string, unknown> = { url: data.modelUrl };
           try {
@@ -933,7 +964,9 @@ export class EntityRenderer {
             material.backFaceCulling = false;
             fallback.material = material;
           }
+          if (setStatus) setStatus(null);
         });
+
 
       } else if (data.presentationType === '2D_WRAPPED' && data.spriteUrl) {
         mesh = WrappedCharacterMesher.createCharacter(id, this.scene, data.spriteUrl);
@@ -1173,3 +1206,5 @@ export class EntityRenderer {
 }
 
 export const entityRenderer = new EntityRenderer();
+
+

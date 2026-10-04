@@ -459,6 +459,8 @@ export interface GameState {
   hydratePlayer: (data: Partial<PlayerState>) => void;
   catchDaemon: (daemonId: string) => void;
   changeMap: (mapId: string, spawnPoint: Point) => void;
+  assetLoadingStatus: string | null;
+  setAssetLoadingStatus: (status: string | null) => void;
   showToast: (message: string) => void;
   removeToast: (id: number) => void;
   modifyHp: (amount: number) => void;

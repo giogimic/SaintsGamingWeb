@@ -24,12 +24,14 @@ function ItemMesh({
   modelScale = 1,
   showAxes = true,
   autoRotate = false,
+  onStatus,
 }: {
   url: string;
   attachOffset?: GripTransform;
   modelScale?: number;
   showAxes?: boolean;
   autoRotate?: boolean;
+  onStatus?: (status: { message: string, error?: boolean } | null) => void;
 }) {
   const [scene, setScene] = useState<THREE.Group | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -40,12 +42,14 @@ function ItemMesh({
     let isCancelled = false;
     const loader = new GLTFLoader();
 
+    if (onStatus) onStatus({ message: 'Loading model...' });
     loader.load(
       url,
       (gltf) => {
         if (!isCancelled) {
           setScene(gltf.scene);
           setError(null);
+          if (onStatus) onStatus(null);
         }
       },
       undefined,
@@ -53,6 +57,7 @@ function ItemMesh({
         if (!isCancelled) {
           console.error('[ItemModelPreview3D] Failed to load GLB model:', err);
           setError('Failed to load 3D model.');
+          if (onStatus) onStatus({ message: 'Error loading asset', error: true });
         }
       }
     );
@@ -120,6 +125,7 @@ export function ItemModelPreview3D({
 }: ItemModelPreview3DProps) {
   const [showAxes, setShowAxes] = useState(true);
   const [autoRotate, setAutoRotate] = useState(false);
+  const [status, setStatus] = useState<{ message: string, error?: boolean } | null>(null);
 
   const effectiveUrl = useMemo(() => {
     if (modelUrl) return modelUrl;
@@ -171,6 +177,30 @@ export function ItemModelPreview3D({
         </button>
       </div>
 
+      {status && (
+        <div role={status.error ? 'alert' : 'status'} className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 text-center pointer-events-none bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#0a101b]/90 border border-primary/30 shadow-[0_0_30px_rgba(219,39,119,0.2)] rounded-2xl p-6 flex flex-col items-center gap-4 max-w-[240px]">
+            {!status.error && (
+              <div className="relative w-10 h-10">
+                <div className="absolute inset-0 rounded-full border-2 border-primary/20"></div>
+                <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <div className={`text-sm font-black uppercase tracking-wider ${status.error ? 'text-red-400' : 'text-white sg-text-gradient'}`}>
+                {status.message}
+              </div>
+              {!status.error && <div className="text-[10px] text-slate-400">Loading 3D asset...</div>}
+            </div>
+            {!status.error && (
+              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full bg-primary/50 w-full animate-pulse rounded-full"></div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 3D Canvas */}
       <div className="flex-1 w-full h-full">
         <Canvas
@@ -188,6 +218,7 @@ export function ItemModelPreview3D({
             modelScale={modelScale}
             showAxes={showAxes}
             autoRotate={autoRotate}
+            onStatus={setStatus}
           />
 
           <OrbitControls makeDefault target={[0, 0, 0]} />

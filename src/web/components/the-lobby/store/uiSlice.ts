@@ -7,7 +7,10 @@ import { INITIAL_SKILLS } from './types';
 
 type GameSlice<T> = StateCreator<GameState, [['zustand/immer', never]], [], T>;
 
-export const createUiSlice: GameSlice<Pick<GameState, "gameMode" | "isMapTransitioning" | "toasts" | "toastHistory" | "clearToastHistory" | "activeDialog" | "openWindows" | "toggleWindow" | "closeWindow" | "closeAllWindows" | "getTopmostWindow" | "isSystemMenuOpen" | "systemMenuSource" | "openSystemMenu" | "closeSystemMenu" | "toggleSystemMenu" | "setGameMode" | "activeAtlasNodeId" | "setActiveAtlasNodeId" | "setIsMapTransitioning" | "setActiveDialog" | "showToast" | "removeToast">> = (set, get) => ({
+export const createUiSlice: GameSlice<Pick<GameState, "assetLoadingStatus" | "setAssetLoadingStatus" | "gameMode" | "isMapTransitioning" | "toasts" | "toastHistory" | "clearToastHistory" | "activeDialog" | "openWindows" | "toggleWindow" | "closeWindow" | "closeAllWindows" | "getTopmostWindow" | "isSystemMenuOpen" | "systemMenuSource" | "openSystemMenu" | "closeSystemMenu" | "toggleSystemMenu" | "setGameMode" | "activeAtlasNodeId" | "setActiveAtlasNodeId" | "setIsMapTransitioning" | "setActiveDialog" | "showToast" | "removeToast">> = (set, get) => ({
+assetLoadingStatus: null,
+setAssetLoadingStatus: (status) => set({ assetLoadingStatus: status }),
+
 gameMode: 'TITLE_SCREEN',
 
 isMapTransitioning: false,

@@ -320,9 +320,11 @@ function CompositeCharacter({
       if (!isCancelled) {
         resolvedAttachments = results.filter((r): r is LoadedSubModel => r !== null);
         setLoadedAttachments(resolvedAttachments);
+        onStatus(null);
       }
     };
 
+    onStatus('Loading attachments…');
     void resolveAndLoad();
 
     return () => {
@@ -816,7 +818,29 @@ export function ArchetypeModelPreview3D({
       )}
 
       {/* 3D Canvas */}
-      {status && <div role={status.error ? 'alert' : 'status'} className="absolute inset-0 z-20 flex items-center justify-center p-4 text-center text-xs text-slate-300 pointer-events-none bg-black/20">{status.message}</div>}
+      {status && (
+        <div role={status.error ? 'alert' : 'status'} className="absolute inset-0 z-20 flex flex-col items-center justify-center p-4 text-center pointer-events-none bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#0a101b]/90 border border-primary/30 shadow-[0_0_30px_rgba(219,39,119,0.2)] rounded-2xl p-6 flex flex-col items-center gap-4 max-w-[240px]">
+            {!status.error && (
+              <div className="relative w-10 h-10">
+                <div className="absolute inset-0 rounded-full border-2 border-primary/20"></div>
+                <div className="absolute inset-0 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+              </div>
+            )}
+            <div className="space-y-1">
+              <div className={`text-sm font-black uppercase tracking-wider ${status.error ? 'text-red-400' : 'text-white sg-text-gradient'}`}>
+                {status.message}
+              </div>
+              {!status.error && <div className="text-[10px] text-slate-400">Loading 3D assets...</div>}
+            </div>
+            {!status.error && (
+              <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full bg-primary/50 w-full animate-pulse rounded-full"></div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       <div className="flex-1 min-h-0 w-full h-full">
         {effectiveBaseUrl && <>
         <Canvas camera={{ position: [0, 1.35, 2.7], fov: 40 }}>
