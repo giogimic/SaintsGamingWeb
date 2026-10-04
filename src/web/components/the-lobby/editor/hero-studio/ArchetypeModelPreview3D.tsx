@@ -261,7 +261,7 @@ function CompositeCharacter({
     }).reverse();
 
     if (activeAttachments.length === 0) {
-      setLoadedAttachments([]);
+      setLoadedAttachments((prev) => prev.length === 0 ? prev : []);
       return;
     }
 
@@ -652,7 +652,7 @@ function CompositeCharacter({
       if (rootGroup.current) bounds.refresh(rootGroup.current).clip().fit();
     });
     return () => cancelAnimationFrame(frame);
-  }, [baseScene, loadedAttachments, modelScale, bounds]);
+  }, [baseScene, loadedAttachments, modelScale]);
 
   useFrame((_, delta) => {
     if (mixerRef.current && isPlaying) {
@@ -728,7 +728,13 @@ export function ArchetypeModelPreview3D({
   const presentation = useMemo(() => getWorldModelPresentation(resolvedModel), [resolvedModel]);
   const effectiveBaseUrl = presentation?.modelUrl;
   const effectiveScale = (presentation?.modelScale || 1) * (resolvedModel.scale || 1);
-  const effectiveAttachments = useMemo(() => modularAttachments || resolvedModel.modularAttachments || [], [modularAttachments, resolvedModel.modularAttachments]);
+  const modularAttachmentsSignature = JSON.stringify(modularAttachments || []);
+  const resolvedModelAttachmentsSignature = JSON.stringify(resolvedModel.modularAttachments || []);
+  const effectiveAttachments = useMemo(() => {
+    const fromProps = JSON.parse(modularAttachmentsSignature);
+    const fromModel = JSON.parse(resolvedModelAttachmentsSignature);
+    return (fromProps.length > 0 ? fromProps : fromModel) || [];
+  }, [modularAttachmentsSignature, resolvedModelAttachmentsSignature]);
   const animationSignature = JSON.stringify(presentation?.animations || {});
   const animationConfig = useMemo(() => applyAnimationProfileFallback(JSON.parse(animationSignature), presentation?.animationProfileId), [animationSignature, presentation?.animationProfileId]);
 

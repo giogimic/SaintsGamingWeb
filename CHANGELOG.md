@@ -1,3 +1,9 @@
+# 2026-10-03 (2.2.110)
+- **Character Creator & Model Preview Fixes**:
+  - Stabilized dynamic attachment rendering in `ArchetypeModelPreview3D` to resolve an issue that caused infinite re-renders and `Maximum call stack size exceeded` errors.
+  - Safely extracted the Quaternius base models from the isolated worktree to correct model occlusion rendering during Archetype creation (preventing "floating eyes" bugs).
+  - Resolved `TypeScript` animation and rigging interface mismatches in `actorModelBinding.ts` to restore build health.
+
 # 2026-10-03 (2.2.109)
 - **Gameplay Cursor & Camera Controls**:
   - Wired the active game client's cursor toggle to middle mouse by default and added a saved, rebindable Show / Hide Cursor action in the in-game Controls menu.
