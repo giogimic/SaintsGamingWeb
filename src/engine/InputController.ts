@@ -235,7 +235,7 @@ public startKeyboardCameraControl() {
         return;
       }
 
-      if (this.engine.editorCameraMode) {
+      if (this.engine.editorCameraMode || this.engine.renderer.isFreeCam) {
         // Pan speed scales with current zoom level.
         const ortho = this.engine.renderer.camera.orthoTop || 10;
         const speed = ortho * 1.2 * dt;
@@ -619,7 +619,7 @@ public enableTilePicking(
       if (!this.engine.scene) return;
       const button = evt.button;
       if (!this.engine.editorCameraMode && button === 2) {
-        if (this.engine.mapType === 'VOXEL' || this.engine.mapType === 'FRACTAL' || this.engine.mapType === 'HYBRID') {
+        if (!this.engine.renderer.isFreeCam && (this.engine.mapType === 'VOXEL' || this.engine.mapType === 'FRACTAL' || this.engine.mapType === 'HYBRID')) {
           // For voxel-like maps, dispatch a block-hit or guard-action based on voxel target.
           const target = this.engine.voxel.resolveVoxelTargetAtScreenCoord(this.engine.scene.pointerX, this.engine.scene.pointerY);
           if (target?.kind === 'voxel-hit' && target.isInsideWorld) {
@@ -651,9 +651,10 @@ public enableTilePicking(
         // Preserve mouse-look pointer lock when possible for right-click orbiting.
         if (this.engine.canvas && typeof (this.engine.canvas as any).requestPointerLock === 'function' && document.pointerLockElement !== this.engine.canvas) {
           try { this.engine.canvas.requestPointerLock(); } catch {}
-        }
         // Treat right-click as hold-to-guard action regardless of voxel target.
-        useGameStore.getState().emitSocketEvent?.('guard_state', { active: true });
+        if (!this.engine.renderer.isFreeCam) {
+          useGameStore.getState().emitSocketEvent?.('guard_state', { active: true });
+        }
         return;
       }
       const style = this.engine.renderer.cameraSettings.playerCameraStyle as string;
@@ -706,7 +707,7 @@ public enableTilePicking(
     };
 
     this.engine.scene.onPointerUp = (evt) => {
-      if (evt.button === 2 && !this.engine.editorCameraMode) {
+      if (evt.button === 2 && !this.engine.editorCameraMode && !this.engine.renderer.isFreeCam) {
         useGameStore.getState().emitSocketEvent?.('guard_state', { active: false });
       }
       if (isPanning) {

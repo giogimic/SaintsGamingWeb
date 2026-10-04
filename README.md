@@ -375,3 +375,7 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 - **Engine/Rendering**: Added support for base skin tinting to both the Three.js Archetype Preview and the Babylon.js live game engine. This allows Character Creation to recolor the base Quaternius body texture.
 - **Data/Schema**: Updated the canonical presentation schema and wardrobe generator to accept and persist \skinColor\ alongside the existing \hairColor\ variable.
 
+
+### v2.2.111-5
+- **Engine/Input**: Fixed /fly and /noclip commands for Staff by unbinding the WASD character controller when Free-Cam is active and enabling the WASD camera panning logic outside of Editor Mode. Skips sending guard actions on right-click when in Free-Cam.
+

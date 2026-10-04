@@ -2189,7 +2189,7 @@ export const VoxelCanvasBabylon: React.FC<GameCanvasBabylonProps> = ({
 
   // Keyboard WASD / interact / auto-walk loop — playtest only (editor runtime keeps sim dormant)
   useEffect(() => {
-    if (isDevEditorOpen) return;
+    if (isDevEditorOpen || useEditorStore.getState().isStudioFreeCam) return;
 
     const keys = { w: false, a: false, s: false, d: false, arrowup: false, arrowdown: false, arrowleft: false, arrowright: false };
     let lastBlockedTime = 0;
