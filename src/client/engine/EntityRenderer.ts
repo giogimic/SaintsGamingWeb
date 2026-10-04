@@ -28,7 +28,7 @@ import { resolveActorAnimationPresentation } from '@/shared/game/actorAnimationP
 import { resolveLocomotionAnimationState, selectAnimationGroup, shouldLoopAnimationState } from '@/engine/animationSelection';
 import { getCameraFacingAngle } from '@/shared/game/cameraFacing';
 import { attachModularComponent } from '@/engine/helpers/babylonAttachmentHelpers';
-import { getHiddenWardrobeAttachmentIndexes, getQuaterniusBodyRegionFromMeshName, getQuaterniusBodyRegionsToHide, shouldHideBaseMesh } from '@/shared/game/quaterniusCharacter';
+import { getHiddenWardrobeAttachmentIndexes, getQuaterniusBodyRegionFromMeshName, getQuaterniusBodyRegionsToHide } from '@/shared/game/quaterniusCharacter';
 import type { ModularAttachmentDef } from '@/shared/game/canonicalAsset';
 
 // Player is 2 blocks tall (like a classic voxel game character)

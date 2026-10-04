@@ -365,3 +365,8 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 - **Engine/Rendering**: Fixed visibility gating sequence in EntityRenderer. Moved global component hiding to execute AFTER default canonical parts are enabled, preventing the base character body from re-enabling itself and clipping through outfits.
 - **Engine/Rendering**: Fixed symmetrical clothing offsets by removing artificial translation resets on Quaternius clothing root nodes, preserving essential hand-authored offsets from the glTF files.
 
+
+### v2.2.111-3
+- **Engine/Rendering**: Implemented Phase 1 of the Character Skeleton Rebinding fix. Replaced hybrid-skeleton transform node linking with direct base skeleton reassignment and vertex bone index remapping. This completely resolves the coordinate space mismatch that caused clothing to physically drift from the base character even when properly animated.
+- **UI/Studio**: Applied identical proper base-inverse bind rebinding to the Three.js Archetype Preview component, ensuring visual parity between the Character Creator and Live Gameplay.
+

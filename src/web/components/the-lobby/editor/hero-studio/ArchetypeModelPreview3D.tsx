@@ -599,15 +599,28 @@ function CompositeCharacter({
           if ((child as THREE.SkinnedMesh).isSkinnedMesh && baseSkeleton) {
             attachedToSkeleton = true;
             const clothingMesh = child as THREE.SkinnedMesh;
-            const newBones = clothingMesh.skeleton.bones.map((clothingBone) => {
+            // Use base bones AND base inverse bind matrices together.
+            // Mixing bones from skeleton A with inverses from skeleton B is
+            // mathematically invalid: the skinning equation is
+            //   final_vertex = vertex × inverse_bind_pose × current_bone_transform
+            // so the inverse and the bone MUST come from the same source.
+            const newBones: THREE.Bone[] = [];
+            const newInverses: THREE.Matrix4[] = [];
+            clothingMesh.skeleton.bones.forEach((clothingBone, i) => {
               const normClothing = normalizeBoneName(clothingBone.name);
-              const baseBone = baseSkeleton!.bones.find(
+              const baseIdx = baseSkeleton!.bones.findIndex(
                 (b) => normalizeBoneName(b.name) === normClothing || b.name === clothingBone.name
               );
-              return baseBone || clothingBone;
+              if (baseIdx >= 0) {
+                newBones.push(baseSkeleton!.bones[baseIdx]);
+                newInverses.push(baseSkeleton!.boneInverses[baseIdx]);
+              } else {
+                newBones.push(clothingBone);
+                newInverses.push(clothingMesh.skeleton.boneInverses[i]);
+              }
             });
-            const newSkeleton = new THREE.Skeleton(newBones, clothingMesh.skeleton.boneInverses);
-            clothingMesh.bind(newSkeleton, clothingMesh.bindMatrix);
+            const newSkeleton = new THREE.Skeleton(newBones, newInverses);
+            clothingMesh.bind(newSkeleton, clothingMesh.matrixWorld);
           }
         });
         if (attachedToSkeleton) {

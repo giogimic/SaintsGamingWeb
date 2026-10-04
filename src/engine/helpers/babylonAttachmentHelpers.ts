@@ -177,34 +177,74 @@ export function attachModularComponent({
       return { rootNodes: targetRoots, isSkinned: false };
     }
 
-    // 1. Skinned Wearable Attachment: Sync clothing bones to base skeleton transform nodes
+    // 1. Skinned Wearable Attachment: Reassign clothing meshes to use the base skeleton directly.
+    //    The skinning equation is: final_vertex = vertex × inverse_bind_pose × current_bone_transform
+    //    If we merely link transform nodes, the clothing mesh still uses its own inverse bind
+    //    matrices (from a different coordinate origin), producing correct animation but wrong
+    //    positioning. Instead, we remap the clothing's bone indices to point at the base
+    //    skeleton's bones, then assign mesh.skeleton = baseSkeleton so both the bone transforms
+    //    AND the inverse bind matrices come from the same source.
     targetRoots.forEach((r) => {
       r.parent = modelWrapper;
     });
 
-    if (clothingSkeletons.length > 0) {
-      clothingSkeletons.forEach((clothingSkeleton) => {
-        
-        clothingSkeleton.bones.forEach((clothingBone: any) => {
-          const normClothing = normalizeBoneName(clothingBone.name);
-          const baseBone = baseSkeleton.bones.find((b: any) =>
-            normalizeBoneName(b.name) === normClothing ||
-            b.name === clothingBone.name ||
-            b.id === clothingBone.id
-          );
-          if (baseBone) {
-            const baseNode = baseBone.getTransformNode();
-            if (baseNode) {
-              clothingBone.linkTransformNode(baseNode);
-            }
+    // Build a lookup: normalized bone name → index in the base skeleton
+    const baseBoneMap = new Map<string, number>();
+    baseSkeleton.bones.forEach((bone: any, idx: number) => {
+      const norm = normalizeBoneName(bone.name);
+      if (!baseBoneMap.has(norm)) baseBoneMap.set(norm, idx);
+      if (!baseBoneMap.has(bone.name)) baseBoneMap.set(bone.name, idx);
+      if (bone.id && !baseBoneMap.has(bone.id)) baseBoneMap.set(bone.id, idx);
+    });
+
+    // Reassign every skinned clothing mesh to use the base skeleton directly
+    importedResult.meshes.forEach((m: any) => {
+      if (!m.skeleton) return;
+      const clothingSkeleton: BABYLON.Skeleton = m.skeleton;
+
+      // Build the index remapping: clothingBoneIdx → baseBoneIdx
+      const indexRemap = new Map<number, number>();
+      let unmappedCount = 0;
+      clothingSkeleton.bones.forEach((clothingBone: any, clothingIdx: number) => {
+        const normName = normalizeBoneName(clothingBone.name);
+        const baseIdx = baseBoneMap.get(normName) ?? baseBoneMap.get(clothingBone.name) ?? baseBoneMap.get(clothingBone.id);
+        if (baseIdx !== undefined) {
+          indexRemap.set(clothingIdx, baseIdx);
+        } else {
+          unmappedCount++;
+        }
+      });
+
+      if (unmappedCount > 0) {
+        console.warn(`[Attachment] ${unmappedCount} bones in '${attachment.assetId || id}' could not be mapped to the base skeleton.`);
+      }
+
+      // Remap the MATRICESINDICES vertex buffer so vertex weights point to base skeleton bones
+      const geometry = m.geometry;
+      if (geometry) {
+        const remapBuffer = (kind: string) => {
+          const data = geometry.getVerticesData(kind);
+          if (!data) return;
+          const remapped = new Float32Array(data.length);
+          for (let i = 0; i < data.length; i++) {
+            const oldIdx = data[i];
+            remapped[i] = indexRemap.get(oldIdx) ?? oldIdx;
           }
-        });
-      });
-    } else {
-      importedResult.meshes.forEach((m: any) => {
-        if (m.skeleton) m.skeleton = baseSkeleton;
-      });
-    }
+          geometry.updateVerticesData(kind, remapped);
+        };
+        remapBuffer(BABYLON.VertexBuffer.MatricesIndicesKind);
+        remapBuffer(BABYLON.VertexBuffer.MatricesIndicesExtraKind);
+      }
+
+      // Point the mesh at the base skeleton — now both bone transforms AND
+      // inverse bind matrices come from the same skeleton
+      m.skeleton = baseSkeleton;
+    });
+
+    // Dispose clothing skeletons — they are no longer referenced by any mesh
+    clothingSkeletons.forEach((cs) => {
+      try { cs.dispose(); } catch { /* already disposed */ }
+    });
 
     // Wearable attachments are driven by the base skeleton; stop independent accessory animations
     importedResult.animationGroups?.forEach((ag) => ag.stop());
