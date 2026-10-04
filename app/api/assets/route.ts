@@ -303,6 +303,25 @@ export async function GET(req: NextRequest) {
             ],
           },
         ];
+      } else if (lowerRole === 'archetype' || lowerRole === 'npc') {
+        whereClause.AND = [
+          ...(whereClause.AND || []),
+          {
+            OR: [
+              { metadata: { contains: `"role":"archetype"` } },
+              { metadata: { contains: `"role": "archetype"` } },
+              { metadata: { contains: `"role":"npc"` } },
+              { metadata: { contains: `"role": "npc"` } },
+              { metadata: { contains: `"profile":"character"` } },
+              { metadata: { contains: `"profile": "character"` } },
+              { categories: { contains: `"character"` } },
+              { categories: { contains: `character` } },
+              { tags: { contains: `character` } },
+              { tags: { contains: `npc` } },
+              { tags: { contains: `playable` } },
+            ],
+          },
+        ];
       } else {
         whereClause.AND = [
           ...(whereClause.AND || []),

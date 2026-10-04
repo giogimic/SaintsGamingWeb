@@ -262,6 +262,7 @@ export function AssetUploadView({
           query: searchQuery || undefined,
           tags: tagsFilter,
           role: activeAssetPicker?.modelRole,
+          modular: activeAssetPicker?.modelRole ? false : undefined,
         },
         0,
         100
