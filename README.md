@@ -370,3 +370,8 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 - **Engine/Rendering**: Implemented Phase 1 of the Character Skeleton Rebinding fix. Replaced hybrid-skeleton transform node linking with direct base skeleton reassignment and vertex bone index remapping. This completely resolves the coordinate space mismatch that caused clothing to physically drift from the base character even when properly animated.
 - **UI/Studio**: Applied identical proper base-inverse bind rebinding to the Three.js Archetype Preview component, ensuring visual parity between the Character Creator and Live Gameplay.
 
+
+### v2.2.111-4
+- **Engine/Rendering**: Added support for base skin tinting to both the Three.js Archetype Preview and the Babylon.js live game engine. This allows Character Creation to recolor the base Quaternius body texture.
+- **Data/Schema**: Updated the canonical presentation schema and wardrobe generator to accept and persist \skinColor\ alongside the existing \hairColor\ variable.
+

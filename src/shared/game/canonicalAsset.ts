@@ -116,6 +116,7 @@ export interface PresentationDefinition {
   categorizedAnimations?: any[];
   skeletonRequirements?: any;
   materials?: any;
+  skinTint?: string;
 }
 
 export interface CanonicalAssetInput {

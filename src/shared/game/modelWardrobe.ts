@@ -468,6 +468,7 @@ export function applyCharacterCreationWardrobe(
   visualData: string | null | undefined,
   selectedAssetIds: string[],
   hairColor?: string,
+  skinColor?: string,
 ): string {
   let data: any = {};
   try {
@@ -511,8 +512,14 @@ export function applyCharacterCreationWardrobe(
     .filter(Boolean);
 
   data.modularAttachments = nextAttachments;
+  if (skinColor) {
+    data.skinTint = skinColor;
+  }
   if (data.worldModel && typeof data.worldModel === 'object' && !Array.isArray(data.worldModel)) {
     data.worldModel.modularAttachments = nextAttachments;
+    if (skinColor) {
+      data.worldModel.skinTint = skinColor;
+    }
   }
   return JSON.stringify(data);
 }

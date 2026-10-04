@@ -638,6 +638,20 @@ export class EntityRenderer {
           }
           const allMeshes = modelWrapper.getChildMeshes(false);
           
+          if (data.skinTint) {
+            const tintColor = BABYLON.Color3.FromHexString(data.skinTint);
+            allMeshes.forEach(m => {
+              if (m.material && m.skeleton && m.skeleton === baseSkeleton) {
+                const mat = m.material as any;
+                if (mat.albedoColor) {
+                  mat.albedoColor = tintColor;
+                } else if (mat.diffuseColor) {
+                  mat.diffuseColor = tintColor;
+                }
+              }
+            });
+          }
+
           if (id.includes('citizen') || data.modelUrl?.includes('citizens')) {
             allMeshes.forEach(m => {
               if (m.material) {

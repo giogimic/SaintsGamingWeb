@@ -569,6 +569,19 @@ function CompositeCharacter({
       if (!baseSkeleton && (child as THREE.SkinnedMesh).isSkinnedMesh) {
         baseSkeleton = (child as THREE.SkinnedMesh).skeleton;
       }
+      
+      // Apply skin tint to base body meshes if specified
+      if (presentation.skinTint && (child as THREE.Mesh).isMesh) {
+        const mesh = child as THREE.Mesh;
+        if (mesh.material) {
+          const materials = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+          materials.forEach((mat) => {
+            if ('color' in mat && typeof (mat as any).color?.set === 'function') {
+              (mat as any).color.set(presentation.skinTint);
+            }
+          });
+        }
+      }
     });
 
     // Wearables share the base rig; rigid props attach to the configured socket.
