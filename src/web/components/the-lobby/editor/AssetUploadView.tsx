@@ -261,15 +261,14 @@ export function AssetUploadView({
           type: typeFilter === 'ALL' ? undefined : (typeFilter as any),
           query: searchQuery || undefined,
           tags: tagsFilter,
+          role: activeAssetPicker?.modelRole,
         },
         0,
         100
       );
       let items = res.items || [];
-      let nextPage = 1;
-      while (activeAssetPicker?.modelRole && res.hasMore && items.filter((asset) => isWorldModelEligibleForRole(asset, activeAssetPicker.modelRole!)).length < 100) {
-        res = await manager.searchAssets({ type: 'MODEL', query: searchQuery || undefined }, nextPage++, 100);
-        items = items.concat(res.items || []);
+      if (activeAssetPicker?.modelRole) {
+         items = items.filter((asset) => isWorldModelEligibleForRole(asset, activeAssetPicker.modelRole!));
       }
       if (requestId === libraryRequestId.current) {
         setLibraryAssets(items);

@@ -1,3 +1,7 @@
+# 2026-10-03 (2.2.111)
+- **Asset Catalog Fix**:
+  - Removed an aggressive while loop in `AssetUploadView` that caused infinite Network request hangs when searching for specific world models in Archetypes.
+
 # 2026-10-03 (2.2.110)
 - **Character Creator & Model Preview Fixes**:
   - Stabilized dynamic attachment rendering in `ArchetypeModelPreview3D` to resolve an issue that caused infinite re-renders and `Maximum call stack size exceeded` errors.
