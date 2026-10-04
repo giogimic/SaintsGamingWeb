@@ -636,24 +636,6 @@ export class EntityRenderer {
               }
             }
           }
-          const hiddenBodyRegions = new Set(getQuaterniusBodyRegionsToHide(modularAttachments));
-          modelWrapper.getChildMeshes(false).forEach((bodyMesh) => {
-            const region = getQuaterniusBodyRegionFromMeshName(bodyMesh.name);
-            if (region && hiddenBodyRegions.has(region)) bodyMesh.setEnabled(false);
-          });
-          const hiddenAttachmentIndexes = getHiddenWardrobeAttachmentIndexes(modularAttachments);
-          const hiddenAttachmentIds = new Set(
-            hiddenAttachmentIndexes
-              .map((index) => String(modularAttachments[index]?.assetId || ''))
-              .filter(Boolean),
-          );
-          if (hiddenAttachmentIds.size > 0) {
-            modelWrapper.getChildMeshes(false).forEach((attachedMesh: any) => {
-              if (hiddenAttachmentIds.has(String(attachedMesh.metadata?.wardrobeAttachmentAssetId || ''))) {
-                attachedMesh.setEnabled(false);
-              }
-            });
-          }
           const allMeshes = modelWrapper.getChildMeshes(false);
           
           if (id.includes('citizen') || data.modelUrl?.includes('citizens')) {
@@ -743,21 +725,22 @@ export class EntityRenderer {
               }
             }
 
-          // Global Anti-clipping Component Hiding (hidesComponents)
-          const hiddenKeywords = new Set<string>();
-          modularAttachments.forEach((att: any) => {
-            if (att.defaultVisible !== false) {
-              (att.hidesComponents || []).forEach((c: string) => hiddenKeywords.add(c.toLowerCase()));
-            }
+          // Global Anti-clipping Component Hiding
+          const hiddenBodyRegions = new Set(getQuaterniusBodyRegionsToHide(modularAttachments));
+          allMeshes.forEach((bodyMesh) => {
+            const region = getQuaterniusBodyRegionFromMeshName(bodyMesh.name);
+            if (region && hiddenBodyRegions.has(region)) bodyMesh.setEnabled(false);
           });
-
-          if (hiddenKeywords.size > 0) {
-            allMeshes.forEach((childMesh) => {
-              for (const kw of hiddenKeywords) {
-                if (shouldHideBaseMesh(childMesh.name, kw)) {
-                  childMesh.setEnabled(false);
-                  break;
-                }
+          const hiddenAttachmentIndexes = getHiddenWardrobeAttachmentIndexes(modularAttachments);
+          const hiddenAttachmentIds = new Set(
+            hiddenAttachmentIndexes
+              .map((index) => String(modularAttachments[index]?.assetId || ''))
+              .filter(Boolean),
+          );
+          if (hiddenAttachmentIds.size > 0) {
+            allMeshes.forEach((attachedMesh: any) => {
+              if (hiddenAttachmentIds.has(String(attachedMesh.metadata?.wardrobeAttachmentAssetId || ''))) {
+                attachedMesh.setEnabled(false);
               }
             });
           }

@@ -180,10 +180,6 @@ export function attachModularComponent({
     // 1. Skinned Wearable Attachment: Sync clothing bones to base skeleton transform nodes
     targetRoots.forEach((r) => {
       r.parent = modelWrapper;
-      r.position = BABYLON.Vector3.Zero();
-      r.rotation = BABYLON.Vector3.Zero();
-      r.scaling = BABYLON.Vector3.One();
-      r.computeWorldMatrix(true);
     });
 
     if (clothingSkeletons.length > 0) {
@@ -350,5 +346,6 @@ export function attachModularComponent({
     socketWrapper,
   };
 }
+
 
 

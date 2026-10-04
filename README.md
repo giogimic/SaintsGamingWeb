@@ -360,3 +360,8 @@ Visit us at [saintsgaming.net](https://saintsgaming.net)
 - **Engine/Rendering**: Implemented modular attachment deduplication in EntityRenderer matching the Character Studio.
 - **Engine/Rendering**: Centralized visibility components (hidesComponents) to completely prevent base-mesh clipping for multi-layered outfits.
 
+
+### v2.2.111-2
+- **Engine/Rendering**: Fixed visibility gating sequence in EntityRenderer. Moved global component hiding to execute AFTER default canonical parts are enabled, preventing the base character body from re-enabling itself and clipping through outfits.
+- **Engine/Rendering**: Fixed symmetrical clothing offsets by removing artificial translation resets on Quaternius clothing root nodes, preserving essential hand-authored offsets from the glTF files.
+
